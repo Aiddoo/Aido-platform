@@ -6,46 +6,53 @@
 
 ### 값과 도구
 
-| 값        | 앱 표현                                                                                                                                                                          | 만드는 곳                    |
-| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
-| 순간      | `Instant`(ISO 8601 문자열 brand)                                                                                                                                                 | `shared/date/instant.ts`     |
-| 달력 날짜 | `DateKey`(`YYYY-MM-DD` 문자열 brand). 경계는 `dateKeySchema`(계약 `dateSchema.brand`)로 한 번 읽고, 검증 안 된 바깥 문자열은 `isDateKey`(타입 가드), 폼은 `dateKeyFieldSchema`다 | `shared/date/date-key.ts`    |
-| 벽시계    | 모델·전송은 `HH:mm`(`timeOfDaySchema`), 계산·피커는 `TimeOfDay`(`{ hour, minute }`, `toTimeOfDay`·`isTimeOfDayInRange` 포함)                                                     | `shared/date/time-of-day.ts` |
-| 시간대    | IANA 이름. 기기 값은 `getDeviceTimezone()`(`shared/infra/localization`)                                                                                                          | `shared/date/zoned.ts`(계산) |
+| 값        | 앱 표현                                                                                                                                                                                    | 만드는 곳                    |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------- |
+| 순간      | `Instant`(ISO 8601 문자열 brand)                                                                                                                                                           | `shared/date/instant.ts`     |
+| 달력 날짜 | `DateKey`(`YYYY-MM-DD` 문자열 brand). 경계는 `dateKeySchema`(계약 `dateSchema.brand`)로 한 번 읽고, 검증 안 된 바깥 문자열은 `isDateKey`(타입 가드), 폼은 `dateKeyFieldSchema`다           | `shared/date/date-key.ts`    |
+| 벽시계    | 모델·전송은 `HH:mm`(`timeOfDaySchema`), 계산·피커는 `TimeOfDay`(`{ hour, minute }`, `toTimeOfDay`·`isTimeOfDayInRange` 포함)                                                               | `shared/date/time-of-day.ts` |
+| 시간대    | IANA 이름. 앱이 쓰는 값은 `getAppTimezone()`, 다시 정하는 것은 `refreshAppTimezone()`(`shared/infra/localization/app-timezone.ts`), 규칙은 `resolveAppTimezone`(`shared/date/timezone.ts`) | `shared/date/zoned.ts`(계산) |
 
 - 시간대 이름은 `timezone`(`currentTimezone`, `DateFormatContext.timezone`)이다. `timeZone`은 그 키를 요구하는 API(`Intl.DateTimeFormat` 옵션, expo-localization `Calendar`, 피커 `timeZoneName`)와 이미 저장된 `aido_device_timezone_v1` 값에만 쓴다.
 - 모델·캐시·전송은 문자열 brand다. 문자열은 같은 값이면 같은 참조라 재조회에도 구조 공유가 유지된다. 순간의 사전순 비교(`a < b`)는 오프셋이 다르면 틀리므로 쓰지 않는다.
 - 날짜 key 계산(`addDaysToDateKey`·`getMonthStartDateKey`·`toDateKey(instant, timezone)` 등)은 `DateKey`만 받고 돌려준다. 계산 결과는 `isDateKey`(스키마와 같은 규칙)로 좁혀 칸마다 Zod를 거치지 않고, 0000~9999년을 벗어나면 던진다. 테스트 리터럴은 `src/testing/date-key.ts`의 `createDateKey('2026-11-12')`로 만든다.
-- `Date`는 `shared/date/native-date.ts`를 지나는 네이티브 피커·달력·파일 수정 시각 경계에서만 만든다. 앱 모델에 `Date`를 두지 않는다.
+- `Date`는 `shared/date/native-date.ts`를 지나는 네이티브 피커·달력·파일 수정 시각 경계에서만 만든다. 앱 모델과 Provider·store의 공개 상태에 `Date`를 두지 않는다.
 - Hermes에는 Temporal이 없고 폴리필도 쓰지 않는다([Temporal spike](#temporal-spike)). 날짜 key 산술은 `date-key.ts`의 순수 계산(Hinnant의 civil 날짜 ↔ 일수 변환), 순간 직렬화는 `Date#toISOString`, 시간대 변환(`zoned.ts`)은 캐시한 `Intl.DateTimeFormat`이다. 테스트는 서버와 같은 Node 26 네이티브 Temporal을 정답으로 비교한다(`src/testing/temporal-oracle.ts`). `dayjs`·`temporal-polyfill` import는 depcruise(`date-library-dayjs`·`date-library-temporal`)가 막는다.
 - 같은 계산의 서버↔앱 이름은 [공통 기준의 표](../../../docs/conventions/dates.md#1-값의-종류)에 있다. 날짜 + 벽시계 → 순간은 `toZonedInstant({ date, time, timezone })` 하나이고 겹치는 시각은 앞쪽, 없는 시각은 전환 뒤 순간이다(Temporal `compatible`). 순간 직렬화는 `Date#toISOString`이라 서버 `toIsoString`(ms 3자리 내림)과 바이트 단위로 같다.
-- 표시는 캐시된 `Intl.DateTimeFormat` 하나다. 새 포매터를 만들지 않는다.
+- 표시는 캐시된 `Intl.DateTimeFormat` 하나다(`format/intl-formatter.ts`의 `getFormatter`). 새 포매터를 만들지 않는다. 런타임이 모르는 시간대 이름(서버가 준 값, 옛 저장값)은 렌더 중 `RangeError`를 던지지 않고 서비스 기본 시간대로 그린다. 렌더를 지키는 마지막 안전망이라 `shared/date`는 앱 시간대 어댑터를 import하지 않는다. 이름 확인(`isSupportedTimezone`)은 아는 이름·모르는 이름을 모두 기억한다.
+- 숫자를 읽는 계산(날짜 key·벽시계·오프셋)은 `getPartsFormatter`로 `en-US`·`calendar: 'gregory'`·`numberingSystem: 'latn'`, 시가 있으면 `hourCycle: 'h23'`을 고정한다. 시 파트는 `getHourPartValue`로 읽어 런타임이 `h23`을 무시하고 자정을 `24`로 그려도 `0`이다. 표시 helper의 형식은 이 고정과 무관하다.
 
 ```text
 shared/date/
-  instant.ts  date-key.ts  time-of-day.ts  day-of-week.ts
+  instant.ts  date-key.ts  time-of-day.ts  day-of-week.ts  week-start.ts
   zoned.ts       # 시간대 계산(Intl). 순간 ↔ 날짜 key·벽시계
-  clock.ts       # 지금(getNowInstant), 오늘 상태, 다음 자정
+  timezone.ts    # 앱 시간대를 정하는 규칙(서버 parseDeviceReportedTimezone과 읽었는가가 같다)
+  clock.ts       # 지금(getNowInstant), 오늘 상태(readLocalDateState), 다음 자정
+  schemas/       # 마지막으로 읽은 시간대(aido_last_read_timezone_v1)
   format/        # Intl 표시 helper와 카탈로그 문구를 붙이는 label helper
   native-date.ts # Date가 드나드는 유일한 경계
 ```
 
 ### Temporal spike
 
-1.15.2 [10/32]에서 같은 검사 1,143개를 Node 26 네이티브 Temporal과 Hermes iOS의 `temporal-polyfill` 1.0.8로 돌려 비교했다(측정 표는 그 PR에 있다).
+폴리필을 쓰지 않는 근거는 같은 검사 1,143개를 Node 26 네이티브 Temporal과 Hermes iOS의 `temporal-polyfill` 1.0.8로 돌린 비교다.
 
 - **버린 이유.** 폴리필은 시간대 이름을 대문자로 바꿔 넘겨, Hermes iOS가 프로세스에서 처음 보는 이름 15개(`Asia/Kolkata`, `US/Eastern`, `Etc/UTC` 등)를 `RangeError`로 거부한다. `Temporal`만 묶어도 `hermesc -O` 바이트코드가 159,974B(순수 계산 `date-key`는 9,717B)이고 앱 시작 경로에서 12–22ms가 든다.
-- **결정.** 폴리필을 쓰지 않는다. 날짜 key 산술은 순수 계산, 순간 직렬화는 `Date#toISOString`, 시간대 변환은 Intl이다. 서버와 같은지는 Node 26 Temporal을 정답으로 테스트한다(1900~2200년 날짜 key 36,646개 × 8개 연산, 서머타임 날 벽시계 320개). Intl 벽시계 변환의 서머타임 틈·겹침은 서버 규칙으로 고쳤다. 출력 글자는 49만 개 조합(7개 시간대 × ko·en)에서 바이트 단위로 같다.
-- **Android.** 개발 빌드 APK가 없어 기기에서 돌리지 못했다. 날짜 key 산술은 Intl을 쓰지 않아 플랫폼과 무관하다. 출시 전에 Android Hermes에서 아래를 확인한다.
+- **결정.** 폴리필을 쓰지 않는다. 날짜 key 산술은 순수 계산, 순간 직렬화는 `Date#toISOString`, 시간대 변환은 Intl이다. 서버와 같은지는 Node 26 Temporal을 정답으로 테스트한다(1900~2200년 날짜 key 36,646개 × 8개 연산, 서머타임 날 벽시계 320개). Intl 벽시계 변환의 서머타임 틈·겹침은 서버 규칙을 따른다. 출력 글자는 49만 개 조합(7개 시간대 × ko·en)에서 바이트 단위로 같다.
+- **Android.** 날짜 key 산술은 Intl을 쓰지 않아 플랫폼과 무관하다. 출시 전에 Android Hermes에서 아래를 확인한다.
   1. `toDateKey`·`toHHmm`·`toZonedInstant`가 Node 결과와 같다: 서울·뉴욕·런던·산티아고·`Asia/Kolkata`, 2026 서머타임 날 전후 매시와 02:30.
   2. 화면 글자가 iOS와 같다: `formatDateLabel` 10종(`monthDayYear`·`day` 포함)·`formatClockTime`·상대 시간을 ko·en으로, 특히 오전/오후 앞 공백과 `dayNumber`·`dottedMonthDay`의 en-US 파트.
   3. 시간 피커(`openAndroidTimePicker`·설정 알림 시각)가 고른 시와 분을 그대로 돌려준다(`timeZoneName="UTC"`, 서머타임 시작일과 피커를 연 채 기기 시간대를 바꾼 뒤 포함).
   4. 자정 전환: 앱을 켠 채 자정을 넘기면 오늘 key·피드·위젯(`readLocalDateKey`)이 함께 바뀐다.
-  5. 앱을 켠 채 설정에서 시간대만 바꾸고 돌아오면 재시작 없이 오늘·달력 칸·받은 편지함 구역·콕 버튼이 새 시간대로 바뀐다. Android는 시간대 변경에 달력 변경 신호를 보내지 않아 `LocalDateProvider`가 복귀·자정마다 `getDeviceTimezone()`을 새로 읽는다. 요청 `X-Timezone`·위젯과 같은 값인지 본다.
+  5. 앱을 켠 채 설정에서 시간대만 바꾸고 돌아오면 재시작 없이 오늘·달력 칸·받은 편지함 구역·콕 버튼이 새 시간대로 바뀐다. Android는 시간대 변경에 달력 변경 신호를 보내지 않아 `LocalDateProvider`가 복귀·자정마다 `refreshAppTimezone()`으로 다시 정한다. 요청 `X-Timezone`·위젯과 같은 값인지 본다.
 
 ### 오늘과 시계
 
-- 시간대는 기기 달력(`expo-localization`)에서만 온다. 앱의 오늘 key와 자정 전환은 `LocalDateProvider`가 소유하고(자정 timer, foreground, `useCalendars()` 변화에서 다시 평가) 컴포넌트는 `useTodayKey()`(`DateKey`)로 읽는다. 다시 평가할 때마다 시간대는 `getDeviceTimezone()`으로 새로 읽는다. Android의 `useCalendars()`는 설정 변경(configuration change) 때만 바뀌어 시간대만 바꾸면 그대로라 신호로만 쓴다. Provider 밖(위젯 경계)은 같은 `readDeviceLocalDateState()`를 쓴다. 렌더 중 `new Date()`를 기준 상태로 만들지 않는다.
+- **시간대는 앱이 지어내지 않는다.** 기기 달력(`expo-localization`)에서 읽은 IANA 이름 → 마지막으로 읽은 값(`aido_last_read_timezone_v1`, 기기 범위라 계정이 바뀌어도 남는다) → 서비스 기본 시간대(`@aido/api/vocabulary`의 `SERVICE_DEFAULT_TIMEZONE`) 순서로 정한다(`resolveAppTimezone`). 기기 값을 읽는 규칙은 `parseDeviceReportedTimezone`이다. 없음·빈 값, 고정 오프셋과 기기 설정의 사용자 지정 ID(`GMT+1`·`UTC+9`), UTC와 같은 이름(`UTC_EQUIVALENT_TIMEZONE_NAMES`, 대소문자 무시), 런타임 `Intl`이 모르는 이름은 읽지 못한 것이고 `Europe/London`처럼 오프셋이 0인 지역 이름은 읽은 값이다. 읽었는가(null 여부)는 서버와 같고 서버와 같은 표(`timezone-report-cases.json`)를 `shared/date/timezone.test.ts`가 읽는다. 표기(대소문자)는 서버가 정식 표기로 맞추고 앱은 기기가 준 글자를 그대로 쓴다.
+- **계산에 쓴 시간대를 그대로 서버에 보낸다.** 시간대를 정하는 때와 읽는 때를 나눈다. `refreshAppTimezone()`이 기기에서 읽어 정하고(읽은 값이 바뀌었으면 마지막 값으로 남긴다) 정한 값을 모듈에 둔다. 부르는 곳은 `LocalDateProvider`의 재평가(시작·복귀·자정·달력 변경 신호)와 Provider 없이 도는 헤드리스 위젯 진입점(`bootstrap/providers/register-widget-task-handler.android.ts`)뿐이다. `getAppTimezone()`은 정해 둔 값만 읽고(Provider보다 먼저 도는 첫 요청만 한 번 정한다) 요청 헤더 `X-Timezone`(`request-headers.ts`), 푸시 기기 보고(`PushRegistrationService`의 `getTimezone` 포트), React 밖 오늘(`readLocalDateState`)이 쓴다. 그래서 화면의 오늘과 헤더·기기 보고는 한 순간에 같은 값이다. Android에서 앱이 앞에 뜬 채 시스템 시간대만 바뀌면 다음 복귀까지 화면과 헤더가 함께 옛 값이다. 기기 보고의 시간대는 그 요청의 `X-Timezone`으로 간다.
+- 기기가 시간대를 못 주고 마지막 값도 없으면 서비스 기본 시간대로 계산하고 그 값을 보낸다. 헤더를 비우면 서버의 날짜 경계가 UTC가 돼 서울 00–09시에 앱과 서버의 오늘이 갈린다. 그 기기를 쓰는 다른 나라 사용자는 기기가 시간대를 줄 때까지 서비스 기본 시간대로 계산된다.
+- 기기가 만든 `Date`를 해석하는 자리는 앱 시간대가 아니라 기기 시스템 시간대 `getDeviceSystemTimezone()`이다. iOS 캘린더 종일 일정은 기기 시간대의 00:00~23:59:59로 오므로 기기를 UTC로 맞췄으면 UTC로 읽어야 하루다(런타임이 모르는 이름이면 앱 시간대).
+- 앱의 오늘 key와 자정 전환은 `LocalDateProvider`가 소유하고(자정 timer, foreground, `useCalendars()` 변화에서 다시 평가) 컴포넌트는 `useTodayKey()`(`DateKey`)로 읽는다. 다시 평가할 때마다 시간대를 위 순서로 새로 정한다. Android의 `useCalendars()`는 설정 변경(configuration change) 때만 바뀌어 시간대만 바꾸면 그대로라 신호로만 쓴다. React 밖(위젯 경계, 조회 시점의 판단, 서비스 포트)은 `readLocalDateState()`(`clock.ts`)를 쓴다. 오늘 key를 읽는 길은 이 둘뿐이다. Provider 상태(`LocalDateState`)는 날짜 key·시간대·오프셋이고 `Date`를 두지 않으며, 렌더 중 `new Date()`를 기준 상태로 만들지 않는다.
 - 지금 시각은 둘이다. 분 단위로 여러 화면이 함께 보는 지금(상대 시간 "5분 전", 날짜·마감 판단)은 `useMinuteNow()`로 앱 하나의 분 시계(`minute-clock-store`, 분 경계와 앱 복귀에 갱신)를 구독한다. 화면마다 다른 간격이나 마감까지 다시 읽는 지금(쿨다운 초, 녹음 경과, 갱신 시각)은 `useNow({ tickMs?, until? })`다. 새 지금 시계 훅을 만들지 않는다.
 - 한 실행 안에서 길이만 재는 값(녹음·인식 세션 경과, 프레임·대기 시간)은 `Date.now()` ms를 그대로 쓴다. 저장하거나 모델이 비교하는 시각(푸시 응답을 받은 때, 앱이 앞에 온 때)은 `getNowInstant()`의 `Instant`이고 차이는 `diffMs`다.
 - 앱 달력·위젯의 주는 `getCalendarWeek`(일요일 시작), 주간 성취·리포트는 서버와 같은 ISO 주(`getIsoWeekOfMonth`)다. 한 화면에서 두 주 규칙을 섞지 않는다. 주차는 두 체계 모두 주의 가운데 날(수·목요일)이 속한 달의 몇째 주이고 라벨은 체계마다 하나(`formatCalendarWeekLabel`·`formatIsoWeekLabel`, 위젯 제목도 `formatCalendarWeekLabel`)이고 둘 다 오늘 key를 받아 다른 해의 주에 연도를 붙인다([주차 규칙](../../../docs/conventions/dates.md#2-오늘과-시간대의-출처)). 하루 길이 상수는 `shared/constants/time-units.ts`의 `DAY_MS`다.
@@ -128,37 +135,44 @@ toast.error(t('friend:toast.sendFailed'));
 
 ## 문구 톤과 용어
 
-- **ko**: 해요체(`저장했어요`, `다시 시도해주세요`). 보조 용언은 붙여 쓴다(`해주세요`). 서버 합니다체와 섞지 않는다. 앱 이름은 "아이두".
+- **ko**: 해요체(`저장했어요`, `다시 시도해주세요`). 보조 용언은 붙여 쓴다(`해주세요`). 요청은 `~해주세요`, 당부·안부는 `~하세요`(`조심하세요`), 제안은 `~해보세요`다. 서버 합니다체와 섞지 않는다. 앱 이름은 "아이두".
 - **en**: sentence case(`Invite friends`)로 자연스러운 영어를 쓴다. ko를 직역하지 않고 같은 뜻·보간 변수를 유지한다. 앱 이름은 "Aido".
 - **마침표**: 버튼·제목·칩·한 문장 토스트에는 찍지 않고, 시트·다이얼로그 설명은 문장마다 찍는다.
+- **말줄임표**: `…` 한 글자다(ko·en, `...`가 아니다). 진행 중 표시(`불러오는 중…`)에만 쓰고 입력 안내나 문장 끝을 흐리는 데 쓰지 않는다.
+- **느낌표**: 축하·환영·달성(`반가워요!`, `다 채웠어요!`)에만 한 문구에 하나 쓴다. 오류·안내·버튼·한도 안내와 추가·전송 같은 보통 결과 토스트에는 쓰지 않는다.
+- **숫자와 단위**: ko는 아라비아 숫자에 단위를 붙이고(`3개`, `7일`, `10분`), en은 띄운다(`3 items`). 한도·기간 숫자는 문구에 적지 않고 `{{count}}`로 받는다. 값은 문구를 고르는 한 곳(`validation-message.ts`·`error-code-message.ts`의 표)이나 호출부가 `@aido/api/vocabulary` 상수로 넣는다. en의 천 단위 구분은 i18next 내장 서식 `{{count, number}}`로 그리고 ko 글자 수는 구분 없이 둔다(`2000자`). 횟수는 `N번`이고 요금제 한도 수치만 `월 10회`다. 읽기 쉬운 단위로 적는 기간(`3개월`)은 리터럴로 두고 값과 함께 바뀌게 테스트로 묶는다.
+- **길이 한도**: `이름은 {{count}}자 이내로 입력해주세요` / `Use up to {{count}} characters for your name` 꼴 하나다. 최소는 `{{count}}자 이상` / `Use at least {{count}} characters`다. 개수 한도가 찬 상태는 아래 표를 따른다.
 - **줄바꿈**: 창 제목·짧은 안내는 ko 문구에 `\n`을 넣어 문장 사이에서 나눈다(Android에 단어 단위 줄바꿈 prop이 없다). 긴 글은 `WordWrapText`로 그린다.
 - 같은 개념은 모든 화면에서 같은 말을 쓴다.
 
-| 개념                         | ko                                | en                                      | 쓰지 않는 말                 |
-| ---------------------------- | --------------------------------- | --------------------------------------- | ---------------------------- |
-| 할 일 / 하위 할 일           | 할 일 / 하위 할 일                | to-do / subtask                         | 투두, 일정 / 항목, 세부 항목 |
-| 메모 탭의 글                 | 메모                              | memo                                    | note                         |
-| 긴 녹음 기능                 | 말로 메모하기 / 말로 남긴 메모    | Voice notes                             | 음성 메모                    |
-| 말로 할 일 만들기            | 말로 할 일 만들기                 | Speak to add                            | 음성 입력                    |
-| 받아쓰기 입력                | 말로 입력                         | Dictate                                 | 음성으로 입력                |
-| 소리 파일 / 기기 인식 데이터 | 녹음 / 음성 인식 파일             | recording / speech recognition download | 음성 파일 / 모델, 언어 팩    |
-| 글자로 바꾼 말               | 들은 내용(정리 전), 전체 글(결과) | what we heard, Transcript               | 글자                         |
-| AI로 요약·나누기             | 정리하기 / 다시 정리              | Summarize / Try again                   |                              |
-| 그 밖의 재시도               | 다시 시도                         | Try again                               | 재시도, Retry                |
-| 앞으로의 때 / 다시 보내기    | 1분 뒤, 3일 뒤 / 다시 보내기      | in 1 minute, in 3 days / Resend         | 1분 후, 3일 후 / 재발송      |
-| 삭제 / 되돌릴 수 없음        | 삭제 / 되돌릴 수 없어요           | Delete / This can't be undone           | 지우기 / 복구할 수 없어요    |
-| 알 수 없는 실패              | 문제가 생겼어요                   | Something went wrong                    | 오류가 발생했어요            |
-| 연결 문제                    | 인터넷                            | internet                                | 네트워크                     |
-| 개수 한도가 찬 상태          | {대상}을 더 추가할 수 없어요      | You can't add more {target}             | 최대 한도에 도달             |
-| 다 쓴 상태 / 남은 횟수       | {기능}를 다 썼어요 / N번          | You've used all your {feature} / N left | 모두 사용                    |
-| 혼자 보는 할 일              | 비공개                            | Private                                 | 나만 보기                    |
-| 정해진 시간 알림             | 리마인드 알림                     | reminder                                | 리마인더                     |
-| 연속 달성                    | 연속 기록                         | streak                                  | 스트릭                       |
-| 초대 보상 도장 / 친구 재촉   | 발자국 / 콕 찌르기                | paw prints / nudge                      |                              |
-| 프리미엄                     | 프리미엄                          | Premium(항상 대문자)                    | premium                      |
-| 반복되는 할 일               | 반복 할 일                        | repeating to-do                         | 루틴, routine                |
-| AI가 고른 반복 후보          | AI 제안                           | AI suggestions                          | 추천                         |
-| 기간별 AI 분석 글·차트       | AI 리포트                         | AI reports                              | 분석 보고서                  |
+| 개념                         | ko                                | en                                      | 쓰지 않는 말                   |
+| ---------------------------- | --------------------------------- | --------------------------------------- | ------------------------------ |
+| 할 일 / 하위 할 일           | 할 일 / 하위 할 일                | to-do / subtask                         | 투두, 일정 / 항목, 세부 항목   |
+| 메모 탭의 글                 | 메모                              | memo                                    | note                           |
+| 긴 녹음 기능                 | 말로 메모하기 / 말로 남긴 메모    | Voice notes                             | 음성 메모                      |
+| 말로 할 일 만들기            | 말로 할 일 만들기                 | Speak to add                            | 음성 입력                      |
+| 받아쓰기 입력                | 말로 입력                         | Dictate                                 | 음성으로 입력                  |
+| 소리 파일 / 기기 인식 데이터 | 녹음 / 음성 인식 파일             | recording / speech recognition download | 음성 파일 / 모델, 언어 팩      |
+| 글자로 바꾼 말               | 들은 내용(정리 전), 전체 글(결과) | what we heard, Transcript               | 글자                           |
+| AI로 요약·나누기             | 정리하기 / 다시 정리              | Summarize / Try again                   |                                |
+| 그 밖의 재시도               | 다시 시도                         | Try again                               | 재시도, Retry                  |
+| 앞으로의 때 / 다시 보내기    | 1분 뒤, 잠시 뒤 / 다시 보내기     | in 1 minute, in 3 days / Resend         | 1분 후, 잠시 후 / 재발송       |
+| 글자 수 한도                 | {{count}}자 이내로                | Use up to {{count}} characters          | 이하, 까지, must be … or fewer |
+| 입력 칸의 이름               | 카테고리 이름, 이름               | category name, name                     | 카테고리명, ~명                |
+| 진행 중                      | 불러오는 중…                      | Loading…                                | `...`                          |
+| 삭제 / 되돌릴 수 없음        | 삭제 / 되돌릴 수 없어요           | Delete / This can't be undone           | 지우기 / 복구할 수 없어요      |
+| 알 수 없는 실패              | 문제가 생겼어요                   | Something went wrong                    | 오류가 발생했어요              |
+| 연결 문제                    | 인터넷                            | internet                                | 네트워크                       |
+| 개수 한도가 찬 상태          | {대상}을 더 추가할 수 없어요      | You can't add more {target}             | 최대 한도에 도달               |
+| 다 쓴 상태 / 남은 횟수       | {기능}를 다 썼어요 / N번          | You've used all your {feature} / N left | 모두 사용                      |
+| 혼자 보는 할 일              | 비공개                            | Private                                 | 나만 보기                      |
+| 정해진 시간 알림             | 리마인드 알림                     | reminder                                | 리마인더                       |
+| 연속 달성                    | 연속 기록                         | streak                                  | 스트릭                         |
+| 초대 보상 도장 / 친구 재촉   | 발자국 / 콕 찌르기                | paw prints / nudge                      |                                |
+| 프리미엄                     | 프리미엄                          | Premium(항상 대문자)                    | premium                        |
+| 반복되는 할 일               | 반복 할 일                        | repeating to-do                         | 루틴, routine                  |
+| AI가 고른 반복 후보          | AI 제안                           | AI suggestions                          | 추천                           |
+| 기간별 AI 분석 글·차트       | AI 리포트                         | AI reports                              | 분석 보고서                    |
 
 - **녹음 고지**: `녹음 파일은 아이두 서버로 보내지 않아요` / `Audio files aren't sent to Aido's servers`. `폰에서만`·`이 기기에만`은 쓰지 않는다(백업 포함·네트워크 인식 경로가 있다).
 - **`음성 인식`**은 권한 이름과 Apple·Google 처리 고지에만 쓴다. 그 밖은 `말을 글자로 바꿔요`처럼 쓰고 `인식`·`텍스트`·`시간 초과`·`쿨다운`은 쓰지 않는다. **`정리`**는 AI 요약·나누기에만 쓴다(자동 삭제는 `삭제돼요`). `듣기`는 재생 뜻으로만 쓴다.

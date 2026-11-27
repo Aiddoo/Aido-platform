@@ -1,17 +1,21 @@
 import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
+import { APP_ICONS } from '@src/shared/constants/app-icons';
 import { useTranslation } from '@src/shared/i18n';
-import { QueryErrorBoundary, LabelChip, SettingsListGroup } from '@src/shared/ui';
+import {
+  LabelChip,
+  QueryErrorBoundary,
+  QueryErrorFallback,
+  SettingsListGroup,
+} from '@src/shared/ui';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { Suspense } from 'react';
 
-import { APP_ICONS } from '../constants/app-icon.constants';
 import { useGetCurrentAppIconQueryOptions } from '../queries/app-icon.queries';
 
-/** 앱 아이콘 행의 현재 값. 바꿀 수 없는 무료 사용자에게는 프리미엄 기능이라는 칩을 보인다 */
 export function AppIconValue() {
   return (
-    <QueryErrorBoundary fallback={() => null}>
+    <QueryErrorBoundary fallback={QueryErrorFallback.Hidden}>
       <Suspense fallback={null}>
         <AppIcon />
       </Suspense>

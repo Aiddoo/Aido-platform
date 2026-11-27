@@ -1,4 +1,5 @@
 import {
+  acceptFriendRequestResponseSchema,
   friendsListResponseSchema,
   receivedRequestsResponseSchema,
   reorderFriendResponseSchema,
@@ -7,10 +8,11 @@ import {
   sentRequestsResponseSchema,
 } from '@aido/api/contracts/follow/v1';
 import type { ErrorCodeType } from '@aido/api/errors';
-import { ApiError } from '@src/core/errors/api-error';
+import { createApiError } from '@src/testing/api-error';
 import { defineFixture } from '@src/testing/fixture';
 
-import { friendUserSchema, searchedUserSchema } from '../domains/friend.model';
+import { friendUserSchema } from '../domains/friend.model';
+import { searchedUserSchema } from '../domains/searched-user.model';
 
 export const createSendFriendRequestDto = defineFixture(sendFriendRequestResponseSchema, {
   message: '친구 요청을 보냈어요.',
@@ -74,6 +76,18 @@ export const createSentRequestsDto = defineFixture(sentRequestsResponseSchema, {
   ],
   totalCount: 1,
   hasMore: false,
+});
+
+export const createAcceptFriendRequestDto = defineFixture(acceptFriendRequestResponseSchema, {
+  message: '친구 요청을 수락했습니다.',
+  friend: {
+    id: 'clz7x5p8k0008qz0z8z8z8z8z',
+    userTag: 'IJKL9012',
+    name: '김철수',
+    profileImage: null,
+    followId: 'clz7x5p8k0012qz0z8z8z8z8z',
+    friendsSince: '2026-03-03T00:00:00.000Z',
+  },
 });
 
 export const createReorderFriendDto = defineFixture(reorderFriendResponseSchema, {
@@ -143,11 +157,10 @@ export const createSearchUsersDto = defineFixture(searchUsersResponseSchema, {
 export function createFriendApiError(
   overrides?: Partial<{ code: ErrorCodeType; message: string; status: number }>,
 ) {
-  return new ApiError(
-    overrides?.code ?? 'FOLLOW_0901',
-    overrides?.message ?? '자기 자신에게 친구 요청을 보낼 수 없어요',
-    overrides?.status ?? 400,
-  );
+  return createApiError(overrides?.code ?? 'FOLLOW_0901', {
+    message: overrides?.message ?? '자기 자신에게 친구 요청을 보낼 수 없어요',
+    status: overrides?.status ?? 400,
+  });
 }
 
 const friendUser = defineFixture(friendUserSchema, {

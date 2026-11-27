@@ -7,6 +7,7 @@ import type { AppStoreListingGateway } from '@src/core/ports/app-store-listing-g
 import type { AppStoreReviewGateway } from '@src/core/ports/app-store-review-gateway';
 import type { ClipboardGateway } from '@src/core/ports/clipboard-gateway';
 import type { DeviceIdStore } from '@src/core/ports/device-id-store';
+import type { DeviceTraits } from '@src/core/ports/device-traits';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import type { ExternalLinkGateway } from '@src/core/ports/external-link-gateway';
 import type { HapticsGateway } from '@src/core/ports/haptics-gateway';
@@ -51,9 +52,11 @@ import { AppIconService } from '@src/features/device/app-icon/services/app-icon.
 import { createCoachmarkRepository } from '@src/features/device/coachmark/repositories/coachmark.repository';
 import { createStoreReviewRepository } from '@src/features/device/store-review/repositories/store-review.repository';
 import { StoreReviewService } from '@src/features/device/store-review/services/store-review.service';
-import type { WidgetBridge } from '@src/features/device/widget/bridge/widget-bridge';
 import { createWidgetNavigationRepository } from '@src/features/device/widget/repositories/widget-navigation.repository';
-import { WidgetSyncService } from '@src/features/device/widget/services/widget-sync.service';
+import {
+  type WidgetBridge,
+  WidgetSyncService,
+} from '@src/features/device/widget/services/widget-sync.service';
 import { TodoCommentApi } from '@src/features/engagement/comment/apis/todo-comment.api';
 import { AuthApi } from '@src/features/identity/auth/apis/auth.api';
 import { createPendingRevocationRepository } from '@src/features/identity/auth/repositories/pending-revocation.repository';
@@ -66,7 +69,6 @@ import { createAuthSessionStore } from '@src/features/identity/auth/stores/auth-
 import { ConsentApi } from '@src/features/identity/consent/apis/consent.api';
 import { PreferenceApi } from '@src/features/identity/preference/apis/preference.api';
 import { UserApi } from '@src/features/identity/user/apis/user.api';
-import { createMyPageDetailRootStore } from '@src/features/identity/user/stores/my-page-detail-root.store';
 import { createMyPagePaneLayoutStore } from '@src/features/identity/user/stores/my-page-pane-layout.store';
 import { AchievementApi } from '@src/features/insights/achievement/apis/achievement.api';
 import { ReportApi } from '@src/features/insights/report/apis/report.api';
@@ -110,8 +112,7 @@ import {
   clearFeatureAttributions,
   createFeatureAttributionStore,
 } from '@src/shared/analytics/feature-attribution';
-import { getNowInstant } from '@src/shared/date/clock';
-import { toDateKey } from '@src/shared/date/zoned';
+import { getNowInstant, readLocalDateState } from '@src/shared/date/clock';
 import { createDraftRepository } from '@src/shared/draft/draft.repository';
 import { DraftService } from '@src/shared/draft/draft.service';
 import { removeStoredValue } from '@src/shared/storage/define-stored-value';
@@ -160,6 +161,7 @@ export interface AppContainerPorts {
   networkStatus: NetworkStatusGateway;
   viewCapture: ViewCaptureGateway;
   screenOrientation: ScreenOrientationGateway;
+  deviceTraits: DeviceTraits;
   deviceLocation: LocationGateway;
   todoImportSource: TodoImportSource;
   applicationMetadata: NativeApplicationMetadataGateway;
@@ -228,6 +230,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
 
   const whatsNewRepository = createWhatsNewRepository(syncStorage);
   const coachmarkRepository = createCoachmarkRepository(syncStorage);
+  const storeReviewRepository = createStoreReviewRepository(syncStorage);
   const marketingPushPromptRepository = createMarketingPushPromptRepository(syncStorage);
 
   const pendingRedemptionService = new PendingRedemptionService(syncStorage, ports.installReferrer);
@@ -301,6 +304,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     networkStatus: ports.networkStatus,
     viewCapture: ports.viewCapture,
     screenOrientation: ports.screenOrientation,
+    deviceTraits: ports.deviceTraits,
     idGenerator: ports.idGenerator,
     speechRecognizer: ports.speechRecognizer,
     pushNotification,
@@ -356,7 +360,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
           'upsell-dismissal': {
             clear: (userId) => removeStoredValue(syncStorage, upsellDismissalStoredValue, userId),
           },
-          'store-review': createStoreReviewRepository(syncStorage),
+          'store-review': storeReviewRepository,
           activation: {
             clear: (userId) =>
               removeStoredValue(syncStorage, activationProgressStoredValue, userId),
@@ -392,7 +396,6 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
 
     userApi: new UserApi(authHttpClient),
     myPagePaneLayoutStore: createMyPagePaneLayoutStore(),
-    myPageDetailRootStore: createMyPageDetailRootStore(),
 
     entitlementApi: new EntitlementApi(authHttpClient),
     purchasesSession,
@@ -412,7 +415,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     coachmarkRepository,
 
     storeReviewService: new StoreReviewService(
-      createStoreReviewRepository(syncStorage),
+      storeReviewRepository,
       ports.appStoreReview,
       getNowInstant,
     ),
@@ -451,7 +454,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
       signOutEpoch,
       idGenerator: ports.idGenerator,
       logger,
-      getTodayKey: () => toDateKey(getNowInstant(), ports.getTimezone()),
+      getTodayKey: () => readLocalDateState({ timezone: ports.getTimezone() }).currentLocalDateKey,
       random: Math.random,
     }),
 

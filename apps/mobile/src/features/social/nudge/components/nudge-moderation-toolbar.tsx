@@ -4,16 +4,18 @@ import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { STACK_MENU_ICON, STACK_MORE_ICON } from '@src/shared/ui';
 import { useSuspenseQueries } from '@tanstack/react-query';
-import { router, Stack } from 'expo-router';
+import { useRouter, Stack } from 'expo-router';
 
 import { NudgeInteractionPolicy } from '../domains/nudge-interaction.model';
-import { useNudgeId } from '../hooks/use-nudge-id';
+import { useNudgeId } from '../hooks/use-nudge-params';
 import { useGetNudgeInteractionQueryOptions } from '../queries/todo-nudge.queries';
+import { formatNudgeUserName } from '../utils/nudge-user-name.view-model';
 
 /** 받은 콕 찌르기의 ⋯ 메뉴. 보낸 사람의 메시지를 신고하거나 보낸 사람을 차단한다 */
 export function NudgeModerationToolbar() {
   const [nudgeId] = useNudgeId();
   const { t } = useTranslation('moderation');
+  const router = useRouter();
   const push = useSingleTap(router.push);
   const [{ data: nudge }, { data: me }] = useSuspenseQueries({
     queries: [useGetNudgeInteractionQueryOptions({ nudgeId }), useGetMeQueryOptions()],
@@ -22,6 +24,7 @@ export function NudgeModerationToolbar() {
   if (!NudgeInteractionPolicy.isReceivedBy(nudge, me.id)) {
     return null;
   }
+  const senderName = formatNudgeUserName(nudge.senderName, nudge.senderUserTag);
 
   return (
     <Stack.Toolbar placement="right">
@@ -37,7 +40,7 @@ export function NudgeModerationToolbar() {
               pathname: '/users/[userId]/report',
               params: {
                 userId: target.targetUserId,
-                name: nudge.senderName,
+                name: senderName,
                 targetType: target.targetType,
                 targetId: target.targetId,
               },
@@ -52,7 +55,7 @@ export function NudgeModerationToolbar() {
           onPress={() =>
             push({
               pathname: '/users/[userId]/block',
-              params: { userId: nudge.senderId, name: nudge.senderName },
+              params: { userId: nudge.senderId, name: senderName },
             })
           }
         >

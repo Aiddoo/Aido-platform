@@ -2,7 +2,7 @@ import { UserList } from '@src/features/identity/user/components/user-list';
 import { formatYearAwareDateLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Button,
@@ -14,6 +14,7 @@ import {
   useConfirmDialog,
   VStack,
 } from '@src/shared/ui';
+import { getTouchTargetInset } from '@src/shared/ui';
 import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { Skeleton } from 'heroui-native';
@@ -23,7 +24,9 @@ import type { BlockedUser } from '../domains/user-block.model';
 import { useUnblockUserMutationOptions } from '../queries/moderation.mutations';
 import { useGetBlockedUsersInfiniteQueryOptions } from '../queries/moderation.queries';
 
-const UNBLOCK_BUTTON_HIT_SLOP = 6;
+/** `Button` small 높이(h-8) */
+const UNBLOCK_BUTTON_HEIGHT = 32;
+const UNBLOCK_BUTTON_HIT_SLOP = getTouchTargetInset(UNBLOCK_BUTTON_HEIGHT);
 const LOADING_ROW_COUNT = 6;
 /** `SettingsScreenLayout`과 같은 위아래 여백. 가상 목록이라 내용에 둔다 */
 const BLOCKED_USER_LIST_CONTENT_STYLE = { flexGrow: 1, paddingTop: 20, paddingBottom: 16 };

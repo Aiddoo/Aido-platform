@@ -1,13 +1,16 @@
-import { INVITE_QUALIFICATION, INVITE_REWARD_CAPS } from '@aido/api/vocabulary';
+import {
+  INVITE_QUALIFICATION,
+  INVITE_REWARD_CAPS,
+  INVITEE_REWARDS,
+  INVITER_REWARD_MILESTONES,
+} from '@aido/api/vocabulary';
 import { InvitePawPrintBoard } from '@src/features/social/invite/components/invite-paw-print-board';
 import { InviteShareActions } from '@src/features/social/invite/components/invite-share-actions';
 import { InviteShareToolbar } from '@src/features/social/invite/components/invite-share-toolbar';
 import { InvitedFriendSummary } from '@src/features/social/invite/components/invited-friend-summary';
 import { MyInviteCode } from '@src/features/social/invite/components/my-invite-code';
-import {
-  INVITEE_PREMIUM_DAYS,
-  FIRST_INVITER_PREMIUM_DAYS,
-} from '@src/features/social/invite/constants/invite.constants';
+import { InviteMilestonePolicy } from '@src/features/social/invite/domains/invite-milestone.model';
+import { InviteRewardPolicy } from '@src/features/social/invite/domains/invite-reward.model';
 import { isInviteDisabledError } from '@src/features/social/invite/domains/invite.error';
 import { refreshInvite } from '@src/features/social/invite/queries/invite-cache';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
@@ -21,6 +24,7 @@ import {
   type QueryErrorFallbackProps,
   ReadableContent,
   StyledSafeAreaView,
+  SurfaceCard,
   Text,
   TintedRefreshControl,
   VStack,
@@ -74,17 +78,18 @@ export default function MyInviteScreen() {
                 </Text>
               </Box>
 
-              {/* 친구와 내가 각각 무엇을 언제 받는지 이름표와 함께 한 줄씩 나눠 보여 준다 */}
               <InviteCard>
                 <RewardLine
                   label={t('myInvite.rewardInviteeLabel')}
-                  value={t('myInvite.rewardInvitee', { days: INVITEE_PREMIUM_DAYS })}
+                  value={t('myInvite.rewardInvitee', {
+                    days: InviteRewardPolicy.getPremiumDays(INVITEE_REWARDS),
+                  })}
                 />
                 <RewardLine
                   label={t('myInvite.rewardInviterLabel')}
                   value={t('myInvite.rewardInviter', {
                     activeDays: INVITE_QUALIFICATION.MIN_ACTIVE_DAYS,
-                    days: FIRST_INVITER_PREMIUM_DAYS,
+                    days: InviteMilestonePolicy.getPremiumDays(INVITER_REWARD_MILESTONES[0]),
                   })}
                 />
               </InviteCard>
@@ -184,17 +189,17 @@ function RewardLine({ label, value }: { label: string; value: string }) {
 }
 
 const inviteCard = tv({
-  base: 'rounded-3xl border border-gray-2 bg-gray-1 px-4.5',
+  base: 'gap-3.5 border border-gray-2 px-4.5',
   variants: { hasTitle: { true: 'py-5', false: 'py-4' } },
 });
 
 /** 제목이 있으면 위아래를 조금 더 띄운다 */
 function InviteCard({ title, children }: { title?: string; children: ReactNode }) {
   return (
-    <VStack gap={14} className={inviteCard({ hasTitle: title != null })}>
+    <SurfaceCard className={inviteCard({ hasTitle: title != null })}>
       {title != null && <H4>{title}</H4>}
       {children}
-    </VStack>
+    </SurfaceCard>
   );
 }
 

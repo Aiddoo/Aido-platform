@@ -1,4 +1,4 @@
-import { unwrap } from '../ast.mjs';
+import { childNodes, isComponentName, isFunction, unwrap } from '../ast.mjs';
 
 // Box·Flex·HStack·VStack·Grid가 style로 바꾸는 여백 prop(값은 px 숫자)
 const PADDING_MARGIN_PROP_NAMES = new Set([
@@ -381,7 +381,103 @@ const oneSpacingNotation = {
   },
 };
 
+const MARGIN_PROP_NAMES = new Set(['m', 'mx', 'my', 'mt', 'mb', 'ml', 'mr']);
+// 바깥 여백(margin)과 부모 안 정렬(self-*). auto도 바깥 위치라 함께 본다
+const OUTER_LAYOUT_CLASS = /^-?(?:m[xytblrse]?-|self-)/u;
+
+function* outerLayoutTokens(text) {
+  for (const token of text.split(/\s+/u)) {
+    const utility = token.slice(token.lastIndexOf(':') + 1).replaceAll(/^!|!$/gu, '');
+    if (OUTER_LAYOUT_CLASS.test(utility)) {
+      yield token;
+    }
+  }
+}
+
+/** 돌려주는 식의 맨 바깥 JSX 요소. 삼항은 두 갈래, &&는 오른쪽을 본다 */
+function* rootElements(expression) {
+  const node = unwrap(expression);
+  switch (node?.type) {
+    case 'JSXElement':
+      yield node;
+      return;
+    case 'ConditionalExpression':
+      yield* rootElements(node.consequent);
+      yield* rootElements(node.alternate);
+      return;
+    case 'LogicalExpression':
+      yield* rootElements(node.right);
+      return;
+    default:
+      return;
+  }
+}
+
+/** 함수 몸통의 return 식. 안쪽 함수의 return은 보지 않는다 */
+function* returnedExpressions(node) {
+  for (const child of childNodes(node)) {
+    if (child.type === 'ReturnStatement') {
+      yield child.argument;
+    } else if (!isFunction(child) && child.type !== 'FunctionDeclaration') {
+      yield* returnedExpressions(child);
+    }
+  }
+}
+
+function isExportedComponent(node) {
+  const exportType = node.parent?.type;
+  if (exportType === 'ExportDefaultDeclaration') {
+    return true;
+  }
+  return exportType === 'ExportNamedDeclaration' && isComponentName(node.id?.name ?? null);
+}
+
+/** 루트 요소가 스스로 정하는 바깥 배치의 설명들 */
+function* outerLayoutOf(element) {
+  const elementName = getRootElementName(element.openingElement.name);
+  if (elementName === 'SafeAreaView') {
+    yield 'SafeAreaView';
+  }
+  for (const attribute of element.openingElement.attributes) {
+    const name = getAttributeName(attribute);
+    if (name === 'edges' || MARGIN_PROP_NAMES.has(name)) {
+      yield `${name} prop`;
+    } else if (name === 'className' && attribute.value != null) {
+      for (const text of classNameTexts(attribute.value)) {
+        yield* outerLayoutTokens(text);
+      }
+    }
+  }
+}
+
+// 기능 컴포넌트는 자기 안만 그린다. 바깥 여백·부모 안 정렬·safe area는 화면이 className·<Spacing>으로 정한다(docs/architecture/ui.md#컴포넌트-계약)
+const componentOuterSpacing = {
+  meta: { type: 'suggestion' },
+  createOnce(context) {
+    return {
+      FunctionDeclaration(node) {
+        if (!isExportedComponent(node)) {
+          return;
+        }
+        const componentName = node.id?.name ?? 'default export';
+        for (const expression of returnedExpressions(node.body)) {
+          for (const element of rootElements(expression)) {
+            const outerLayout = [...outerLayoutOf(element)];
+            if (outerLayout.length > 0) {
+              context.report({
+                node: element.openingElement,
+                message: `${componentName}의 루트가 바깥 배치(${outerLayout.join(', ')})를 스스로 정합니다. 바깥 여백·self-*·safe area는 화면이 className이나 <Spacing>으로 넘깁니다.`,
+              });
+            }
+          }
+        }
+      },
+    };
+  },
+};
+
 export default {
+  'component-outer-spacing': componentOuterSpacing,
   'spacing-props-with-classname': spacingPropsWithClassName,
   'spacing-scale': spacingScale,
   'no-arbitrary-spacing-class': noArbitrarySpacingClass,

@@ -51,7 +51,8 @@
       --gray-9: oklch(0.379 0 0);
       --gray-10: oklch(0.248 0 0);
 
-      --main: oklch(0.702 0.1919 35);
+      /* #FF6B43. 앱 아이콘·스플래시·위젯·기본 카테고리 색과 같은 값인지 brand-color-contract 테스트가 본다 */
+      --main: oklch(0.7058 0.1892 35.98);
       --secondary: oklch(0.882 0.14 87.6);
       --error: oklch(0.677 0.2106 25);
       --error-light: oklch(0.95 0.05 25);
@@ -89,7 +90,7 @@
       --gray-9: oklch(0.97 0 0);
       --gray-10: oklch(0.98 0 0);
 
-      --main: oklch(0.702 0.1919 35);
+      --main: oklch(0.7058 0.1892 35.98);
       --secondary: oklch(0.882 0.14 87.6);
       --error: oklch(0.677 0.2106 25);
       --error-light: oklch(0.25 0.05 25);

@@ -33,7 +33,7 @@ import { useFormatPlanValue } from '../hooks/use-format-plan-value';
 import { useSubscriptionParams } from '../hooks/use-subscription-params';
 import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
 import { getInitialBenefitIndex } from '../utils/benefit-slides.view-model';
-import { toBenefitQuotaLabel } from '../utils/plan-benefit.view-model';
+import { getBenefitQuotaLabel } from '../utils/plan-benefit.view-model';
 import { getPremiumGateAnalyticsFeature } from '../utils/subscription-analytics';
 
 const BENEFIT_ART_RATIO = 1372 / 560;
@@ -234,7 +234,7 @@ function BenefitQuota({ feature }: { feature: BenefitFeature }) {
   return (
     <Box className="self-start rounded-xl bg-on-sky/15 px-3 py-1.5">
       <Text size="b4" weight="semibold" tone="onSky" lineBreakStrategyIOS="hangul-word">
-        {match(toBenefitQuotaLabel(entitlements, feature))
+        {match(getBenefitQuotaLabel(entitlements, feature))
           .with({ type: 'premiumOnly' }, () => t('paywall.premiumOnly'))
           .with({ type: 'upgrade' }, ({ free, premium }) =>
             t('paywall.benefitQuota', {

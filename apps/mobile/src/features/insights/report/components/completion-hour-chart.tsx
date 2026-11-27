@@ -32,12 +32,17 @@ import {
   CHART_PAN_FAIL_OFFSET_Y_PT,
   CHART_REVEAL_EASING,
   CHART_TAP_MAX_DISTANCE_PT,
-  HOUR_CHART_ASPECT_RATIO,
-  HOUR_CHART_BAR,
 } from '../constants/report-chart.constants';
-import { toBarIndex, toBarRects } from '../utils/bar-chart.geometry';
+import { type BarShape, toBarIndex, toBarRects } from '../utils/bar-chart.geometry';
 
 const ACCESSIBILITY_ACTIONS = [{ name: 'increment' }, { name: 'decrement' }];
+// 차트와 .Loading이 같은 비율을 써야 받은 뒤 자리가 움직이지 않는다
+const HOUR_CHART_ASPECT_RATIO = 3.5;
+const HOUR_CHART_BAR = {
+  widthRatio: 0.65,
+  cornerRadius: 3,
+  minHeight: 2,
+} as const satisfies BarShape;
 const TICK_STEP_CHOICES_HOURS = [3, 6];
 const WIDEST_TICK_STEP_HOURS = 12;
 const TICK_LABEL_MIN_WIDTH_PT = 56;

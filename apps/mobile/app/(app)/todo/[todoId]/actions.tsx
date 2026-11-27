@@ -1,4 +1,4 @@
-import { TodoActionsBottomSheet } from '@src/features/planning/todo/components/todo-list/todo-actions-bottom-sheet';
+import { TodoActionsBottomSheet } from '@src/features/planning/todo/components/todo-actions-bottom-sheet';
 import { todoParamsSchema } from '@src/features/planning/todo/schemas/todo-params.schema';
 import { TodoThanksSummary } from '@src/features/social/nudge/components/todo-thanks-summary';
 import { useRouteParamsOrRedirect } from '@src/shared/hooks/use-route-params-or-redirect';

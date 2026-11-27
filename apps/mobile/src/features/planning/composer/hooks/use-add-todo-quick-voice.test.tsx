@@ -1,6 +1,5 @@
-import { ErrorCode, HttpStatus } from '@aido/api/errors';
+import { ErrorCode } from '@aido/api/errors';
 import { AI_DATA_SHARING_CONSENT, PLAN_CATALOG } from '@aido/api/vocabulary';
-import { ApiError } from '@src/core/errors/api-error';
 import { fail, ok } from '@src/core/errors/result';
 import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
 import '@src/shared/i18n/init';
@@ -23,6 +22,7 @@ import {
   createVoiceNoteStorageFake,
   createTestQueryClient,
   createTestDi,
+  createApiError,
 } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
@@ -82,7 +82,13 @@ function QuickVoiceProbe({
     rules: { validate: (value) => value.trim().length > 0 },
   });
   const { isValid } = useFormState({ control: form.control });
-  const quickVoice = useAddTodoQuickVoice({ form, onExit });
+  // 시트처럼 제목 칸을 값과 콜백으로 잇는다
+  const [quickVoice, controls] = useAddTodoQuickVoice({
+    getTitle: () => form.getValues('title'),
+    onTitleChange: (heard) =>
+      form.setValue('title', heard, { shouldDirty: true, shouldValidate: true }),
+    onExit,
+  });
   const title = useWatch({ control: form.control, name: 'title' });
   const { state } = quickVoice;
   if (state.status === 'failed') {
@@ -94,42 +100,36 @@ function QuickVoiceProbe({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="begin"
-        onPress={() =>
-          quickVoice.begin({ locale: 'ko-KR', hintWords: [], recordingDirectory: null })
-        }
+        onPress={() => controls.begin({ locale: 'ko-KR', hintWords: [], recordingDirectory: null })}
       />
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="finish"
-        onPress={quickVoice.finish}
-      />
+      <Pressable accessibilityRole="button" accessibilityLabel="finish" onPress={controls.finish} />
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="retry"
-        onPress={quickVoice.retryPlanning}
+        onPress={controls.retryPlanning}
       />
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="type-instead"
-        onPress={quickVoice.typeInstead}
+        onPress={controls.typeInstead}
       />
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="cancel-planning"
-        onPress={quickVoice.cancelPlanning}
+        onPress={controls.cancelPlanning}
       />
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="start"
         onPress={() => {
-          quickVoice.start().catch(jest.fn());
+          controls.start().catch(jest.fn());
         }}
       />
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="continue-as-note"
         onPress={() => {
-          quickVoice.continueAsVoiceNote().catch(jest.fn());
+          controls.continueAsVoiceNote().catch(jest.fn());
         }}
       />
       <Text testID="status">{state.status}</Text>
@@ -254,7 +254,7 @@ describe('useAddTodoQuickVoice', () => {
     const user = userEvent.setup();
     const { httpClient, speechRecognizer } = await renderQuickVoice();
     httpClient.post.mockResolvedValueOnce(
-      fail(new ApiError(ErrorCode.AI_1301, '실패', HttpStatus.SERVICE_UNAVAILABLE)),
+      fail(createApiError(ErrorCode.AI_1301, { message: '실패' })),
     );
     httpClient.post.mockResolvedValueOnce(ok(createQuickPlanDto([WORKOUT_ACTION])));
     await speak(speechRecognizer);
@@ -274,7 +274,7 @@ describe('useAddTodoQuickVoice', () => {
     const user = userEvent.setup();
     const { httpClient, speechRecognizer } = await renderQuickVoice();
     httpClient.post.mockResolvedValueOnce(
-      fail(new ApiError(ErrorCode.AI_1318, '다른 내용', HttpStatus.UNPROCESSABLE_ENTITY)),
+      fail(createApiError(ErrorCode.AI_1318, { message: '다른 내용' })),
     );
     httpClient.post.mockResolvedValueOnce(ok(createQuickPlanDto([WORKOUT_ACTION])));
     await speak(speechRecognizer);
@@ -466,7 +466,7 @@ describe('useAddTodoQuickVoice', () => {
         },
       });
       httpClient.post.mockResolvedValueOnce(
-        fail(new ApiError(ErrorCode.AI_1311, '동의 필요', HttpStatus.FORBIDDEN)),
+        fail(createApiError(ErrorCode.AI_1311, { message: '동의 필요' })),
       );
       await user.press(screen.getByRole('button', { name: 'start' }));
       await waitFor(() => expect(speechRecognizer.start).toHaveBeenCalled());
@@ -486,7 +486,7 @@ describe('useAddTodoQuickVoice', () => {
       expect(screen.getByTestId('consent-required')).toHaveTextContent('true');
       expect(screen.queryByTestId('ai-consent-sheet')).toBeNull();
       httpClient.post.mockResolvedValueOnce(
-        fail(new ApiError(ErrorCode.AI_1311, '동의 필요', HttpStatus.FORBIDDEN)),
+        fail(createApiError(ErrorCode.AI_1311, { message: '동의 필요' })),
       );
       httpClient.post.mockResolvedValueOnce(ok(createQuickPlanDto([WORKOUT_ACTION])));
       httpClient.patch.mockResolvedValue(

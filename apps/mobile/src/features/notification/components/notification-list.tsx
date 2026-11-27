@@ -5,6 +5,7 @@ import { useTrack } from '@src/shared/analytics';
 import { getErrorMessage } from '@src/shared/errors';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
@@ -21,7 +22,7 @@ import {
 } from '@src/shared/ui';
 import { useQueryClient, useSuspenseInfiniteQuery, useMutation } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
-import { type Href, router } from 'expo-router';
+import { type Href, useRouter } from 'expo-router';
 import { Separator } from 'heroui-native';
 import { Fragment } from 'react';
 import { ScrollView } from 'react-native';
@@ -37,12 +38,14 @@ import {
 import { useNotificationCategory } from '../hooks/use-notification-params';
 import { refreshNotifications } from '../queries/notification-cache';
 import { useMarkAsReadMutationOptions } from '../queries/notification.mutations';
-import { useGetNotificationsInfiniteQueryOptions } from '../queries/notification.queries';
+import {
+  type DateSectionKey,
+  useGetNotificationsInfiniteQueryOptions,
+} from '../queries/notification.queries';
 import {
   findRootStackDetailHref,
   type NotificationDestination,
 } from '../utils/notification-destination.view-model';
-import type { DateSectionKey } from '../utils/notification-section.view-model';
 import { getNotificationLabelKey } from '../utils/notification.view-model';
 import { NotificationListRow } from './notification-list-row';
 
@@ -58,7 +61,8 @@ interface NotificationItemProps {
 
 export function NotificationList() {
   const [category] = useNotificationCategory();
-  const { currentLocalDateKey, currentTimezone } = useLocalDate();
+  const todayKey = useTodayKey();
+  const { currentTimezone } = useLocalDate();
   const {
     data: listItems,
     fetchNextPage,
@@ -69,7 +73,7 @@ export function NotificationList() {
     useGetNotificationsInfiniteQueryOptions({
       category,
       limit: NOTIFICATION_PAGE_SIZE,
-      todayDateKey: currentLocalDateKey,
+      todayDateKey: todayKey,
       timezone: currentTimezone,
     }),
   );
@@ -211,6 +215,7 @@ NotificationList.Empty = function Empty() {
 function useOpenNotification() {
   const { t } = useTranslation('notification');
   const resolveInboxDestination = useResolveInboxDestination();
+  const router = useRouter();
   const openDestination = useOpenNotificationDestination({ openRoute: router.navigate });
   const logger = useLogger();
   const { mutate: markAsRead } = useMutation(useMarkAsReadMutationOptions());
@@ -272,6 +277,7 @@ function useResolveInboxDestination() {
 /** 받은 응원이면 그 메시지를 신고하는 화면을 연다. 응원이 아니면 행에 길게 누르기를 달지 않는다 */
 function useReportCheer({ receivedCheer }: Notification) {
   const { t } = useTranslation('moderation');
+  const router = useRouter();
   const push = useSingleTap(router.push);
 
   if (receivedCheer == null) {

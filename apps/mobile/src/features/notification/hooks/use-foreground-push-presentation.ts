@@ -16,7 +16,6 @@ import {
 } from '../utils/notification-destination.view-model';
 import { useResolveNotificationDestination } from './use-notification-destination';
 
-/** 앱이 앞에 있을 때 받은 알림을 지금 보고 있는 화면에 맞춰 배너로 보일지 정한다 */
 export function useForegroundPushPresentation() {
   const gateway = usePushNotification();
   const logger = useLogger();

@@ -2,7 +2,7 @@ import { useAppWindow } from '@src/shared/hooks/use-app-window';
 import { findVerticalFold } from '@src/shared/utils/find-vertical-fold';
 import type { ReactNode } from 'react';
 import { I18nManager, type StyleProp, type ViewStyle } from 'react-native';
-import { ReservedRegionsProvider, useReservedRegions } from 'react-native-reserved-regions';
+import { useReservedRegions } from 'react-native-reserved-regions';
 import {
   SafeAreaProvider,
   useSafeAreaFrame,
@@ -14,13 +14,14 @@ import { HStack } from '../h-stack/h-stack';
 import type { AdaptivePaneProps } from './adaptive-pane.types';
 import { getPaneEdgeInsets, type PaneSlot } from './get-pane-edge-insets';
 import { usePaneArea, usePaneColumns } from './pane-area';
+import { PaneRegionsProvider } from './pane-regions-provider';
 
 /** pane마다 SafeAreaProvider를 두어 창이 아닌 pane이 실제로 겹치는 safe area만 보게 한다. 접고 펼 때 목록 pane이 다시 마운트되지 않게 같은 트리 슬롯에 둔다 */
 export function AdaptivePane(props: AdaptivePaneProps) {
   return (
-    <ReservedRegionsProvider style={{ flex: 1 }}>
+    <PaneRegionsProvider>
       <AdaptivePaneLayout {...props} />
-    </ReservedRegionsProvider>
+    </PaneRegionsProvider>
   );
 }
 

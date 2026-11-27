@@ -20,8 +20,15 @@ interface RunStepOptions {
   onError?: () => void;
 }
 
+interface PushPermissionActions {
+  runStep: (step: PushPermissionStep, options?: RunStepOptions) => void;
+  isPending: boolean;
+}
+
 /** 알림을 받으려면 필요한 한 단계(권한 묻기·기기 설정·앱 알림 켜기)를 실행한다. 결과는 mutation이 한 번 추적한다 */
-export function usePushPermissionAction({ source }: UsePushPermissionActionOptions) {
+export function usePushPermissionAction({
+  source,
+}: UsePushPermissionActionOptions): PushPermissionActions {
   const requestPermission = useMutation(useRequestPushPermissionMutationOptions());
   const openSettings = useMutation(useOpenPushSettingsMutationOptions());
   const enableInApp = useMutation(useUpdatePreferenceMutationOptions());

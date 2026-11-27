@@ -3,12 +3,11 @@ import { unwrap } from '@src/core/errors/result';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
 import { useTranslation } from '@src/shared/i18n';
 import { queryOptions } from '@tanstack/react-query';
-import { useCallback } from 'react';
 
-import { type User } from '../domains/user.model';
+import { type User, UserPolicy } from '../domains/user.model';
 import { USER_QUERY_KEYS } from './user-query-keys';
 
-function toMe(user: User, { defaultName }: { defaultName: string }) {
+function selectMe(user: User, { defaultName }: { defaultName: string }) {
   return {
     ...user,
     name: user.name ?? defaultName,
@@ -20,11 +19,16 @@ export function selectAccountId(user: User) {
   return user.id;
 }
 
+/** 무료 체험을 처음 보는 사용자인지만 골라 다른 칸이 바뀌어도 쓰는 쪽이 다시 그리지 않는다 */
+export function selectIsNeverSubscribed(user: User) {
+  return UserPolicy.isNeverSubscribed(user);
+}
+
 export function useGetMeQueryOptions() {
   const userApi = useUserApi();
   const { t } = useTranslation('user');
   const defaultName = t('profile.defaultName');
-  const select = useCallback((user: User) => toMe(user, { defaultName }), [defaultName]);
+  const select = (user: User) => selectMe(user, { defaultName });
 
   return queryOptions({
     queryKey: USER_QUERY_KEYS.me(),

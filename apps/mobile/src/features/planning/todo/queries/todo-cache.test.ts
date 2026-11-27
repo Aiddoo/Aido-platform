@@ -1,44 +1,45 @@
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/queries/todo-category-query-keys';
+import type { DateKey } from '@src/shared/date/date-key';
 import { createPendingResponse, createTestQueryClient } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
 import { QueryObserver, type QueryClient } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 
 import { createParentTodo } from '../__tests__/sub-todo.fixtures';
-import type { DailyCompletionsResult } from '../domains/daily-completion.model';
-import type { Todo, TodoListResult, TodoSummary } from '../domains/todo.model';
+import {
+  type DailyCompletionsResult,
+  getCompletionMonthRange,
+} from '../domains/daily-completion.model';
+import type { TodoListResult } from '../domains/todo-list.model';
+import type { TodoSummary } from '../domains/todo-summary.model';
+import type { Todo } from '../domains/todo.model';
 import {
   getCachedTodoDateSpan,
+  getOptimisticListDate,
   getTodoSummaryRefetchInterval,
   invalidateCategorizedTodos,
   invalidateTodoDependentQueries,
   invalidateTodos,
   invalidateTodoSummaries,
   isTodoSummaryDateRequestable,
+  settleTodoBatchWrite,
   settleTodoWrite,
   shouldPersistTodosByDate,
   syncDailyCompletionWithList,
-  withTodoAdded,
-  withTodoCompleted,
-  withTodoCreated,
-  withTodoRemoved,
-  withTodoRestored,
-  withTodoSaved,
-  withTodoUpdated,
 } from './todo-cache';
 import { TODO_MUTATION_KEYS } from './todo-mutation-keys';
 import { TODO_QUERY_KEYS } from './todo-query-keys';
 
 const DAY = createDateKey('2026-07-14');
 const NEXT_DAY = createDateKey('2026-07-15');
-const WEEK = { startDate: createDateKey('2026-07-13'), endDate: createDateKey('2026-07-19') };
-const NEXT_WEEK = { startDate: createDateKey('2026-07-20'), endDate: createDateKey('2026-07-26') };
+const MONTH = createDateKey('2026-07-01');
+const NEXT_MONTH = createDateKey('2026-08-01');
 
 const toList = (todos: Todo[]): TodoListResult => ({ todos, hasNext: false, nextCursor: null });
-const toCompletions = (range: typeof WEEK): DailyCompletionsResult => ({
+const toCompletions = (month: DateKey): DailyCompletionsResult => ({
   completions: [],
   totalCompleteDays: 0,
-  dateRange: range,
+  dateRange: getCompletionMonthRange(month),
 });
 const toSummary = (date: string): TodoSummary => ({
   date: createDateKey(date),
@@ -55,89 +56,26 @@ function isInvalidated(client: QueryClient, queryKey: readonly unknown[]) {
 }
 
 describe('todo-cache', () => {
-  describe('목록 updater', () => {
-    const first = createParentTodo({ id: 1 });
-    const second = createParentTodo({ id: 2 });
-
-    it('더하면 끝에 붙고 원래 목록은 바뀌지 않는다', () => {
+  describe('getOptimisticListDate', () => {
+    it('오늘이 기간 안인 여러 날 할 일은 오늘 목록을, 그 밖은 시작일 목록을 고친다', () => {
       // Given
-      const list = toList([first]);
+      const multiDay = createParentTodo({
+        startDate: createDateKey('2026-11-05'),
+        endDate: createDateKey('2026-11-09'),
+      });
+      const pastOneDay = createParentTodo({
+        startDate: createDateKey('2026-11-01'),
+        endDate: null,
+      });
 
       // When
-      const next = withTodoAdded(list, second);
+      const dates = [
+        getOptimisticListDate(multiDay, createDateKey('2026-11-07')),
+        getOptimisticListDate(pastOneDay, createDateKey('2026-11-07')),
+      ];
 
       // Then
-      expect(next.todos.map((todo) => todo.id)).toEqual([1, 2]);
-      expect(list.todos).toHaveLength(1);
-    });
-
-    it('지우거나 고치면 그 할 일만 바뀐다', () => {
-      // Given
-      const list = toList([first, second]);
-
-      // When
-      const removed = withTodoRemoved(list, 1);
-      const updated = withTodoUpdated(list, 2, (todo) => ({ ...todo, completed: true }));
-
-      // Then
-      expect(removed.todos).toEqual([second]);
-      expect(updated.todos[0]).toBe(first);
-      expect(updated.todos[1]?.completed).toBe(true);
-    });
-
-    it('되돌리면 빠진 할 일은 원래 자리로, 남은 할 일은 값만 돌아온다', () => {
-      // Given
-      const list = toList([second]);
-      const changed = toList([{ ...first, completed: true }, second]);
-
-      // When
-      const reinserted = withTodoRestored(list, { todo: first, index: 0 });
-      const reverted = withTodoRestored(changed, { todo: first, index: 0 });
-
-      // Then
-      expect(reinserted.todos).toEqual([first, second]);
-      expect(reverted.todos).toEqual([first, second]);
-    });
-
-    it.each([
-      {
-        title: '만들기 응답은 임시 행을 서버 행으로 바꾼다',
-        todos: [first, createParentTodo({ id: -7 })],
-        expectedIds: [1, 2],
-      },
-      {
-        title: '응답 전에 다시 받아 임시 행이 사라졌으면 서버 행을 끝에 붙인다',
-        todos: [first],
-        expectedIds: [1, 2],
-      },
-      {
-        title: '다시 받은 목록에 이미 서버 행이 있으면 한 번만 둔다',
-        todos: [first, second],
-        expectedIds: [1, 2],
-      },
-    ])('$title', ({ todos, expectedIds }) => {
-      // Given
-      const list = toList(todos);
-
-      // When
-      const next = withTodoSaved(list, -7, second);
-
-      // Then
-      expect(next.todos.map((todo) => todo.id)).toEqual(expectedIds);
-      expect(next.todos.at(-1)).toBe(second);
-    });
-
-    it('개요는 이미 참이면 같은 객체를 돌려 구독자가 다시 그리지 않는다', () => {
-      // Given
-      const overview = { hasTodo: true, hasCompletedTodo: false, hasActiveRepeat: false };
-
-      // When
-      const created = withTodoCreated(overview);
-      const completed = withTodoCompleted(overview);
-
-      // Then
-      expect(created).toBe(overview);
-      expect(completed).toEqual({ hasTodo: true, hasCompletedTodo: true, hasActiveRepeat: false });
+      expect(dates).toEqual(['2026-11-07', '2026-11-01']);
     });
   });
 
@@ -181,8 +119,14 @@ describe('todo-cache', () => {
       const client = createTestQueryClient();
       client.setQueryData(TODO_QUERY_KEYS.listByDate({ date: DAY }), toList([]));
       client.setQueryData(TODO_QUERY_KEYS.listByDate({ date: NEXT_DAY }), toList([]));
-      client.setQueryData(TODO_QUERY_KEYS.completionsByRange(WEEK), toCompletions(WEEK));
-      client.setQueryData(TODO_QUERY_KEYS.completionsByRange(NEXT_WEEK), toCompletions(NEXT_WEEK));
+      client.setQueryData(
+        TODO_QUERY_KEYS.completionsByMonth({ month: MONTH }),
+        toCompletions(MONTH),
+      );
+      client.setQueryData(
+        TODO_QUERY_KEYS.completionsByMonth({ month: NEXT_MONTH }),
+        toCompletions(NEXT_MONTH),
+      );
       client.setQueryData(
         TODO_QUERY_KEYS.widgetSummaryByDate({ date: DAY, userId: null }),
         toSummary(DAY),
@@ -230,7 +174,9 @@ describe('todo-cache', () => {
       // Then
       expect(isInvalidated(client, TODO_QUERY_KEYS.listByDate({ date: DAY }))).toBe(false);
       expect(isInvalidated(client, TODO_QUERY_KEYS.listByDate({ date: NEXT_DAY }))).toBe(false);
-      expect(isInvalidated(client, TODO_QUERY_KEYS.completionsByRange(WEEK))).toBe(false);
+      expect(isInvalidated(client, TODO_QUERY_KEYS.completionsByMonth({ month: MONTH }))).toBe(
+        false,
+      );
       expect(
         isInvalidated(client, TODO_QUERY_KEYS.widgetSummaryByDate({ date: DAY, userId: null })),
       ).toBe(true);
@@ -260,8 +206,12 @@ describe('todo-cache', () => {
       // Then
       expect(isInvalidated(client, TODO_QUERY_KEYS.listByDate({ date: DAY }))).toBe(false);
       expect(isInvalidated(client, TODO_QUERY_KEYS.listByDate({ date: NEXT_DAY }))).toBe(true);
-      expect(isInvalidated(client, TODO_QUERY_KEYS.completionsByRange(WEEK))).toBe(true);
-      expect(isInvalidated(client, TODO_QUERY_KEYS.completionsByRange(NEXT_WEEK))).toBe(false);
+      expect(isInvalidated(client, TODO_QUERY_KEYS.completionsByMonth({ month: MONTH }))).toBe(
+        true,
+      );
+      expect(isInvalidated(client, TODO_QUERY_KEYS.completionsByMonth({ month: NEXT_MONTH }))).toBe(
+        false,
+      );
       await finishWrite();
     });
 
@@ -285,7 +235,9 @@ describe('todo-cache', () => {
       // Then
       expect(isInvalidated(client, TODO_QUERY_KEYS.listByDate({ date: DAY }))).toBe(true);
       expect(isInvalidated(client, detailKey)).toBe(true);
-      expect(isInvalidated(client, TODO_QUERY_KEYS.completionsByRange(WEEK))).toBe(true);
+      expect(isInvalidated(client, TODO_QUERY_KEYS.completionsByMonth({ month: MONTH }))).toBe(
+        true,
+      );
       await finishWrite();
     });
 
@@ -334,16 +286,73 @@ describe('todo-cache', () => {
     });
   });
 
+  describe('쓰기 묶음 밖의 여러 할 일 쓰기', () => {
+    function startWrite(client: QueryClient) {
+      const response = createPendingResponse(undefined);
+      const running = client
+        .getMutationCache()
+        .build(client, {
+          mutationKey: TODO_MUTATION_KEYS.listWrites(),
+          mutationFn: () => response.response,
+        })
+        .execute(undefined);
+      return () => {
+        response.settle();
+        return running;
+      };
+    }
+
+    function observeList(client: QueryClient) {
+      const fetchList = jest.fn(async () => toList([]));
+      client.setQueryData(TODO_QUERY_KEYS.listByDate({ date: DAY }), toList([]));
+      const unsubscribe = new QueryObserver(client, {
+        queryKey: TODO_QUERY_KEYS.listByDate({ date: DAY }),
+        queryFn: fetchList,
+        staleTime: Infinity,
+      }).subscribe(noop);
+      return { fetchList, unsubscribe };
+    }
+
+    it('진행 중인 체크가 있으면 낡음만 표시해 그 낙관적 값을 덮지 않는다', async () => {
+      // Given
+      const client = createTestQueryClient();
+      const { fetchList, unsubscribe } = observeList(client);
+      const finishWrite = startWrite(client);
+
+      // When
+      await settleTodoBatchWrite(client);
+
+      // Then
+      expect(isInvalidated(client, TODO_QUERY_KEYS.listByDate({ date: DAY }))).toBe(true);
+      expect(fetchList).not.toHaveBeenCalled();
+      await finishWrite();
+      unsubscribe();
+    });
+
+    it('진행 중인 체크가 없으면 보이는 목록을 바로 다시 받는다', async () => {
+      // Given
+      const client = createTestQueryClient();
+      const { fetchList, unsubscribe } = observeList(client);
+
+      // When
+      await settleTodoBatchWrite(client);
+
+      // Then
+      expect(fetchList).toHaveBeenCalledTimes(1);
+      unsubscribe();
+    });
+  });
+
   describe('바뀐 날짜를 모를 때의 무효화', () => {
     const listKey = TODO_QUERY_KEYS.listByDate({ date: DAY });
-    const completionKey = TODO_QUERY_KEYS.completionsByRange(WEEK);
+    const completionKey = TODO_QUERY_KEYS.completionsByMonth({ month: MONTH });
     const friendKey = TODO_QUERY_KEYS.friendListByDate({ userId: 'u', date: DAY });
     const categoryKey = TODO_CATEGORY_QUERY_KEYS.list();
 
     function createSeededClient() {
       const client = createTestQueryClient();
       client.setQueryData(listKey, toList([createParentTodo({ id: 7 })]));
-      client.setQueryData(completionKey, toCompletions(WEEK));
+      client.setQueryData(completionKey, toCompletions(MONTH));
       client.setQueryData(friendKey, toList([]));
       client.setQueryData(categoryKey, { categories: [] });
 
@@ -427,13 +436,13 @@ describe('todo-cache', () => {
       const widgetKey = TODO_QUERY_KEYS.widgetSummaryByDate({ date: DAY, userId: 'u' });
       const widgetSummary = toSummary(DAY);
       const overview = { hasTodo: true, hasCompletedTodo: false, hasActiveRepeat: false };
-      const nextWeek = toCompletions(NEXT_WEEK);
+      const nextMonth = toCompletions(NEXT_MONTH);
       client.setQueryData(widgetKey, widgetSummary);
       client.setQueryData(TODO_QUERY_KEYS.overview(), overview);
       client.setQueryData(TODO_QUERY_KEYS.listByDate({ date: DAY }), toList([]));
-      client.setQueryData(TODO_QUERY_KEYS.completionsByRange(NEXT_WEEK), nextWeek);
-      client.setQueryData(TODO_QUERY_KEYS.completionsByRange(WEEK), {
-        ...toCompletions(WEEK),
+      client.setQueryData(TODO_QUERY_KEYS.completionsByMonth({ month: NEXT_MONTH }), nextMonth);
+      client.setQueryData(TODO_QUERY_KEYS.completionsByMonth({ month: MONTH }), {
+        ...toCompletions(MONTH),
         completions: [
           {
             date: DAY,
@@ -452,10 +461,12 @@ describe('todo-cache', () => {
       // Then
       expect(client.getQueryData(widgetKey)).toBe(widgetSummary);
       expect(client.getQueryData(TODO_QUERY_KEYS.overview())).toBe(overview);
-      expect(client.getQueryData(TODO_QUERY_KEYS.completionsByRange(NEXT_WEEK))).toBe(nextWeek);
-      expect(client.getQueryData(TODO_QUERY_KEYS.completionsByRange(WEEK))?.completions).toEqual(
-        [],
+      expect(client.getQueryData(TODO_QUERY_KEYS.completionsByMonth({ month: NEXT_MONTH }))).toBe(
+        nextMonth,
       );
+      expect(
+        client.getQueryData(TODO_QUERY_KEYS.completionsByMonth({ month: MONTH }))?.completions,
+      ).toEqual([]);
     });
   });
 

@@ -8,10 +8,10 @@ import { range } from 'es-toolkit';
 import { AIR_METER_COLORS } from '../constants/weather-colors.constants';
 import {
   type AirPollutant,
+  type AirQuality,
   type AirQualityGrade,
-  WeatherIndicatorPolicy,
-} from '../domains/weather-indicator.model';
-import type { AirQuality } from '../domains/weather-report.model';
+  AirQualityPolicy,
+} from '../domains/air-quality.model';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
 import { toAirMeterPosition } from '../utils/weather-bar.geometry';
 import { WeatherCard } from './weather-card';
@@ -72,7 +72,7 @@ WeatherAirQuality.Pollutant = function Pollutant({
   const labelMinScale = useMinimumFontScale('b4');
   const gradeMinScale = useMinimumFontScale(GRADE_FONT_SIZE);
   const value = airQuality[pollutant];
-  const grade = WeatherIndicatorPolicy.findPollutantGrade(airQuality, pollutant);
+  const grade = AirQualityPolicy.findPollutantGrade(airQuality, pollutant);
   const label = t(`airQuality.${pollutant}`);
   const gradeLabel = grade == null ? t('details.noValue') : t(AIR_GRADE_LABEL_KEYS[grade]);
   const valueLabel = value == null ? t('details.noValue') : t('airQuality.value', { value });

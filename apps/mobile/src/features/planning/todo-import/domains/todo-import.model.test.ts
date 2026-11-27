@@ -1,117 +1,137 @@
 import { TODO_IMPORT_STATUSES } from '@aido/api/vocabulary';
-import { dateKeySchema } from '@src/shared/date/date-key';
 import { toInstant } from '@src/shared/date/instant';
 
 import { createTodoImport, IMPORT_ID } from '../__tests__/todo-import.fixtures';
-import { IMPORT_RANGE_PRESETS } from '../constants/todo-import.constants';
-import {
-  canImportUntil,
-  getRangeEndDate,
-  rememberTodoImportId,
-  TodoImportPolicy,
-} from './todo-import.model';
+import { rememberTodoImportId, TodoImportPolicy } from './todo-import.model';
 
-const TODAY = dateKeySchema.parse('2026-11-24');
-const FREE_HORIZON_DAYS = 30;
 const PREVIOUS_IMPORT_ID = 'clz7x5p8k0010qz0z8z8z8z8a';
 const OLDEST_IMPORT_ID = 'clz7x5p8k0010qz0z8z8z8z8b';
 const NEWEST_IMPORT_ID = 'clz7x5p8k0010qz0z8z8z8z8c';
-
-describe('getRangeEndDate', () => {
-  it.each([
-    ['1주는 오늘 포함 7일째', IMPORT_RANGE_PRESETS.week, '2026-11-30'],
-    ['1개월은 30일이라 31일짜리 달에도 무료 기간 안이다', IMPORT_RANGE_PRESETS.month, '2026-12-23'],
-    ['1년은 365일째', IMPORT_RANGE_PRESETS.year, '2027-11-23'],
-  ])('%s', (_case, days, expected) => {
-    // When
-    const endDate = getRangeEndDate(TODAY, days);
-
-    // Then
-    expect(endDate).toBe(expected);
-  });
-});
-
-describe('canImportUntil', () => {
-  it.each([
-    ['무료 30일의 마지막 날은 된다', '2026-12-23', FREE_HORIZON_DAYS, true],
-    ['무료 31일째는 안 된다', '2026-12-24', FREE_HORIZON_DAYS, false],
-    ['오늘 이전은 안 된다', '2026-11-23', FREE_HORIZON_DAYS, false],
-    ['기간 제한이 없으면(관리자) 먼 날도 된다', '2028-01-01', null, true],
-  ])('%s', (_case, endDate, horizonDays, expected) => {
-    // When
-    const canImport = canImportUntil(dateKeySchema.parse(endDate), TODAY, horizonDays);
-
-    // Then
-    expect(canImport).toBe(expected);
-  });
-});
+const ACTIVE_STATUSES = new Set<string>(['UPLOADING', 'QUEUED', 'RUNNING', 'UNDOING']);
 
 describe('TodoImportPolicy', () => {
   const NOW = toInstant('2026-11-24T03:00:00.000Z');
 
-  it.each(TODO_IMPORT_STATUSES)(
-    '%s는 끝났거나 처리 중 둘 중 하나이고 끝나면 묻지 않는다',
-    (status) => {
+  describe('getStage', () => {
+    it.each([
+      { status: 'UPLOADING', failureReason: null, expected: 'processing' },
+      { status: 'QUEUED', failureReason: null, expected: 'processing' },
+      { status: 'RUNNING', failureReason: null, expected: 'processing' },
+      { status: 'COMPLETED', failureReason: null, expected: 'finished' },
+      { status: 'UNDOING', failureReason: null, expected: 'finished' },
+      { status: 'UNDONE', failureReason: null, expected: 'finished' },
+      { status: 'FAILED', failureReason: 'MATERIALIZATION_FAILED', expected: 'failed' },
+      { status: 'FAILED', failureReason: 'STALLED', expected: 'failed' },
+      { status: 'FAILED', failureReason: null, expected: 'failed' },
+      { status: 'FAILED', failureReason: 'UNDO_FAILED', expected: 'undoFailed' },
+      { status: 'CANCELED', failureReason: null, expected: 'stopped' },
+      { status: 'ABANDONED', failureReason: null, expected: 'stopped' },
+    ] as const)(
+      '$status(실패 이유 $failureReason)는 $expected 단계다',
+      ({ status, failureReason, expected }) => {
+        // Given
+        const todoImport = createTodoImport({ status, failureReason });
+
+        // When
+        const stage = TodoImportPolicy.getStage(todoImport);
+
+        // Then
+        expect(stage).toBe(expected);
+      },
+    );
+  });
+
+  describe('isTerminal', () => {
+    it.each(TODO_IMPORT_STATUSES)('%s는 끝났거나 처리 중 둘 중 하나다', (status) => {
       // Given
       const todoImport = createTodoImport({ status });
 
       // When
       const isTerminal = TodoImportPolicy.isTerminal(todoImport);
-      const pollIntervalMs = TodoImportPolicy.getPollIntervalMs(todoImport);
 
       // Then
-      expect(pollIntervalMs === false).toBe(isTerminal);
-    },
-  );
-
-  // 되돌릴 수 있는지는 서버가 정해 기한(undoableUntil)으로만 알려 준다. 앱은 상태·수를 다시 보지 않는다
-  it.each([
-    ['완료이고 기한 전이면 되돌린다', 'COMPLETED', '2026-12-01T00:00:00.000Z', true],
-    ['만들다 멈춰도 기한 전이면 만든 할 일을 되돌린다', 'FAILED', '2026-12-01T00:00:00.000Z', true],
-    ['기한이 지금이면 지났다', 'COMPLETED', '2026-11-24T03:00:00.000Z', false],
-    ['기한이 없으면(모두 이미 가져온 일정·되돌리는 중) 되돌릴 수 없다', 'COMPLETED', null, false],
-  ] as const)('%s', (_case, status, undoableUntil, expected) => {
-    // Given
-    const todoImport = createTodoImport({
-      status,
-      undoableUntil: undoableUntil == null ? null : toInstant(undoableUntil),
+      expect(isTerminal).toBe(!ACTIVE_STATUSES.has(status));
     });
-
-    // When
-    const canUndo = TodoImportPolicy.canUndo(todoImport, NOW);
-
-    // Then
-    expect(canUndo).toBe(expected);
   });
 
-  it('업로드 중에만 멈출 수 있다', () => {
-    // When
-    const canCancelUploading = TodoImportPolicy.canCancel(
-      createTodoImport({ status: 'UPLOADING' }),
-    );
-    const canCancelQueued = TodoImportPolicy.canCancel(createTodoImport({ status: 'QUEUED' }));
+  describe('canUndo', () => {
+    // 되돌릴 수 있는지는 서버가 정해 기한(undoableUntil)으로만 알려 준다. 앱은 상태·수를 다시 보지 않는다
+    it.each([
+      ['완료이고 기한 전이면 되돌린다', 'COMPLETED', '2026-12-01T00:00:00.000Z', true],
+      [
+        '만들다 멈춰도 기한 전이면 만든 할 일을 되돌린다',
+        'FAILED',
+        '2026-12-01T00:00:00.000Z',
+        true,
+      ],
+      ['기한이 지금이면 지났다', 'COMPLETED', '2026-11-24T03:00:00.000Z', false],
+      ['기한이 없으면(모두 이미 가져온 일정·되돌리는 중) 되돌릴 수 없다', 'COMPLETED', null, false],
+    ] as const)('%s', (_case, status, undoableUntil, expected) => {
+      // Given
+      const todoImport = createTodoImport({
+        status,
+        undoableUntil: undoableUntil == null ? null : toInstant(undoableUntil),
+      });
 
-    // Then
-    expect(canCancelUploading).toBe(true);
-    expect(canCancelQueued).toBe(false);
+      // When
+      const canUndo = TodoImportPolicy.canUndo(todoImport, NOW);
+
+      // Then
+      expect(canUndo).toBe(expected);
+    });
   });
 
-  it('처리 비율은 받은 수와 예상 수 중 큰 값 기준이고 0~1이다', () => {
-    // Given
-    const todoImport = createTodoImport({
-      expectedItemCount: 200,
-      receivedItemCount: 180,
-      processedItemCount: 50,
+  describe('canCancel', () => {
+    it('업로드 중에만 멈출 수 있다', () => {
+      // When
+      const canCancelUploading = TodoImportPolicy.canCancel(
+        createTodoImport({ status: 'UPLOADING' }),
+      );
+      const canCancelQueued = TodoImportPolicy.canCancel(createTodoImport({ status: 'QUEUED' }));
+
+      // Then
+      expect(canCancelUploading).toBe(true);
+      expect(canCancelQueued).toBe(false);
     });
+  });
 
-    // When
-    const ratio = TodoImportPolicy.calculateProcessedRatio(todoImport);
+  describe('canStop', () => {
+    it.each([
+      ['이 기기가 보내는 중이면 멈추지 못한다', 'UPLOADING', 'sending', false],
+      ['이 기기의 업로드가 멈췄으면 멈출 수 있다', 'UPLOADING', 'paused', true],
+      ['서버가 이 기기의 일정을 받지 않았으면 멈출 수 있다', 'UPLOADING', 'failed', true],
+      ['다른 기기에서 시작한 업로드는 멈출 수 있다', 'UPLOADING', 'elsewhere', true],
+      ['확정된 뒤에는 서버가 끝까지 만들어 멈추지 못한다', 'RUNNING', 'elsewhere', false],
+    ] as const)('%s', (_case, status, deviceUpload, expected) => {
+      // Given
+      const todoImport = createTodoImport({ status });
 
-    // Then
-    expect(ratio).toBe(0.25);
-    expect(
-      TodoImportPolicy.calculateProcessedRatio(createTodoImport({ expectedItemCount: 0 })),
-    ).toBe(0);
+      // When
+      const canStop = TodoImportPolicy.canStop(todoImport, deviceUpload);
+
+      // Then
+      expect(canStop).toBe(expected);
+    });
+  });
+
+  describe('calculateProcessedRatio', () => {
+    it('처리 비율은 받은 수와 예상 수 중 큰 값 기준이고 0~1이다', () => {
+      // Given
+      const todoImport = createTodoImport({
+        expectedItemCount: 200,
+        receivedItemCount: 180,
+        processedItemCount: 50,
+      });
+
+      // When
+      const ratio = TodoImportPolicy.calculateProcessedRatio(todoImport);
+
+      // Then
+      expect(ratio).toBe(0.25);
+      expect(
+        TodoImportPolicy.calculateProcessedRatio(createTodoImport({ expectedItemCount: 0 })),
+      ).toBe(0);
+    });
   });
 });
 

@@ -25,9 +25,10 @@ import {
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { formatCount } from '@src/shared/utils/number-format';
+import { tv } from '@src/shared/utils/tv';
 import { useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { useEffect, useId, useState } from 'react';
 import { StyleSheet } from 'react-native';
@@ -46,7 +47,7 @@ import Svg, { Defs, Pattern, Rect } from 'react-native-svg';
 import { match, P } from 'ts-pattern';
 import { useResolveClassNames } from 'uniwind';
 
-import { type Invite, InvitePolicy } from '../domains/invite.model';
+import { type Invite, InvitePolicy, type PawPrintState } from '../domains/invite.model';
 import { useGetInviteQueryOptions } from '../queries/invite.queries';
 import { pawPrintCelebrationStoredValue } from '../schemas/paw-print-celebration-storage.schema';
 import {
@@ -56,25 +57,56 @@ import {
   PAW_PRINT_BOARD_SIZE,
   type PawPrintBoard,
   type PawPrintCell,
-  type PawPrintState,
 } from '../utils/invite-paw-print-board.geometry';
-import {
-  fishBoneVariants,
-  pawPrintIconVariants,
-  pawPrintVariants,
-} from './invite-paw-print-board.variants';
 
 const NEW_PAW_PRINT_STAGGER_MS = 160;
-/** 기다리는 발자국이 흔들리기까지 쉬는 시간과 한 번 꺾는 데 걸리는 시간 */
 const WAITING_WIGGLE_REST_MS = 1700;
 const WAITING_WIGGLE_STEP_MS = 190;
-/** 기다리는 발자국이 차례로 꺾이는 각도 */
 const WAITING_WIGGLE_DEGREES = [-7, 6, -3] as const;
 
-/**
- * 고양이 발자국 판. 친구가 사용을 시작할 때마다 발자국이 하나씩 찍힌다.
- * 지금 판(12칸)만 보여 줘서 발자국이 늘어도 높이가 바뀌지 않는다.
- */
+const pawPrintVariants = tv({
+  base: 'size-full items-center justify-center rounded-full',
+  variants: {
+    state: {
+      stamped: '-rotate-6 bg-main',
+      waiting: 'border-[1.5px] border-dashed border-main bg-main/10',
+      empty: 'border border-gray-3 bg-white dark:border-gray-2 dark:bg-gray-1',
+      milestone: 'border border-fish bg-fish/10',
+    },
+    isNext: {
+      true: '',
+    },
+  },
+  compoundVariants: [
+    { state: 'empty', isNext: true, className: 'border-[1.5px] border-main/50 bg-highlight' },
+  ],
+});
+
+const pawPrintIconVariants = tv({
+  variants: {
+    state: {
+      stamped: 'text-white dark:text-gray-1',
+      waiting: 'text-main opacity-40',
+      empty: 'text-gray-4 dark:text-gray-3',
+      milestone: 'text-fish',
+    },
+    isNext: {
+      true: '',
+    },
+  },
+  compoundVariants: [{ state: 'empty', isNext: true, className: 'text-main/50' }],
+});
+
+const fishBoneVariants = tv({
+  variants: {
+    isFilled: {
+      true: 'text-main',
+      false: 'text-gray-4 dark:text-gray-3',
+    },
+  },
+});
+
+/** 지금 판(12칸)만 보여 줘서 발자국이 늘어도 높이가 바뀌지 않는다 */
 export function InvitePawPrintBoard() {
   const { t } = useTranslation('invite');
   const dateFormatContext = useDateFormatContext();
@@ -110,8 +142,7 @@ export function InvitePawPrintBoard() {
       {/* 줄마다 칸·생선 뼈 폭을 같은 pt로 정해 모든 줄이 같은 열에 놓인다. flex로 나누지 않는다 */}
       <VStack accessibilityRole="list" align="center" onLayout={handleBoardLayout}>
         {board.rows.map((row, rowIndex) => (
-          // 열 수가 바뀌면(Duo 접기·펼치기, iPad 창 크기) 칸이 다른 줄·자리로 옮겨 간다.
-          // 옮겨 간 칸을 재사용하면 이전 격자 배치가 남으므로 열 수마다 줄을 새로 그린다
+          // 열 수가 바뀌면(Duo 접기·펼치기, iPad 창 크기) 이전 격자 배치가 남지 않게 열 수마다 줄을 새로 그린다
           <VStack key={`${grid.columns}-${rowIndex}`} style={{ width: grid.rowWidth }}>
             <HStack align="center">
               {row.cells.map((cell) => (
@@ -154,10 +185,6 @@ export function InvitePawPrintBoard() {
   );
 }
 
-/**
- * 판 아래 한 줄. 다 채운 판에서는 축하를, 판에 다 못 그린 기다리는 친구가 있으면 그 수를,
- * 빈 판에서는 어디부터 찍히는지 보여 준다
- */
 InvitePawPrintBoard.Caption = function Caption({ board }: { board: PawPrintBoard }) {
   const { t } = useTranslation('invite');
 
@@ -247,7 +274,6 @@ interface ConnectorProps {
   length?: number;
 }
 
-/** 발자국 사이를 잇는 생선 뼈. 찍힌 발자국 사이만 main 색으로 채운다 */
 InvitePawPrintBoard.Connector = function Connector({
   isFilled,
   orientation = 'horizontal',
@@ -337,10 +363,7 @@ InvitePawPrintBoard.Unavailable = function Unavailable() {
   );
 };
 
-/**
- * 지난번에 본 수보다 늘었으면 진동과 리뷰 요청으로 축하하고 본 수를 저장한다.
- * 돌려주는 값은 처음 그릴 때 본 수다. 저장한 뒤에도 이번 화면에서는 찍히는 애니메이션이 이어져야 한다
- */
+/** 처음 그릴 때 본 수를 돌려준다. 저장한 뒤에도 이번 화면에서는 찍히는 애니메이션이 이어져야 한다 */
 function useCelebrateNewPawPrints(userId: string, invite: Invite) {
   const { qualifiedCount } = invite;
   const haptics = useHaptics();
@@ -506,13 +529,11 @@ function InviteProgressMessage() {
     .exhaustive();
 }
 
-/**
- * 초대 보상 프리미엄 상한에 닿았을 때 구독 화면으로 가는 버튼. 이동만 하고 보상·상한은 서버가 정한다.
- * 이미 스토어 구독 중이면 권하지 않는다
- */
+/** 이동만 하고 보상·상한은 서버가 정한다 */
 function KeepPremiumButton() {
   const { t } = useTranslation('invite');
   const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
+  const router = useRouter();
   const navigate = useSingleTap(router.navigate);
 
   if (PremiumAccessPolicy.isStoreSubscribed(me.premiumAccess)) {

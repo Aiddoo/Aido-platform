@@ -41,10 +41,7 @@ interface InviteShareServicePorts {
   logger: Pick<AppLogger, 'warn'>;
 }
 
-/**
- * 초대 링크를 카카오톡·OS 공유·복사로 보낸다. 방법을 하나 더하려면 `#channels`에 한 줄만 추가한다.
- * 카카오톡을 못 쓰면 OS 공유로, 그것도 안 되면 링크 복사로 이어서 사용자가 빈손으로 끝나지 않게 한다.
- */
+/** 카카오톡을 못 쓰면 OS 공유로, 그것도 안 되면 링크 복사로 이어서 사용자가 빈손으로 끝나지 않게 한다 */
 export class InviteShareService {
   readonly #socialShare: SocialShareGateway;
   readonly #systemShare: Pick<SystemShareGateway, 'share'>;

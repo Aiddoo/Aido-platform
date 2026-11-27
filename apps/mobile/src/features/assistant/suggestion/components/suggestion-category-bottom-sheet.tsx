@@ -3,11 +3,13 @@ import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { RouteBottomSheet, type SheetRouteExit } from '@src/shared/ui';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import { type ComponentProps, useEffect } from 'react';
 
+import { usePromptSuggestionLimit } from '../hooks/use-prompt-suggestion-limit';
 import { useActOnSuggestionMutationOptions } from '../queries/suggestion.mutations';
 import { useGetSuggestionsQueryOptions } from '../queries/suggestion.queries';
 import {
@@ -20,7 +22,6 @@ type SuggestionCategoryBottomSheetProps = Omit<
   'fallbackHref' | 'loading' | 'children'
 >;
 
-/** 제안을 받아들일 카테고리를 고르는 시트. 대상은 `/suggestions/[suggestionId]/category` route에서 읽는다. */
 export function SuggestionCategoryBottomSheet(props: SuggestionCategoryBottomSheetProps) {
   return (
     <RouteBottomSheet
@@ -53,7 +54,19 @@ SuggestionCategoryBottomSheet.AcceptForm = function AcceptForm({
     categoriesData.categories,
     suggestion?.suggestedCategoryId ?? null,
   );
-  const actOnSuggestionMutation = useMutation(useActOnSuggestionMutationOptions());
+  const promptSuggestionLimit = usePromptSuggestionLimit();
+  // 한도 안내는 mutation 단계에 건다. 호출 단계 콜백은 응답 전에 시트가 내려가면 불리지 않는다
+  const actOnSuggestion = useMutation({
+    ...useActOnSuggestionMutationOptions(),
+    onError: promptSuggestionLimit,
+  });
+  // isPending은 다시 그린 뒤에야 켜져 같은 프레임의 두 번째 누름이 수락을 한 번 더 보낸다
+  const handleSubmit = useSingleTap((acceptedSuggestionId: number, categoryId: number) =>
+    actOnSuggestion.mutate(
+      { suggestionId: acceptedSuggestionId, input: { action: 'accept', categoryId }, source },
+      { onSuccess: () => onClose({ type: 'dismiss-to', href: '/feed' }) },
+    ),
+  );
 
   useEffect(() => {
     if (suggestion == null || defaultCategoryId == null) {
@@ -68,14 +81,9 @@ SuggestionCategoryBottomSheet.AcceptForm = function AcceptForm({
   return (
     <CategoryPickForm
       defaultValue={defaultCategoryId}
-      onSubmit={(categoryId) =>
-        actOnSuggestionMutation.mutate(
-          { suggestionId: suggestion.id, input: { action: 'accept', categoryId }, source },
-          { onSuccess: () => onClose({ type: 'dismiss-to', href: '/feed' }) },
-        )
-      }
+      onSubmit={(categoryId) => handleSubmit(suggestion.id, categoryId)}
       submitLabel={t('suggestions.item.make')}
-      isLoading={actOnSuggestionMutation.isPending}
+      isLoading={actOnSuggestion.isPending}
     />
   );
 };

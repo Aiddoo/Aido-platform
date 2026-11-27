@@ -1,4 +1,4 @@
-import { getCalleeName, unwrap } from '../ast.mjs';
+import { getCalleeName, getPolicyNameOfObject, unwrap } from '../ast.mjs';
 
 const REACT_BASE_CLASS = /^(?:React\.)?(?:Pure)?Component$/u;
 const ERROR_BASE_CLASS = /Error$/u;
@@ -45,7 +45,7 @@ const noClassMethod = {
   },
 };
 
-// `{ run() {} }` 축약 메서드 대신 `{ run: () => {} }`로 쓴다. 한 가지 모양만 둔다
+// `{ run() {} }` 축약 메서드 대신 `{ run: () => {} }`로 쓴다. this로 서로를 부르는 Policy 객체(`const XPolicy = { … }`)만 메서드다
 const noObjectMethodShorthand = {
   meta: { type: 'suggestion' },
   createOnce(context) {
@@ -54,11 +54,13 @@ const noObjectMethodShorthand = {
         if (
           node.method === true &&
           node.kind === 'init' &&
-          node.parent?.type === 'ObjectExpression'
+          node.parent?.type === 'ObjectExpression' &&
+          getPolicyNameOfObject(node.parent) == null
         ) {
           context.report({
             node: node.key,
-            message: '객체 메서드 축약을 쓰지 않는다. 화살표 프로퍼티(`name: () => {}`)로 쓴다.',
+            message:
+              '객체 메서드 축약을 쓰지 않는다. 화살표 프로퍼티(`name: () => {}`)로 쓴다. Policy 객체(`const XPolicy = { method(model) {} }`)만 예외다.',
           });
         }
       },

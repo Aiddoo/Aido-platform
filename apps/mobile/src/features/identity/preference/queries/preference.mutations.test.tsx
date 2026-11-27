@@ -9,7 +9,7 @@ import {
   createTestDi,
 } from '@src/testing/core';
 import { renderScreenHook } from '@src/testing/render';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { act, screen, waitFor } from '@testing-library/react-native';
 
 import {
@@ -20,6 +20,7 @@ import {
 import { type Preference } from '../domains/preference.model';
 import { PREFERENCE_QUERY_KEYS } from './preference-query-keys';
 import { useUpdatePreferenceMutationOptions } from './preference.mutations';
+import { useGetPreferenceQueryOptions } from './preference.queries';
 
 async function renderUpdate(httpClient = createHttpClientStub()) {
   const queryClient = createTestQueryClient();
@@ -118,6 +119,55 @@ describe('설정 토글을 연달아 저장', () => {
       await secondResult;
     });
     expect(cached()).toMatchObject({ pushEnabled: false, nightPushEnabled: true });
+  });
+
+  it('서버가 처리한 순서와 응답이 어긋나게 와도 마지막 응답 대신 서버 값을 다시 받아 맞춘다', async () => {
+    // Given
+    const httpClient = createHttpClientStub();
+    // 서버는 앞 저장을 먼저 처리해 앞 응답에는 뒤 토글이 없다. 응답은 뒤 저장이 먼저 온다
+    const serverFinal = createPreferenceDto({ pushEnabled: false, nightPushEnabled: true });
+    const first = createPendingResponse(
+      ok(createPreferenceDto({ pushEnabled: false, nightPushEnabled: false })),
+    );
+    const second = createPendingResponse(ok(serverFinal));
+    httpClient.patch
+      .mockImplementationOnce(() => first.response)
+      .mockImplementationOnce(() => second.response);
+    httpClient.get.mockResolvedValue(
+      ok(createPreferenceDto({ pushEnabled: true, nightPushEnabled: false })),
+    );
+    const queryClient = createTestQueryClient();
+    const { result } = await renderScreenHook(
+      () => ({
+        update: useMutation(useUpdatePreferenceMutationOptions()),
+        preference: useQuery(useGetPreferenceQueryOptions()),
+      }),
+      { di: createTestDi({ ports: { httpClient, queryClient } }) },
+    );
+    await waitFor(() => expect(result.current.preference.data?.pushEnabled).toBe(true));
+    const firstResult = result.current.update.mutateAsync({ pushEnabled: false });
+    const secondResult = result.current.update.mutateAsync({ nightPushEnabled: true });
+    await waitFor(() => expect(httpClient.patch).toHaveBeenCalledTimes(2));
+    httpClient.get.mockResolvedValue(ok(serverFinal));
+
+    // When
+    await act(async () => {
+      second.settle();
+      await secondResult;
+      first.settle();
+      await firstResult;
+    });
+
+    // Then
+    expect(queryClient.getQueryData(PREFERENCE_QUERY_KEYS.current())).toMatchObject({
+      pushEnabled: false,
+      nightPushEnabled: true,
+    });
+    await waitFor(() => expect(httpClient.get).toHaveBeenCalledTimes(2));
+    expect(result.current.preference.data).toMatchObject({
+      pushEnabled: false,
+      nightPushEnabled: true,
+    });
   });
 
   it('앞 저장이 실패하면 그 토글만 되돌리고 뒤에 바꾼 토글은 지킨다', async () => {

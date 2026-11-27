@@ -1,4 +1,4 @@
-import { type ReactNode, useCallback } from 'react';
+import { type ReactNode } from 'react';
 
 import { useOverlay } from './use-overlay';
 
@@ -13,21 +13,18 @@ interface KeyboardSheetControl {
 export function useOpenKeyboardSheet() {
   const overlay = useOverlay();
 
-  return useCallback(
-    (render: (sheet: KeyboardSheetControl) => ReactNode) => {
-      overlay.open(({ isOpen, close, unmount }) =>
-        render({
-          isOpen,
-          onOpenChange: (nextIsOpen) => {
-            if (!nextIsOpen) {
-              close();
-              unmount();
-            }
-          },
-          close,
-        }),
-      );
-    },
-    [overlay],
-  );
+  return (render: (sheet: KeyboardSheetControl) => ReactNode) => {
+    overlay.open(({ isOpen, close, unmount }) =>
+      render({
+        isOpen,
+        onOpenChange: (nextIsOpen) => {
+          if (!nextIsOpen) {
+            close();
+            unmount();
+          }
+        },
+        close,
+      }),
+    );
+  };
 }

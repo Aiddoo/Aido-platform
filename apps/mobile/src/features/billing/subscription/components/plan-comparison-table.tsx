@@ -23,10 +23,10 @@ import { Popover, PressableFeedback, Separator } from 'heroui-native';
 import { type ComponentType, type ReactNode, useState } from 'react';
 import { match } from 'ts-pattern';
 
-import type { EntitlementFeature } from '../domains/entitlement.model';
+import { EntitlementPolicy, type PlanValue } from '../domains/entitlement.model';
+import type { EntitlementFeature } from '../domains/feature-quota.model';
 import { useFormatPlanValue } from '../hooks/use-format-plan-value';
 import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
-import { type PlanValue, toPlanFeatureComparison } from '../utils/plan-benefit.view-model';
 import { getPremiumGateAnalyticsFeature } from '../utils/subscription-analytics';
 
 /** 응원(CHEER)은 같은 한도인 콕 찌르기 줄이 함께 보여 준다 */
@@ -74,6 +74,8 @@ const VALUE_COLUMN_WIDTH = 80;
 const PREMIUM_BAND_INSET = 6;
 /** 정보 아이콘이 마지막 낱말과 떨어져 혼자 다음 줄로 내려가지 않게 붙인다 */
 const NBSP = '\u00A0';
+/** 이름 칸의 위아래 여백(py-3)만큼만 넓혀 옆 줄 이름과 누르는 영역이 겹치지 않는다. 한 줄 이름은 44에 2~3pt 모자란다 */
+const TERM_HIT_SLOP = { top: 12, bottom: 12, left: 8, right: 8 };
 
 function useValueColumnWidth() {
   const fontScaledSize = useFontScaledSize();
@@ -219,7 +221,7 @@ function Divider() {
 
 function FeatureRow({ feature }: { feature: ComparisonFeature }) {
   const { data: entitlements } = useSuspenseQuery(useGetEntitlementsQueryOptions());
-  const { free, premium } = toPlanFeatureComparison(entitlements, feature);
+  const { free, premium } = EntitlementPolicy.getPlanFeatureComparison(entitlements, feature);
 
   return (
     <RowLayout
@@ -290,7 +292,7 @@ function Term({ feature, label }: { feature: ComparisonFeature; label: string })
           accessibilityRole="button"
           accessibilityLabel={label}
           accessibilityHint={t('planComparison.hint')}
-          hitSlop={8}
+          hitSlop={TERM_HIT_SLOP}
           testID={`plan-comparison-term-${feature}`}
         >
           <Text size="b4" shade={8} lineBreakStrategyIOS="hangul-word">

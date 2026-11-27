@@ -8,8 +8,7 @@ import { type Consent } from '@src/features/identity/consent/domains/consent.mod
 import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/queries/consent-query-keys';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { Button, OverlayProvider } from '@src/shared/ui';
+import { Button } from '@src/shared/ui';
 import {
   createAnalyticsStub,
   createErrorReporterStub,
@@ -81,26 +80,21 @@ async function renderStart({
     );
   }
 
-  await renderScreen(
-    <LocalDateProvider>
-      <OverlayProvider>
-        <StartProbe />
-      </OverlayProvider>
-    </LocalDateProvider>,
-    {
-      di: createTestDi({
-        ports: {
-          httpClient,
-          syncStorage,
-          speechRecognizer,
-          analytics,
-          errorReporter: createErrorReporterStub(),
-          logger,
-          queryClient,
-        },
-      }),
-    },
-  );
+  await renderScreen(<StartProbe />, {
+    di: createTestDi({
+      ports: {
+        httpClient,
+        syncStorage,
+        speechRecognizer,
+        analytics,
+        errorReporter: createErrorReporterStub(),
+        logger,
+        queryClient,
+      },
+    }),
+    withLocalDate: true,
+    withOverlay: true,
+  });
 
   return { speechRecognizer, analytics, httpClient };
 }

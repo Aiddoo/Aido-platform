@@ -1,10 +1,14 @@
 import {
+  changePasswordResponseSchema,
   deleteAccountResponseSchema,
+  forgotPasswordResponseSchema,
   linkedAccountsResponseSchema,
+  resendVerificationResponseSchema,
+  resetPasswordResponseSchema,
 } from '@aido/api/contracts/auth/v1';
 import type { ErrorCodeType } from '@aido/api/errors';
-import { ApiError } from '@src/core/errors/api-error';
 import type { AppleSignInResult } from '@src/core/ports/social-auth-gateway';
+import { createApiError } from '@src/testing/api-error';
 import { defineFixture } from '@src/testing/fixture';
 
 import { authTokensEnvelopeSchema, registerEnvelopeSchema } from '../schemas/auth-response.schema';
@@ -30,6 +34,23 @@ export const createDeleteAccountDto = defineFixture(deleteAccountResponseSchema,
   gracePeriodDays: 30,
 });
 
+export const createChangePasswordDto = defineFixture(changePasswordResponseSchema, {
+  message: '비밀번호가 성공적으로 변경되었습니다.',
+});
+
+export const createForgotPasswordDto = defineFixture(forgotPasswordResponseSchema, {
+  message: '등록된 이메일인 경우 비밀번호 재설정 코드가 발송됩니다.',
+});
+
+export const createResetPasswordDto = defineFixture(resetPasswordResponseSchema, {
+  message: '비밀번호가 성공적으로 변경되었습니다.',
+});
+
+export const createResendVerificationDto = defineFixture(resendVerificationResponseSchema, {
+  message: '인증 코드를 다시 보냈습니다.',
+  email: 'test@example.com',
+});
+
 export const createLinkedAccountsDto = defineFixture(linkedAccountsResponseSchema, {
   accounts: [
     {
@@ -51,11 +72,10 @@ export const createLinkedAccountsDto = defineFixture(linkedAccountsResponseSchem
 export function createAuthApiError(
   overrides?: Partial<{ code: ErrorCodeType; message: string; status: number }>,
 ) {
-  return new ApiError(
-    overrides?.code ?? 'AUTH_0101',
-    overrides?.message ?? '인증 오류',
-    overrides?.status ?? 401,
-  );
+  return createApiError(overrides?.code ?? 'AUTH_0101', {
+    message: overrides?.message ?? '인증 오류',
+    status: overrides?.status ?? 401,
+  });
 }
 
 export function createAppleSignInSuccess(): AppleSignInResult {

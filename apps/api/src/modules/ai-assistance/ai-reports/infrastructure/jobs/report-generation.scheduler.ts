@@ -12,8 +12,7 @@ import { runInBackground } from "#api/platform/jobs/non-blocking-init";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { instantToDate, toIsoString } from "#api/shared/domain/time/instant";
-import { resolveTimezone } from "#api/shared/domain/time/timezone-name";
-import { Timezone } from "#api/shared/domain/time/timezone.vo";
+import { resolveDeliveryTimezone } from "#api/shared/domain/time/timezone-name";
 
 import { AiGenerationLogEvent } from "../../../ai-generations/application/ai-generations.log-events.js";
 import type { ReportType } from "../../domain/ai-reports.constants.js";
@@ -90,7 +89,7 @@ export class ReportGenerationScheduler implements OnModuleInit {
       fetchPage: (cursor, take) => this.#findRecipientPage(cursor, take),
       onBatch: async (batch) => {
         const due = batch.flatMap((user) => {
-          const timezone = resolveTimezone(user.timezone ?? Timezone.SEOUL.value);
+          const timezone = resolveDeliveryTimezone(user.timezone);
           return isInReportDispatchWindow(type, dispatchedAt, timezone) ? [{ user, timezone }] : [];
         });
         if (due.length === 0) {

@@ -8,7 +8,7 @@
 인스타그램처럼 할 일 본문 아래에서 댓글을 훑고, 답글은 그 자리에서 펼치고, 답글 달기·수정은 화면 이동 없이
 키보드 위 작성 바에서 끝낸다.
 
-- 단계는 **댓글 → 답글** 두 개뿐이다. 답글에 답하면 같은 묶음 끝에 붙고 본문 앞에 `@이름`이 붙는다.
+- 단계는 **댓글 → 답글** 두 개뿐이다(답글 깊이 1단). 답글에 답하면 서버가 같은 묶음 끝에 붙이고 누구에게 답했는지는 `replyTo`(본문 앞 `@이름`)로만 준다. 트리가 오지 않으니 재귀로 그리지 않는다.
   들여쓰기는 최대 1단계라 답글 본문 폭이 모두 같다.
 - 화면은 `/todo/[todoId]` 하나다. 알림·링크로 여는 댓글 위치는 `?comment=<id>`다. 신고 시트는 `comments/[commentId]/report`다.
 - 모바일은 묶음·답글 수·대표 답글·참여자·권한·`@멘션` 이름을 다시 계산하지 않는다. 서버 read model(v2)을 그린다.
@@ -21,8 +21,9 @@
 | --------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
 | 서버 상태 | 묶음 페이지, 묶음별 답글 페이지, 할 일 상세          | TanStack Query 무한 쿼리 2종 + 상세 쿼리                                                                      |
 | URL 상태  | 정렬 `sort`, 알림·링크로 연 위치 `comment`           | `todoCommentParamsSchema` 읽기 훅 `useTodoCommentParams`와 세터 `useTodoCommentSort`(`comment`를 함께 지운다) |
-| 작성기    | 모드(`new`·`reply`·`edit`)와 대상, 이어 쓰기 입력값  | `TodoCommentSession`이 가진 `useForm` 하나. 하위는 `useWatch`·`useFormState`                                  |
-| 펼친 묶음 | 묶음별 펼침 여부                                     | `TodoCommentExpansionProvider`(게시하면 작성 바가 그 묶음을 펼친다)                                           |
+| 작성기    | 모드(`new`·`reply`·`edit`)와 대상, 이어 쓰기 입력값  | `TodoCommentPane`의 세션이 가진 `useForm` 하나. 하위는 `useWatch`·`useFormState`                              |
+| 펼친 묶음 | 묶음별 펼침 여부                                     | `TodoCommentExpansionProvider`의 저장소. 묶음은 `useThreadExpansion(id)`로 자기 값만 구독한다                 |
+| 강조      | 알림·링크로 연 댓글 하나(1.6초)                      | `TodoCommentRevealProvider`의 저장소. 행은 `useIsTodoCommentHighlighted(id)`로 자기 것만 구독한다             |
 | 클라 계산 | 상대 시간, 좋아요 ±1, 더블탭 애니메이션, 키보드 위치 | `useMinuteNow`, `TodoCommentPolicy`, Reanimated shared value                                                  |
 
 전체 화면과 펼친 피드 칸은 같은 조각을 각자 route에 나열한다. 화면 URL은 `/todo/42?sort=LATEST&comment=cm_1`,
@@ -40,27 +41,35 @@ pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾸고,
 
 ## 모델과 Policy
 
-`domains/todo-comment.model.ts`가 앱 모델과 규칙을 소유하고, `apis/todo-comment.mapper.ts`가 계약 DTO를 모델로 바꾼다.
+댓글은 `domains/todo-comment.model.ts`(`TodoCommentPolicy`), 묶음과 페이지는 `domains/todo-comment-thread.model.ts`(`TodoCommentThreadPolicy`)가 모델과 규칙을 소유하고, `apis/todo-comment.mapper.ts`가 계약 DTO를 모델로, 폼 값을 요청으로 바꾼다.
 
 - zod: 모델 스키마는 `domains/`에서 앱 모양으로 직접 정의하고 시각은 `Instant`다. `schemas/`는 폼·params·초안·요청 모양만 둔다.
   계약(`@aido/api/contracts/todo-comment/v<n>`)은 `apis/`와 `schemas/`만 import한다(dependency-cruiser가 검사).
-- 이름 있는 순수 함수와 `TodoCommentPolicy` Facade(키 = 함수 이름)
-  - 표시: `getDisplayState(active | deleted | blockedAuthor)`, `isReply`
+- `TodoCommentPolicy` 메서드(댓글 하나)
+  - 표시: `getDisplayState(active | deleted | blockedAuthor)`, `isActive`, `isReply`
   - 권한: `canLikeComment`, `canReplyToComment`, `canEditComment`, `canDeleteComment`, `canDeleteOnlyAsTodoOwner`,
-    `canCopyComment`, `canReportComment`, `canBlockCommentAuthor`, `hasCommentActions`, `isTombstonedOnDelete`
-  - 묶음: `getHiddenReplyCount`, `hasRepliesToShow`, `flattenThreads`, `flattenReplies`, `findCommentInThread`
-  - 캐시 변환: `withLiked`, `withLikeResult`, `withContentEdited`, `withReplyAdded`, `withCommentRemoved`, `withRepliesRemoved`
+    `canCopyComment`·`findCopyableContent`, `canReportComment`, `canBlockCommentAuthor`, `hasCommentActions`, `isTombstonedOnDelete`
+  - 캐시 변환: `withLiked`, `withLikeResult`, `withContentEdited`, `withTombstoned`
+- `TodoCommentThreadPolicy` 메서드(묶음 하나)
+  - 답글 수: `getHiddenReplyCount`, `getCollapsedHiddenReplyCount`, `hasRepliesToShow`
+  - 찾기: `findCommentInThread`, `findAnchoredReplyId`(알림으로 연 위치가 이 묶음의 답글인지)
+  - 캐시 변환: `withReplyAdded`, `withCommentRemoved`
+- 페이지를 한 목록으로 펴는 일(`flattenThreadPages`·`flattenReplyPages`)은 `queries/todo-comment-pages-cache.ts`가 하고 쿼리 `select`가 부른다.
 - 화면 상태인 답글 아래 줄(`getReplyFooter`)과 펼침(`expandThread`)은 `utils/todo-comment-replies.view-model.ts`에 둔다.
 - 화면 분기는 `getDisplayState`·`getReplyFooter`를 ts-pattern으로만 나눈다. 개수와 숨김을 화면에서 다시 세지 않는다.
 
-`domains/todo-comment-composer.model.ts`(`TodoCommentComposerPolicy`)는 작성 규칙만 맡는다. 이어 쓰기, 뒤로가기 판단,
-바뀐 글 판정(`isSameAsOriginal`, 같으면 PATCH하지 않는다), 제출 준비(멱등 키 재사용)가 있다. 모드 union·폼 스키마·폼 값은
-`schemas/todo-comment-form.schema.ts`, 초안 키와 원본 시각은 `utils/todo-comment-draft.ts`에 있다.
+`domains/todo-comment-composer.model.ts`는 작성기가 하는 일(새 댓글·답글·수정과 그 대상)인 `TodoCommentComposer`와 작성 규칙
+(`TodoCommentComposerPolicy`)만 맡는다. 대상 찾기, 이어 쓰기, 뒤로가기 판단, 바뀐 글 판정(`isUnchanged`, 같으면 PATCH하지 않는다)이
+있다. 보낼 글은 앞뒤 공백을 지운 값(`getTrimmedContent`)이고 빈 칸 판정(`isBlankContent`)이 그것으로 정해진다. 폼 값을 요청으로
+바꾸는 일과 멱등 키 재사용(`toTrimmedContents`·`toTodoCommentChainSubmission`)은 mapper, 폼 스키마·폼 값은
+`schemas/todo-comment-form.schema.ts`(작성기 상태는 모델 스키마로 검사한다), 칸을 지운 뒤 포커스가 갈 칸은
+`utils/todo-comment-form.view-model.ts`, 초안 키와 원본 시각은 `utils/todo-comment-draft.ts`에 있다.
 
 ## 화면 조립
 
 ```tsx
-// components/todo-comment-pane.tsx. 상세 화면은 네이티브 헤더, 펼친 피드 칸은 직접 그린 제목 줄을 titleBar로 넘긴다
+// components/todo-comment-pane.tsx. 상세 화면은 네이티브 헤더, 펼친 피드 칸은 직접 그린 제목 줄을 titleBar로 넘긴다.
+// 세션·볼 수 없음 가드·키보드 제스처·작성 바는 이 칸만 써서 같은 파일의 지역 컴포넌트다
 <TodoCommentSession onExit={onExit}>
   {titleBar}
 
@@ -86,31 +95,32 @@ pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾸고,
 
 - 본문·댓글·작성 바는 같은 상세 조회를 읽어 기다림 경계(`Suspense`)가 하나다. 경계 여럿이 함께 기다리다 한쪽만 다시 그려지면 React 19.3이 서로의 재시도를 번갈아 그려 응답 전까지 렌더가 끝나지 않는다(개발 번들에서 토큰 만료 뒤 상세를 열 때 재현). fallback(`TodoCommentPane.Loading`)에는 경계도 Suspense 조회도 두지 않고, 댓글 목록 오류만 안쪽 `QueryErrorBoundary`가 받아 작성 바는 남긴다. 목록 머리가 본문(상세)을 그려 안쪽 경계는 다시 시도 범위를 칸과 함께 쓰고(`resetScope="parent"`), 상세 오류는 안쪽 fallback의 머리가 다시 던져 칸 경계 한 곳이 받는다. 범위가 갈리면 칸 전체 오류의 다시 시도가 상세를 다시 받지 않는다.
 - 화면은 `todoId`를 props로 넘기지 않는다. 블록 컴포넌트가 `const [todoId] = useTodoId()`로 읽고, 가상 목록의 댓글·답글 행은 route 훅을 부르지 않고 댓글 모델의 `todoId`를 읽는다(Oxlint `aido/no-route-id-props`가 검사).
-- 스크롤은 `TodoCommentThreadList`의 `FlashList` 하나다. `renderScrollComponent`로 `KeyboardChatScrollView`를 쓰고,
+- 스크롤은 `TodoCommentThreadList`의 `FlashList` 하나다. `renderScrollComponent`로 `KeyboardChatScrollView`(같은 파일의 지역 `KeyboardScrollView`)를 쓰고,
   할 일 본문·댓글 수와 정렬(`TodoCommentThreadList.Header`·`.Toolbar`)·더블탭 안내·이전 댓글 보기는 `ListHeaderComponent`다. 묶음 행만 가상화하고 답글은 그 행 안에 그린다.
-- 정렬을 바꾸면 새 정렬의 첫 페이지를 미리 받은 뒤 URL을 바꿔 목록이 fallback으로 빠지지 않는다. 목록 `key`에는 정렬을 넣지 않는다(다시 마운트하면 FlashList가 다시 재는 동안 행이 빈다). FlashList가 보던 첫 행 자리를 지키려 옮긴 스크롤은 같은 커밋에서 맨 위로 되돌린다.
+- 정렬을 바꾸면 새 정렬의 첫 페이지를 미리 받은 뒤 URL을 바꿔 목록이 fallback으로 빠지지 않는다. 미리 받지 못하면(서버 장애) 정렬은 바꾸고 목록 자리에 실패와 다시 시도를 보인다. 오프라인이면 미리 받기가 멈춰 연결될 때까지 정렬 버튼이 기다리고 보던 목록은 그대로다. 목록 `key`에는 정렬을 넣지 않는다(다시 마운트하면 FlashList가 다시 재는 동안 행이 빈다). FlashList가 보던 첫 행 자리를 지키려 옮긴 스크롤은 같은 커밋에서 맨 위로 되돌린다.
 - 할 일을 볼 수 없으면(`TodoAvailabilityGuard`, `TODO_0801`) 본문·댓글 대신 `TodoDetailSummary.Unavailable` 하나만 보인다.
-- `TodoDetailSummary`는 `Owner`(친구 할 일만) → `Task`(체크와 제목 t3) → `Schedule`(시간·반복·카테고리·날짜) → `SubTodos` → `Metrics`(조회수는 여기 한 곳) 순서다. 구분선은 카드와 댓글 사이 하나, 댓글 수와 정렬은 한 줄이다.
-- 체크는 내 할 일(`permissions.canEdit`)만 기존 토글 mutation으로 눌리고 친구 할 일은 읽기 전용이다. 상세는 피드 날짜를 몰라 `TodoPolicy.getOptimisticListDate`로 고칠 목록을 고른다.
+- `TodoDetailSummary`는 `Owner`(친구 할 일만) → `Task`(체크와 제목 t3) → 일정 줄(시간·반복·카테고리·날짜, 할 일 기능의 `TodoDetailSchedule`) → `SubTodos` → `Metrics`(조회수는 여기 한 곳) 순서다. 구분선은 카드와 댓글 사이 하나, 댓글 수와 정렬은 한 줄이다.
+- 체크는 내 할 일(`permissions.canEdit`)만 기존 토글 mutation으로 눌리고 친구 할 일은 읽기 전용이다. 상세는 피드 날짜를 몰라 `todo-cache`의 `getOptimisticListDate`로 고칠 목록을 고른다.
 - 상세 응답에는 반복 규칙이 없다. 내 반복 할 일은 시작일 목록에서 규칙을 읽어 요약하고, 친구 할 일과 받기 전에는 "반복"만 보인다.
 
 ## 묶음과 답글
 
-- `ThreadRow` = 댓글 행 + `TodoCommentReplies`.
+- 묶음 행(`TodoCommentThreadList.Item`) = 댓글 행 + 답글(`TodoCommentThreadList.Replies`). 댓글과 답글은 같은 `TodoCommentItem`으로 그리고, 더 보기·숨기기·다시 보기와 "이전 댓글 보기"는 같은 `TodoCommentItem.More`다.
 - 접힘: 서버의 대표 답글 1개와 "답글 N개 더 보기"(대표 답글이 없으면 "답글 N개 보기").
 - 펼침: 답글 첫 페이지(10개)를 그 자리에 붙이고, 아래 줄은 `getReplyFooter`가 정한다.
   - 다음 페이지에 남은 답글이 있으면 "답글 N개 더 보기"(`viewMore`)
   - 사용자가 펼쳤고(`source: 'user'`) 2개 이상 불러왔으면 "답글 숨기기"(`hide`)
   - 답글을 올려 앱이 펼쳤거나(`source: 'auto'`) 답글이 하나뿐이면 줄 없음(`none`). 이때 마지막 답글이 `isLast`라 선이 닫힌다.
-- 펼침 상태는 화면의 `TodoCommentExpansionProvider`가 `Map<threadCommentId, ThreadExpansion>`으로 든다. 사용자가 누르면
+- 펼침 상태는 화면의 `TodoCommentExpansionProvider`가 저장소(`Map<threadCommentId, ThreadExpansion>`)로 들고 묶음마다 자기 값만 구독해, 한 묶음을 펼쳐도 다른 묶음과 작성기는 다시 그려지지 않는다. 사용자가 누르면
   `source: 'user'`, 작성 바가 답글을 올리면 `expandThread(current, 'auto')`로 저장해 사용자가 직접 연
   묶음은 그대로 둔다. 알림으로 연 답글 묶음은 사용자가 고른 것이라 `user`로 시작한다.
   로딩 중에는 같은 높이의 답글 skeleton 1행을 둔다. 위 행은 움직이지 않는다.
 - 개수는 `formatCompactCount`로 줄여 쓴다("답글 1.2천개 보기"). 좋아요는 `IconCountButton countDisplay="compact"`라
   숫자가 바뀌어도 옆 "답글 달기"가 움직이지 않는다.
 
-### 연결선 (`TodoCommentRailRow`)
+### 연결선 (`TodoCommentItem`의 지역 `TodoCommentRailRow`)
 
+- 행이 연결선까지 그린다. 깊이는 `TodoCommentPolicy.isReply(comment)`로 정하고 부모는 `hasReplies`(댓글)·`isLast`(답글)만 넘긴다.
 - 기하는 글자 크기와 무관한 아바타 열(댓글 36, 답글 28)과 고정 여백에만 맞춘다. 텍스트 길이로 계산하지 않는다.
 - 댓글 행: 아바타 아래(top = 14 + 36 + 4)부터 행 bottom까지 세로선.
 - 답글·토글 행: 위에서 아바타 중심 높이까지 곡선, 마지막이 아니면 행 top~bottom 세로선. 마지막 행은 렌더 순서로 정한다.
@@ -124,7 +134,7 @@ pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾸고,
 - 묘비(`deleted`)·차단(`blockedAuthor`): 흐린 아바타 + 안내 문구. 좋아요·답글·`⋯` 없음.
 - `⋯`와 길게 누르기: 같은 heroui-native `Menu`에 `MenuActionItem`을 넣는다. 내 글은 수정·복사 / 삭제, 남의 글은 복사 / 신고·차단,
   내 할 일의 남의 글은 삭제도 보인다. 삭제는 항상 `useConfirmDialog`로 확인하고, 답글이 남는 댓글이면 묘비로 남는다고 안내한다.
-  복사는 공용 `useCopyToClipboard`(성공·실패 토스트와 실패 로그 키)를 쓴다.
+  복사는 공용 `useCopyToClipboard`(성공·실패 토스트와 실패 로그 키)를 쓴다. 길게 누르기 메뉴의 동작은 본문의 `accessibilityActions`에도 같은 이름으로 두어 스크린리더가 쓴다([Link](./architecture/state-and-routing.md#link)).
 
 ### 더블탭 하트
 
@@ -139,7 +149,7 @@ pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾸고,
 
 ## 작성 바와 키보드
 
-- `TodoCommentComposerBar`는 목록 아래 한 번 놓인다. `KeyboardStickyView`로 키보드를 따라가고, 아래 여백은
+- 작성 바(`TodoCommentPane`의 지역 `TodoCommentComposerBar`)는 목록 아래 한 번 놓인다. `KeyboardStickyView`로 키보드를 따라가고, 아래 여백은
   `useKeyboardHandler` worklet의 진행률로 바뀌어 JS 리렌더 없이 60fps로 붙는다(`KeyboardAdaptiveButton`과 같은 방식).
 - 키보드가 열린 채 작성기가 커지면 그 차이만큼 `extraContentPadding`으로 목록 끝을 올린다.
 - 답글 달기·수정: 폼을 `toReplyFormValues`·`toEditFormValues`로 reset하고 입력창에 focus한다. 키보드가 다 올라오면
@@ -156,14 +166,14 @@ pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾸고,
 
 - 키(`queries/todo-comment-query-keys.ts`): `all → todo(todoId) → threadLists → threads(sort, anchorCommentId)`, `… → replyLists → threadReplies(commentId) → replies(aroundReplyId)`.
 - 무효화·갱신은 `queries/todo-comment-cache.ts`만 거친다. 페이지 변환과 페이지 cursor는 `queries/todo-comment-pages-cache.ts` 순수 함수다.
-- 좋아요: `scope: todo-comment-like:<id>`로 같은 댓글 연타를 직렬화, `cancelQueries(todo)` → 묶음·답글 캐시 ±1.
+- 좋아요: 행마다 요청 관찰자는 하나이고(본문 두 번 탭과 하트 버튼이 함께 쓴다) `scope: todo-comment-like:<id>`로 같은 댓글 연타를 직렬화, `cancelQueries(todo)` → 묶음·답글 캐시 ±1.
   응답은 댓글마다 센 `likeComment` 키의 마지막만 서버 값으로 쓰고, 실패하면 마지막 하트만 되돌린 뒤 목록을 다시 받는다.
   앞 응답을 쓰면 뒤에 누른 하트가 깜빡인다.
 - 삭제: 낙관적으로 빼고(답글이 남은 댓글은 묘비, 마지막 답글을 잃은 묘비 묶음은 제거) 실패하면 그 댓글만 지운 자리에 되돌린다(`restoreTodoCommentToCaches`). 마지막 지우기가 끝나면 할 일 댓글 수만 다시 받는다.
-- 수정: 낙관적 본문 교체 후 마지막 수정만 글 칸(`content`·`isEdited`·`editedAt`)을 서버 값으로 확정, 실패하면 글 칸만 되돌린다.
+- 수정: 낙관적 본문 교체 후 혼자 끝난 수정만 글 칸(`content`·`isEdited`·`editedAt`)을 서버 값으로 확정, 실패하면 글 칸만 되돌린다. 겹친 수정은 응답 순서가 서버 처리 순서와 다를 수 있어 응답을 쓰지 않고 마지막 수정이 끝날 때 다시 받는다(`settleTodoCommentEdit`).
 - 캐시를 통째로 스냅샷해 되돌리지 않는다. 함께 누른 다른 하트·지운 댓글이 사라진다([낙관적 갱신](./architecture/data.md)).
 - 오류: 각 mutation의 `onError`는 롤백을 한다(`TODO_0833`·`TODO_0831` "이미 삭제된 댓글"이면 그 행을 캐시에서 빼 서버 상태에 맞춘다). 이미 삭제된 댓글과 연타(429)는 기능이 경고 토스트를 띄우고 `isHandledByFeature`로 전역에서 뺀다. 나머지 안내는 `meta.errorFeedback` 전역 피드백이 햅틱·토스트·Sentry를 한 번 처리한다([오류 처리](./error-handling.md#mutation-오류-피드백)). 삭제 확인 다이얼로그는 실패하면 남고, 이미 삭제된 댓글이면 닫힌다.
-- 알림으로 연 위치: `comment`가 있으면 anchor 페이지를 받아 그 묶음으로 옮기고(답글이면 펼쳐서) 1.6초 강조한다.
+- 알림으로 연 위치: `comment`가 있으면 anchor 페이지를 받아 그 묶음으로 옮기고(답글이면 펼쳐서) 1.6초 강조한다. 강조는 그 글의 줄만 구독해 켜지고 꺼져도 목록의 `renderItem`과 다른 행은 그대로다. 강조하는 동안 다른 위치를 받으면 그 위치로 다시 1.6초를 세고, 사라진 위치면 바로 끈다.
   `anchor: null`이면 "찾는 댓글이 삭제됐거나…" 토스트 후 목록 맨 위.
 
 ## 분석
@@ -172,6 +182,7 @@ pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾸고,
 
 ## 검증
 
-- 단위: model/Policy, composer, 비자명한 mapper, `queries/*-cache`(페이지 고치기·cursor), route/back, draft(위치는 Oxlint `aido/todo-comment-test-location`이 검사).
+- 단위: model/Policy(댓글·묶음·작성기), 비자명한 mapper, `queries/*-cache`(페이지 고치기·펴기·cursor), draft(위치는 Oxlint `aido/todo-comment-test-location`이 검사).
+- 다시 그리는 범위: `hooks/use-todo-comment-expansion.test.tsx`(펼친 묶음만), `hooks/use-todo-comment-reveal.test.tsx`(강조한 댓글만). 화면 흐름은 `__tests__/todo-detail-screen.test.tsx`, 묶음 흐름(알림 위치·펼치기·스크린리더 동작)은 `__tests__/todo-comment-thread.flow.test.tsx`다.
 - native: iOS·Android에서 목록, 펼치기·더 보기·숨기기, 답글 달기(키보드 위 대상 행), 게시 후 위치, 수정·삭제·신고·차단,
   묘비·긴 이름·큰 숫자, 더블탭(동작 줄이기·연타·이미 좋아요), 알림 위치(`?comment=`), pane, 라이트·다크, 글자 크기 xsmall~xlarge, ko·en.

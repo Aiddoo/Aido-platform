@@ -11,7 +11,7 @@ import { AdaptivePane } from '@src/shared/ui';
 iPadOS 26+에서 NativeTabs(`preferredPlacement="automatic"`) 사이드바는 탭 폭을 줄이지 않고 탭 안 화면의 왼쪽 safe area inset으로 온다(iPad Pro 13인치 iPadOS 27 가로에서 280pt). iPhone Duo 레일(84pt)도 inset이다. 폭만 보고 나누면 사이드바가 열린 가로 iPad에서 목록 칸 400pt 중 280pt가 inset으로 빠져 목록이 120pt로 짓눌린다. NativeTabs는 탭 바·사이드바 배치를 알려 주지 않는다(Expo 문서: "We're working on a layout function to provide more detailed layout info in the future"). 그래서 탭 Stack을 `PaneArea`로 감싸 react-native-safe-area-context의 `SafeAreaProvider`가 잰 탭의 폭(`useSafeAreaFrame`)과 좌우 inset(`useSafeAreaInsets`)을 쓴다. 규칙은 `WindowLayoutPolicy`(`shared/ui/adaptive-pane/window-layout.ts`)에 있다.
 
 - `PaneArea`: 할 일·메모·마이 탭의 Stack 레이아웃이 감싼다. 탭 위에 여는 화면(날씨 등)은 사이드바가 없어 감싸지 않고 창 폭을 쓴다.
-- `usePaneSizeClass()`: 좌우 inset을 뺀 내용 폭으로 칸을 나눌지, 고른 항목을 칸에 열지 push할지(`useFeedSelectedTodoId`·`useSelectedMemoId`·`useOpenDetailWhenCompact`·마이 탭 메뉴)를 정한다. 같은 값을 봐야 칸은 하나인데 고른 항목이 칸에 열리는 어긋남이 없다.
+- `usePaneSizeClass()`: 좌우 inset을 뺀 내용 폭으로 칸을 나눌지, 고른 항목을 칸에 열지 push할지(`useOpenFeedTodoDetail`·`useSelectedMemoId`·`useOpenDetailWhenCompact`·마이 탭 메뉴)를 정한다. 같은 값을 봐야 칸은 하나인데 고른 항목이 칸에 열리는 어긋남이 없다.
 - 빼는 inset은 칸 자리를 차지하는 것(iOS의 iPad 사이드바·iPhone Duo 레일)뿐이다. Android 좌우 inset은 시스템 바·컷아웃이라 칸 안에서 피하고 크기 등급은 예전처럼 탭(창) 폭으로 정한다(펼친 Pixel Fold 841dp에 컷아웃 1dp씩이 와도 `expanded`). 모델은 OS를 모르고 `PaneArea`가 `insetsOccupyPane`으로 넘긴다.
 - 펼친 iPhone Duo는 레일(84pt)을 뺀 폭으로 정해 창 폭이 600/840 경계 바로 위면 한 단계 아래(`medium`·`compact`)가 될 수 있고, 레일이 옮겨 가면 경계를 넘나든다. 레일이 칸 자리를 차지하므로 의도한 동작이다.
 - `usePaneColumns()`: 두 칸인지와 목록 칸 폭이다. 목록 칸은 내용 320/400에 닿는 가장자리의 사이드바·레일 inset을 더한다(Android inset은 더하지 않는다). 접힘선이 있으면 접힘선 x, 한 칸이면 영역 전체다. `AdaptivePane`·마이 탭 칸·달력·날씨 배경이 쓴다.
@@ -31,9 +31,9 @@ iPadOS 26+에서 NativeTabs(`preferredPlacement="automatic"`) 사이드바는 �
 - 첫 프레임에는 그 pane이 닿는 가장자리의 창 inset만 `initialMetrics`로 준다(`getPaneEdgeInsets`, RTL이면 좌우를 바꾼다). 네이티브 측정 전에 레일 반대쪽 pane이 84pt 들여 그려졌다가 튀는 시프트를 막는다.
 - 컨테이너는 가로 inset을 적용하지 않는다. pane 내용이 스스로 피한다: 스크롤 내용은 `<StyledSafeAreaView edges={['left', 'right']}>`로 감싸고(스크롤바와 배경은 가장자리까지), 고정 헤더·하단 버튼·빈 상태는 그 컨테이너에 `left`/`right`를 둔다. react-native-safe-area-context의 `SafeAreaView`는 가장 가까운 네이티브 provider의 inset을 쓰므로 같은 축의 `SafeAreaView`를 중첩하지 않는다(중복 패딩). JS `SafeAreaInsetsContext`로 바꾼 값은 보지 않는다([칸 안의 safe area](#칸-안의-safe-area)).
 - 목록 칸 내용 폭은 size class별 최소 목록 폭(320/400)이고, 닿는 가장자리의 inset은 칸 바깥쪽에 더한다. 상세 pane은 남은 폭을 채운다. 기기별 고정 폭이 아니라 탭 안 내용 폭 기준이다.
-- 반쯤 접어 세로 접힘선(reserved region `division`)이 생기면 목록 폭을 접힘선의 `frame.x`에 맞추고 접힘선 폭만큼 비운다. `AdaptivePane`이 `ReservedRegionsProvider`로 자기 좌표계를 만들고, 접힘선은 `findVerticalFold`로 찾는다.
+- 반쯤 접어 세로 접힘선(reserved region `division`)이 생기면 목록 폭을 접힘선의 `frame.x`에 맞추고 접힘선 폭만큼 비운다. `AdaptivePane`이 `PaneRegionsProvider`로 자기 좌표계를 만들고, 접힘선은 `findVerticalFold`로 찾는다. Android는 칸이 창 왼쪽 끝에서 시작해 앱 루트 provider의 좌표를 그대로 쓴다(Android의 가림 영역 뷰는 처음 붙을 때 이벤트를 동기로 보내, 화면을 그리는 중에 새로 붙으면 앱이 죽는다).
 - 펼친 화면에서 고른 항목은 URL param으로 상세 pane에 보여 준다. 접히면 항상 렌더링되는 목록 pane에서 `useOpenDetailWhenCompact(selectedId, openDetail)`로 상세 라우트에 넘긴다. 훅은 `useIsFocused`로 앞에 보이는 화면에서만 동작하므로, 뒤에 남아 있는 다른 탭은 push하지 않는다.
-- 목록 밖(푸시·알림함 행)에서 여는 항목도 같은 기준을 따른다. 할 일은 `toTodoDetailRoute(windowSizeClass, …)`가 접힌 화면이면 `/todo/[todoId]`, 펼친 화면이면 `/feed?todoId=`(피드 상세 pane)를 고른다. 알림이 할 일 주인·날짜(`routing.todoOwnerId`·`todoDate`)를 실으면 목록 pane도 그 사람(친구면 `friendId`)의 그 `date` 피드로 연다. 없는 예전 알림은 내 피드 기본 날짜다.
+- 목록 밖(푸시·알림함 행)에서 여는 항목도 같은 기준을 따른다. 할 일은 `toTodoDetailRoute(windowSizeClass, …)`가 접힌 화면이면 `/todo/[todoId]`, 펼친 화면이면 `/feed?todoId=`(피드 상세 pane)를 고른다. 알림 `navigation`이 할 일 주인·날짜(`todoOwnerId`·`todoDate`)를 실으면 목록 pane도 그 사람(친구면 `friendId`)의 그 `date` 피드로 연다. 싣지 않은 알림은 내 피드 기본 날짜다.
 - 하단 탭 바 높이를 가정한 여백을 두지 않는다.
 - 목록 pane은 size class와 무관하게 같은 트리 슬롯에 둔다. 접기/펼치기에서 다시 마운트되지 않아 스크롤·입력 상태가 유지된다.
 - 창을 끌거나 사이드바를 여닫는 동안 폭이 프레임마다 바뀐다. 폭마다 다시 만들어야 하는 무거운 부품(달력 쪽 목록)은 `useDeferredValue`로 늦춰 다른 그리기를 막지 않는다. 늦춘 동안에는 옛 폭의 부품이 새 폭 안에 남는다. 그래서 그 부품이 보내는 위치(스크롤 끝 쪽)는 잰 폭이 같을 때만 믿고, 다시 만들 때는 옛 부품의 위치가 아니라 상태(고른 날짜)에서 시작한다. inset 패딩은 네이티브가 바로 적용하고 JS가 정하는 칸 폭은 다음 그리기에 따라온다(React Native는 UIKit 사이드바 애니메이션 안에서 배치하지 않는다).
@@ -51,7 +51,7 @@ iPadOS 26+에서 NativeTabs(`preferredPlacement="automatic"`) 사이드바는 �
 - `(me)/_layout`의 `unstable_settings.anchor = 'mypage/index'`라 꺼진 앱에서 링크·푸시로 하위 화면을 바로 열어도 아래에 메뉴가 깔려 뒤로 가면 메뉴다. 탭 레이아웃은 `anchor = '(todos)'`로 탭 위 화면 링크가 할 일 탭 위에 열리게 한다.
 - 마이 탭에서 연 하위 화면만 마이 탭에 쌓인다. 할 일·메모 탭에서 연 같은 화면은 그 탭에 쌓이고 뒤로 가면 누른 화면이다(NativeTabs는 처음부터 모든 탭을 띄워 탭마다 첫 화면이 아래에 있다). 탭 위 흐름에서 탭 안 화면으로 떠날 때는 `dismissToTab`(`shared/navigation/open-entry-href.ts`)으로 탭을 새로 쌓지 않고 아래 보던 탭에 연다.
 - 업셀 결제는 예외로 지금 맥락 위 모달(`/paywall`, `(app)/paywall.tsx`)로 연다. 마이 탭 메뉴·푸시는 `/settings/subscription` 그대로이고, 두 라우트는 `bootstrap/navigation/subscription-checkout.tsx`를 함께 그린다.
-- 넓은 화면 옵션은 `getMyPageDetailOptions`(`features/identity/user/utils/my-page-detail-options.view-model.ts`)가 정하고, 메뉴가 걷고 바로 연 경로는 DI의 `myPageDetailRootStore`가 넘긴다. 첫 상세는 메뉴가 고른 화면이라 뒤로 가기·스와이프 없이 애니메이션 없이 바꾼다. 두 번째 단계부터는 네이티브 헤더의 뒤로 가기이고, 밀어 넣지 않고 `fade`로 겹쳐 바꾼다(스와이프도 같은 애니메이션, `animationMatchesGesture`). 메뉴 칸이 화면마다 같은 자리에 있어 상세만 바뀌어 보인다.
+- 넓은 화면 옵션은 마이 탭 Stack의 지역 훅 `useMyPageDetailOptions`(`bootstrap/navigation/my-page-stack.tsx`)가 구독한 루트 내비게이션 상태에서 화면의 자리로 정한다(메뉴가 걷고 바로 연 화면도 같은 렌더에서 첫 상세다). 첫 상세는 메뉴가 고른 화면이라 뒤로 가기·스와이프 없이 애니메이션 없이 바꾼다. 두 번째 단계부터는 네이티브 헤더의 뒤로 가기이고, 밀어 넣지 않고 `fade`로 겹쳐 바꾼다(스와이프도 같은 애니메이션, `animationMatchesGesture`). 메뉴 칸이 화면마다 같은 자리에 있어 상세만 바뀌어 보인다.
 - 메뉴 이동은 메뉴 칸의 `MyPageMenuNavigationProvider`가 정한다(`useMyPageMenuNavigate`·`useIsMyPageMenuItemSelected`). 좁은 화면은 push, 넓은 화면은 쌓인 화면을 걷고(`dismissAll`) 고른 화면 하나를 연다. 메뉴 칸이 그리는 항목이 `router.push` 등으로 직접 이동하면 Oxlint `aido/my-page-menu-navigation`이 거부한다.
 - 종은 마이 탭 첫 화면 헤더의 `NotificationBellToolbar`(`Stack.Toolbar`) 한 곳이다. 종으로 연 알림함(함께 쓰는 화면)은 넓은 화면에서 메뉴가 고른 화면처럼 첫 상세로 열려 뒤로 가기 없이 메뉴 칸 옆에 놓이고, 메뉴 항목을 누르면 바뀐다.
 - 메뉴는 쌓인 화면마다 그려지고 `useMyPagePaneLayout`이 스크롤 위치를 넘긴다. 앞에 보이는 화면의 메뉴만 위치를 저장하고, 새로 그린 메뉴는 내용·보이는 높이가 바뀔 때마다 저장된 위치로 다시 맞춘다. 그래서 화면을 쌓거나 접고 펴도 메뉴가 같은 자리다.

@@ -4,7 +4,7 @@ import { useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-quer
 import { noop } from 'es-toolkit';
 import { Tabs } from 'heroui-native';
 
-import { useInvitedFriendsView } from '../hooks/use-invited-friends-view';
+import { useInvitedFriendsView } from '../hooks/use-invite-params';
 import {
   useGetInviteQueryOptions,
   useGetInvitedFriendCountInfiniteQueryOptions,

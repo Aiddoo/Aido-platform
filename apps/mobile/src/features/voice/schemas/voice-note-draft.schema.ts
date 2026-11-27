@@ -1,8 +1,8 @@
 import { memoize } from 'es-toolkit';
 import { z } from 'zod';
 
+import type { PlanReviewDraft } from '../domains/plan-review-draft.model';
 import { voiceNoteSchema } from '../domains/voice-note.model';
-import type { PlanReviewDraft } from '../domains/voice-plan.model';
 import { createPlanReviewDraftSchema } from './plan-review-form.schema';
 
 // 고친 카드를 통째로 읽지 못하면 글자와 요약은 살리고 이 칸만 비워 화면이 알리게 한다

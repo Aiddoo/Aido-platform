@@ -16,6 +16,7 @@ import {
   Box,
   LineTabTrigger,
   QueryErrorBoundary,
+  QueryErrorFallback,
   ReadableContent,
   SegmentTabTrigger,
   StyledSafeAreaView,
@@ -89,7 +90,7 @@ export default function NotificationsScreen() {
               <>
                 {/* 안 읽은 수와 모두 읽음은 모든 분류를 합친 값이라 전체 탭에만 둔다. 벨과 같은 수를 읽어 벨을 거쳐 오면 값이 이미 있고, 0이면 줄 자체가 없으니 자리를 잡지 않는다 */}
                 {category === NOTIFICATION_CATEGORY.ALL && (
-                  <QueryErrorBoundary fallback={() => null}>
+                  <QueryErrorBoundary fallback={QueryErrorFallback.Hidden}>
                     <Suspense fallback={null}>
                       <UnreadNotificationCard className="mx-4 my-2" />
                     </Suspense>

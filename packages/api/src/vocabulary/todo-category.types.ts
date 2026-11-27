@@ -1,3 +1,8 @@
+/** 카테고리 이름 길이(앞뒤 공백 제외). 요청 검증·DB 칸·앱 입력 자르기가 같은 값을 쓴다 */
+export const TODO_CATEGORY_LIMITS = {
+  NAME_MAX_LENGTH: 50,
+} as const;
+
 export const hexColorRegex = /^#[0-9A-Fa-f]{6}$/;
 export const REORDER_POSITIONS = ["before", "after"] as const;
 export type ReorderPosition = (typeof REORDER_POSITIONS)[number];

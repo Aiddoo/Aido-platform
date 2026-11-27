@@ -1,10 +1,38 @@
+import { toInstant } from '@src/shared/date/instant';
 import { createDateKey } from '@src/testing/date-key';
 
 import {
-  createWidgetSnapshotContext,
+  createWidgetDaySnapshot,
   createWidgetSummary,
 } from '../__tests__/widget-snapshot.fixtures';
-import { toLoggedOutWidgetSnapshot, toWidgetSnapshot } from './widget-snapshot.mapper';
+import {
+  toLoggedOutWidgetDaySnapshot,
+  toWidgetDaySnapshot,
+  toWidgetSnapshot,
+  type WidgetDayCopy,
+} from './widget-snapshot.mapper';
+
+const { strings: STRINGS, weekDays: WEEK_DAYS = [] } = createWidgetDaySnapshot({
+  weekDays: [
+    createDateKey('2026-07-12'),
+    createDateKey('2026-07-13'),
+    createDateKey('2026-07-14'),
+    createDateKey('2026-07-15'),
+    createDateKey('2026-07-16'),
+    createDateKey('2026-07-17'),
+    createDateKey('2026-07-18'),
+  ].map((date) => ({
+    date,
+    weekdayLabel: '일',
+    dayLabel: '12',
+    isComplete: false,
+    hasTodos: false,
+  })),
+});
+const COPY: WidgetDayCopy = {
+  strings: STRINGS,
+  week: { days: WEEK_DAYS, title: '7월 3주차', rangeLabel: '07.12 ~ 07.18' },
+};
 
 describe('toWidgetSnapshot', () => {
   it('요약을 data 상태 스냅샷으로 변환한다', () => {
@@ -12,7 +40,10 @@ describe('toWidgetSnapshot', () => {
     const summary = createWidgetSummary();
 
     // When
-    const document = toWidgetSnapshot({ today: summary }, createWidgetSnapshotContext());
+    const document = toWidgetSnapshot(
+      [toWidgetDaySnapshot(summary, COPY, 'ko')],
+      toInstant('2026-07-12T09:00:00.000Z'),
+    );
     const [snapshot] = document.days;
 
     // Then
@@ -27,36 +58,38 @@ describe('toWidgetSnapshot', () => {
     expect(snapshot.topTodos).toHaveLength(2);
     expect(snapshot.locale).toBe('ko');
   });
+});
 
-  it('내일 요약을 받으면 오늘 다음 day로 함께 담고 각 날짜의 주간 달력을 만든다', () => {
-    // Given
-    // 토요일 다음 날은 새 주의 일요일이다
-    const today = createWidgetSummary({ date: createDateKey('2026-07-18'), totalTodos: 2 });
-    const tomorrow = createWidgetSummary({
-      date: createDateKey('2026-07-19'),
-      totalTodos: 0,
-      topTodos: [],
-    });
-
+describe('toWidgetDaySnapshot', () => {
+  it.each([
+    [0, 'empty'],
+    [1, 'data'],
+  ] as const)('할 일 %i개면 %s 상태다', (totalTodos, expected) => {
     // When
-    const { days } = toWidgetSnapshot({ today, tomorrow }, createWidgetSnapshotContext());
+    const { state } = toWidgetDaySnapshot(createWidgetSummary({ totalTodos }), COPY, 'ko');
 
     // Then
-    expect(days.map((day) => [day.date, day.state])).toEqual([
-      ['2026-07-18', 'data'],
-      ['2026-07-19', 'empty'],
-    ]);
-    expect(days[1]?.weekDays?.[0]?.date).toBe('2026-07-19');
+    expect(state).toBe(expected);
+  });
+
+  it('구운 문구 뒤에 주간 제목·범위를 붙이고 주간 달력을 담는다', () => {
+    // When
+    const day = toWidgetDaySnapshot(createWidgetSummary(), COPY, 'ko');
+
+    // Then
+    expect(day.weekDays).toBe(WEEK_DAYS);
+    expect(day.strings).toEqual({
+      ...STRINGS,
+      weekTitle: '7월 3주차',
+      weekRangeLabel: '07.12 ~ 07.18',
+    });
   });
 });
 
-describe('toLoggedOutWidgetSnapshot', () => {
+describe('toLoggedOutWidgetDaySnapshot', () => {
   it('비로그인 스냅샷을 만든다 (카운트 0, loggedOut 상태)', () => {
     // When
-    const [snapshot] = toLoggedOutWidgetSnapshot(
-      createDateKey('2026-07-12'),
-      createWidgetSnapshotContext({ locale: 'en' }),
-    ).days;
+    const snapshot = toLoggedOutWidgetDaySnapshot(createDateKey('2026-07-12'), STRINGS, 'en');
 
     // Then
     expect(snapshot.state).toBe('loggedOut');
@@ -64,6 +97,7 @@ describe('toLoggedOutWidgetSnapshot', () => {
     expect(snapshot.totalTodos).toBe(0);
     expect(snapshot.topTodos).toEqual([]);
     expect(snapshot.locale).toBe('en');
-    expect(snapshot.strings.loggedOutTitle).toBe('widget:state.loggedOutTitle');
+    expect(snapshot.strings.loggedOutTitle).toBe(STRINGS.loggedOutTitle);
+    expect(snapshot.weekDays).toBeUndefined();
   });
 });

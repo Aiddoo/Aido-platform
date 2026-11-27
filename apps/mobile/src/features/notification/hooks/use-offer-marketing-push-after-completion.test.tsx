@@ -7,8 +7,6 @@ import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/queries/conse
 import { createPreferenceDto } from '@src/features/identity/preference/__tests__/preference.fixtures';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { OverlayProvider } from '@src/shared/ui';
 import {
   createAnalyticsStub,
   createHttpClientStub,
@@ -48,16 +46,11 @@ async function renderOffer() {
   const analytics = createAnalyticsStub();
   const sessionEpoch = createSessionEpoch();
   // 앱처럼 Overlay 호스트를 LocalDateProvider 안에 둔다(제안 시트가 날짜 형식을 쓴다)
-  const { di } = await renderScreen(
-    <LocalDateProvider>
-      <OverlayProvider>
-        <OfferProbe />
-      </OverlayProvider>
-    </LocalDateProvider>,
-    {
-      di: createTestDi({ ports: { httpClient, analytics, sessionEpoch, queryClient } }),
-    },
-  );
+  const { di } = await renderScreen(<OfferProbe />, {
+    di: createTestDi({ ports: { httpClient, analytics, sessionEpoch, queryClient } }),
+    withLocalDate: true,
+    withOverlay: true,
+  });
   return { analytics, httpClient, sessionEpoch, prompts: di.marketingPushPromptRepository };
 }
 

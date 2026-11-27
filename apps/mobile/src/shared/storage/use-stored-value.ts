@@ -1,6 +1,6 @@
 import type { ObservableSyncStorage } from '@src/core/ports/observable-sync-storage';
 import { useAccountSyncStorage, useSyncStorage } from '@src/shared/di/shared-di-context';
-import { useMemo, useSyncExternalStore } from 'react';
+import { useSyncExternalStore } from 'react';
 import { match } from 'ts-pattern';
 
 import {
@@ -46,10 +46,7 @@ function useStoredValueSource<TValue, TScope>(
   definition: StoredValueDefinition<TValue, TScope>,
   key: string | null,
 ) {
-  const source = useMemo(
-    () => createStoredValueSource(storage, definition, key),
-    [storage, definition, key],
-  );
+  const source = createStoredValueSource(storage, definition, key);
   const value = useSyncExternalStore(source.subscribe, source.getSnapshot);
 
   return [value, source.setValue] as const;

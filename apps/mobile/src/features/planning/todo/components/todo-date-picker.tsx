@@ -1,6 +1,7 @@
-import { addDaysToDateKey, getDayOfWeek, type DateKey } from '@src/shared/date/date-key';
-import { getWeekdayLabels } from '@src/shared/date/format/date-labels';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { addDaysToDateKey, type DateKey } from '@src/shared/date/date-key';
+import { getDateKeyDayOfWeek } from '@src/shared/date/day-of-week';
+import { getDayOfWeekLabel } from '@src/shared/date/format/date-labels';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, ListRow, SheetHeaderLayout, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
@@ -19,7 +20,6 @@ interface TodoDatePickerProps {
   value: DateKey;
   onChange: (dateKey: DateKey) => void;
   onCancel: () => void;
-  /** 고른 날짜를 저장하는 동안 확인을 막는다 */
   isConfirmDisabled?: boolean;
 }
 
@@ -55,7 +55,7 @@ export function TodoDatePicker({
           displayMonthKey={picker.displayMonthKey}
           weeks={picker.weeks}
           selectedDateKey={picker.selectedDateKey}
-          onPreviousMonth={picker.goToPrevMonth}
+          onPreviousMonth={picker.goToPreviousMonth}
           onNextMonth={picker.goToNextMonth}
           onSelect={picker.selectDate}
         />
@@ -101,7 +101,6 @@ interface QuickDateRowProps {
 
 function QuickDateRow({ label, dateKey, isSelected, onPress }: QuickDateRowProps) {
   const { i18n } = useTranslation();
-  const weekdayLabels = getWeekdayLabels(i18n.language);
   const tone = isSelected ? 'brand' : 'neutral';
 
   return (
@@ -124,7 +123,7 @@ function QuickDateRow({ label, dateKey, isSelected, onPress }: QuickDateRowProps
         }
         right={
           <Text size="b2" tone={tone} shade={isSelected ? undefined : 6}>
-            {weekdayLabels[getDayOfWeek(dateKey)]}
+            {getDayOfWeekLabel(getDateKeyDayOfWeek(dateKey), i18n.language)}
           </Text>
         }
         horizontalPadding="medium"

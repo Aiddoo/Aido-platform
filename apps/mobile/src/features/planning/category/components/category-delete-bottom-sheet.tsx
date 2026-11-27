@@ -33,16 +33,13 @@ import { type ComponentProps, type ReactNode, Suspense, useEffect, useState } fr
 import Animated from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
+import type { TodoCategoryWithCount } from '../domains/todo-categories.model';
 import {
   TodoCategoryDeletionPolicy,
   type TodoCategoryDeletionPreview,
 } from '../domains/todo-category-deletion.model';
-import {
-  type TodoCategory,
-  TodoCategoryPolicy,
-  type TodoCategoryWithCount,
-} from '../domains/todo-category.model';
-import { useTodoCategoryId } from '../hooks/use-todo-category-id';
+import { type TodoCategory, TodoCategoryPolicy } from '../domains/todo-category.model';
+import { useTodoCategoryId } from '../hooks/use-todo-category-params';
 import { useDeleteTodoCategoryMutationOptions } from '../queries/todo-category.mutations';
 import {
   useGetTodoCategoriesQueryOptions,
@@ -56,10 +53,7 @@ const AnimatedCard = Animated.createAnimatedComponent(Card);
 // 누를 때 미리 받은 미리보기는 대개 이 안에 와서, 다이얼로그로 끝날 카테고리에 빈 시트가 잠깐 비치지 않는다
 const LOADING_SHEET_DELAY_MS = 300;
 
-/**
- * 안의 할 일을 옮길지 함께 지울지 고르고 카테고리를 지운다. 대상은 `/todo-categories/[categoryId]/delete` route에서 읽는다.
- * 옮기거나 지울 할 일·반복이 없거나 마지막 카테고리면 시트 대신 확인 다이얼로그를 띄운다
- */
+/** 옮기거나 지울 할 일·반복이 없거나 마지막 카테고리면 시트 대신 확인 다이얼로그를 띄운다 */
 export function CategoryDeleteBottomSheet() {
   const sheet = useSheetRoute('/settings/category-settings');
   const [categoryId] = useTodoCategoryId();
@@ -487,7 +481,7 @@ function MoveTargetRow({
 
   const openMoveTargetPicker = async () => {
     const categoryId = await openSheet<number>((close) => (
-      <QueryErrorBoundary>
+      <QueryErrorBoundary fallback={CategoryPickForm.Error}>
         <Suspense fallback={<CategoryPickForm.Loading />}>
           <CategoryPickForm
             defaultValue={moveTargetCategoryId}

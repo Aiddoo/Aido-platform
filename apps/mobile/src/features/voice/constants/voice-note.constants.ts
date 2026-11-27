@@ -1,10 +1,12 @@
+import { SECOND_MS } from '@src/shared/constants/time-units';
+
 /** 메모 탭에 바로 보이는 최근 말로 메모 수. 넘치면 전체 목록으로 보내 아래 메모가 밀리지 않게 한다 */
 export const VOICE_NOTE_PREVIEW_COUNT = 3;
 
 export const VOICE_NOTE_DRAFT_SAVE_DEBOUNCE_MS = 800;
 
 /** 말이 끊이지 않아도 이 시간마다는 쓴다. 앱이 꺼져도 이만큼만 잃는다 */
-export const VOICE_NOTE_DRAFT_SAVE_MAX_WAIT_MS = 5_000;
+export const VOICE_NOTE_DRAFT_SAVE_MAX_WAIT_MS = 5 * SECOND_MS;
 
 export const VOICE_RECORDING_ROOT_DIRECTORY = 'voice-notes';
 
@@ -24,10 +26,11 @@ export const WAVEFORM_BAR = {
   maxLiveBars: 160,
 } as const;
 
-export const SPEECH_LEVEL_THRESHOLD = 0.2;
+/** 녹음 파형의 칸을 말소리 색으로 칠하는 음량. 칸 하나(`WAVEFORM_BAR.intervalMs`)의 가장 큰 음량과 비교하는 표시 값이다 */
+export const WAVEFORM_SPEECH_BAR_LEVEL = 0.2;
 
 /** 끝낸 뒤 인식기가 녹음 파일을 다 쓸 때까지 화면이 기다리는 시간. 넘기면 글자만 먼저 넘긴다 */
-export const VOICE_RECORDING_SAVE_WAIT_MS = 3_000;
+export const VOICE_RECORDING_SAVE_WAIT_MS = 3 * SECOND_MS;
 
 /** 화면이 내려간 뒤에도 늦은 녹음 파일을 받아 초안에 더하는 시간 */
-export const VOICE_RECORDING_LATE_WAIT_MS = 30_000;
+export const VOICE_RECORDING_LATE_WAIT_MS = 30 * SECOND_MS;

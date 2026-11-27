@@ -2,7 +2,7 @@ import type {
   NotificationNavigation,
   NotificationNavigationKind,
 } from '@aido/api/contracts/notification/v1';
-import { ErrorCode, HttpStatus } from '@aido/api/errors';
+import { ErrorCode } from '@aido/api/errors';
 import { fail, ok, type Result } from '@src/core/errors/result';
 import type { PushNotificationResponse } from '@src/core/ports/push-notification-gateway';
 import type { AuthStatus } from '@src/core/session/auth-status';
@@ -10,7 +10,8 @@ import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests_
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { createMarkReadResponseDto } from '@src/features/notification/__tests__/notification.fixtures';
 import { NOTIFICATION_READ_BUDGET_MS } from '@src/features/notification/constants/notification.constants';
-import { ApiError, NetworkError } from '@src/shared/errors';
+import type { ApiError } from '@src/shared/errors';
+import { NetworkError } from '@src/shared/errors';
 import {
   createAppLifecycleGatewayStub,
   createExternalLinkGatewayStub,
@@ -19,8 +20,10 @@ import {
   createPushNotificationGatewayStub,
   createTestDi,
   stubWindowDimensions,
+  createApiError,
+  stubInitialUrl,
 } from '@src/testing/core';
-import { renderAppRoute } from '@src/testing/render-route-hook';
+import { createStackLayoutRoute, renderAppRoute } from '@src/testing/render-route-hook';
 import { userEvent } from '@testing-library/react-native';
 import { noop } from 'es-toolkit';
 import * as ExpoLinking from 'expo-linking';
@@ -28,7 +31,7 @@ import { router, Stack, Tabs, useFocusEffect } from 'expo-router';
 import { act, screen, waitFor } from 'expo-router/testing-library';
 import * as SplashScreen from 'expo-splash-screen';
 import { type ComponentType, useCallback } from 'react';
-import { Linking, Pressable, Text } from 'react-native';
+import { Pressable, Text } from 'react-native';
 import { match } from 'ts-pattern';
 
 import { unstable_settings as myPageTabSettings } from '../../../app/(app)/(tabs)/(me)/_layout';
@@ -233,13 +236,6 @@ function createScreen(testID: string) {
   };
 }
 
-function createStackLayout(unstableSettings: { anchor: string }) {
-  return {
-    default: () => <Stack screenOptions={{ headerShown: false, animation: 'none' }} />,
-    unstable_settings: unstableSettings,
-  };
-}
-
 async function setup({
   status,
   initialUrl = '/',
@@ -324,7 +320,7 @@ async function setup({
     'invite/index': () => <Text>Invite</Text>,
     '(auth)/_layout': () => <Stack screenOptions={{ animation: 'none' }} />,
     '(auth)/login': LoginScreen,
-    '(app)/_layout': createStackLayout(appSettings),
+    '(app)/_layout': createStackLayoutRoute(appSettings),
     // NativeTabs는 Jest에서 그려지지 않아 같은 탭 라우터를 쓰는 JS Tabs로 대신한다
     '(app)/(tabs)/_layout': {
       default: () => (
@@ -336,9 +332,9 @@ async function setup({
       ),
       unstable_settings: tabsSettings,
     },
-    '(app)/(tabs)/(todos)/_layout': createStackLayout(feedTabSettings),
-    '(app)/(tabs)/(memos)/_layout': createStackLayout(memoTabSettings),
-    '(app)/(tabs)/(me)/_layout': createStackLayout(myPageTabSettings),
+    '(app)/(tabs)/(todos)/_layout': createStackLayoutRoute(feedTabSettings),
+    '(app)/(tabs)/(memos)/_layout': createStackLayoutRoute(memoTabSettings),
+    '(app)/(tabs)/(me)/_layout': createStackLayoutRoute(myPageTabSettings),
     '(app)/(tabs)/(todos)/feed/index': FeedScreen,
     '(app)/(tabs)/(memos)/memo/index': createScreen('memo'),
     '(app)/(tabs)/(me)/mypage/index': createScreen('mypage'),
@@ -380,11 +376,11 @@ async function setup({
   };
 }
 
-describe('푸시 탭 진입', () => {
+describe('AuthGateLayout', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     stubWindowDimensions(390);
-    jest.spyOn(Linking, 'getInitialURL').mockResolvedValue(null);
+    stubInitialUrl();
     jest.mocked(ExpoLinking.useLinkingURL).mockReturnValue(null);
   });
 
@@ -457,7 +453,7 @@ describe('푸시 탭 진입', () => {
     const { route, gateway, focusLog } = await setup({
       status: 'loading',
       lastResponse: TODO_RESPONSE,
-      markRead: async () => fail(new ApiError('NOTIFICATION_1004', '없어요', 404)),
+      markRead: async () => fail(createApiError('NOTIFICATION_1004', { message: '없어요' })),
     });
 
     // When
@@ -650,7 +646,7 @@ describe('푸시 탭 진입', () => {
     // Given
     const { route, gateway } = await setup({
       status: 'authenticated',
-      markRead: async () => fail(new ApiError('NOTIFICATION_1004', '없어요', 404)),
+      markRead: async () => fail(createApiError('NOTIFICATION_1004', { message: '없어요' })),
     });
     await waitFor(() => expect(route.getPathname()).toBe('/feed'));
 
@@ -860,6 +856,59 @@ describe('푸시 탭 진입', () => {
     await waitFor(() => expect(gateway.clearLastResponse).toHaveBeenCalled());
   });
 
+  it('앱 종료 상태 탭: 마지막 응답이 리스너로 다시 와도 읽음·열림·이동·열림 분석이 한 번씩이다', async () => {
+    // Given
+    const user = userEvent.setup();
+    const { route, gateway, httpClient, analytics } = await setup({
+      status: 'loading',
+      lastResponse: TODO_RESPONSE,
+    });
+    await user.press(screen.getByRole('button', { name: 'boot-authenticated' }));
+    await waitFor(() => expect(route.getPathname()).toBe('/todo/42'));
+    await waitFor(() => expect(gateway.clearLastResponse).toHaveBeenCalled());
+
+    // When
+    await act(async () => gateway.emitResponse(TODO_RESPONSE));
+
+    // Then
+    expect(route.getPathname()).toBe('/todo/42');
+    expect(router.canGoBack()).toBe(true);
+    await act(() => router.back());
+    expect(route.getPathname()).toBe('/feed');
+    expect(httpClient.patch).toHaveBeenCalledTimes(1);
+    expect(
+      httpClient.post.mock.calls.filter(([url]) => url === 'v1/notifications/7/opened'),
+    ).toHaveLength(1);
+    expect(
+      jest
+        .mocked(analytics.trackEvent)
+        .mock.calls.filter(([eventName]) => eventName === 'push_notification_opened'),
+    ).toHaveLength(1);
+  });
+
+  it.each([
+    ['칸이 모두 깨진 data', { notificationId: 'broken', type: 3, navigation: 'broken' }],
+    ['비어 있는 data', {}],
+  ])('읽을 칸이 없는 푸시(%s)는 읽음·열림을 묻지 않고 알림함으로 연다', async (_case, data) => {
+    // Given
+    const { route, gateway, httpClient, analytics } = await setup({ status: 'authenticated' });
+    await waitFor(() => expect(route.getPathname()).toBe('/feed'));
+
+    // When
+    await act(async () => gateway.emitResponse({ ...TODO_RESPONSE, data }));
+
+    // Then
+    await waitFor(() => expect(route.getPathname()).toBe('/notifications'));
+    await waitFor(() =>
+      expect(analytics.trackEvent).toHaveBeenCalledWith(
+        'push_notification_opened',
+        expect.objectContaining({ type: 'UNKNOWN', action: 'DEEP_LINK' }),
+      ),
+    );
+    expect(httpClient.patch).not.toHaveBeenCalled();
+    expect(httpClient.post).not.toHaveBeenCalled();
+  });
+
   describe('알림 종류마다 열리는 자리(접힌 화면)', () => {
     it.each(LANDING_CASES)(
       '$kind: 꺼진 앱에서 누르면 화면을 가진 탭에 열고 읽음·열림을 한 번 남긴다',
@@ -1027,7 +1076,7 @@ describe('푸시 탭 진입', () => {
       match(url)
         .with('v1/auth/me', () => ok(createCurrentUserDto()))
         .with('v1/todos/42/details', () =>
-          fail(new ApiError(ErrorCode.TODO_0801, '없음', HttpStatus.NOT_FOUND)),
+          fail(createApiError(ErrorCode.TODO_0801, { message: '없음' })),
         )
         .otherwise(() => ok({ unreadCount: 0, items: [], pagination: PAGINATION, anchor: null })),
     );

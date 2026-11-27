@@ -2,12 +2,12 @@ import { NetworkError, ServerError } from '@src/shared/errors';
 
 import { SubscriptionErrors } from '../domains/subscription.error';
 import {
-  toSubscriptionActionFailure,
-  toSubscriptionLoadFailure,
-  toSubscriptionStoreUnavailableFailure,
+  getSubscriptionActionFailure,
+  getSubscriptionLoadFailure,
+  getSubscriptionStoreUnavailableFailure,
 } from './subscription-failure.view-model';
 
-describe('toSubscriptionLoadFailure', () => {
+describe('getSubscriptionLoadFailure', () => {
   it.each([
     {
       when: '내 정보가 네트워크 오류로 실패하면',
@@ -39,17 +39,17 @@ describe('toSubscriptionLoadFailure', () => {
     },
   ])('$when 무엇이 실패했는지와 할 일을 알린다', ({ target, error, titleKey, descriptionKey }) => {
     // When
-    const failure = toSubscriptionLoadFailure(target, error);
+    const failure = getSubscriptionLoadFailure(target, error);
 
     // Then
     expect(failure).toMatchObject({ titleKey, descriptionKey });
   });
 });
 
-describe('toSubscriptionActionFailure', () => {
+describe('getSubscriptionActionFailure', () => {
   it('사용자가 결제를 취소하면 아무것도 알리지 않는다', () => {
     // When
-    const failure = toSubscriptionActionFailure(
+    const failure = getSubscriptionActionFailure(
       'purchase',
       SubscriptionErrors.purchaseCancelled('1'),
     );
@@ -60,7 +60,7 @@ describe('toSubscriptionActionFailure', () => {
 
   it('결제 승인을 기다리면 문의 대신 승인 대기를 알린다', () => {
     // When
-    const failure = toSubscriptionActionFailure(
+    const failure = getSubscriptionActionFailure(
       'purchase',
       SubscriptionErrors.paymentPending('20'),
     );
@@ -96,17 +96,17 @@ describe('toSubscriptionActionFailure', () => {
     },
   ])('$when 문의하기로 안내한다', ({ when: _when, target, error, ...expected }) => {
     // When
-    const failure = toSubscriptionActionFailure(target, error);
+    const failure = getSubscriptionActionFailure(target, error);
 
     // Then
     expect(failure).toEqual({ type: 'contactSupport', ...expected });
   });
 });
 
-describe('toSubscriptionStoreUnavailableFailure', () => {
+describe('getSubscriptionStoreUnavailableFailure', () => {
   it('설정 문제는 다시 해도 같아 문의로만 안내한다', () => {
     // When
-    const failure = toSubscriptionStoreUnavailableFailure({
+    const failure = getSubscriptionStoreUnavailableFailure({
       kind: 'setup',
       diagnosticCode: 'SUBSCRIPTION_STORE_UNAVAILABLE (23)',
     });
@@ -121,7 +121,7 @@ describe('toSubscriptionStoreUnavailableFailure', () => {
 
   it('스토어가 잠시 응답하지 못했으면 다시 시도도 함께 준다', () => {
     // When
-    const failure = toSubscriptionStoreUnavailableFailure({
+    const failure = getSubscriptionStoreUnavailableFailure({
       kind: 'temporary',
       diagnosticCode: 'SUBSCRIPTION_STORE_PROBLEM (2)',
     });

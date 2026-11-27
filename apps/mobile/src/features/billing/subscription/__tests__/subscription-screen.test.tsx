@@ -12,8 +12,6 @@ import { type User } from '@src/features/identity/user/domains/user.model';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import { type CurrentUserResponse } from '@src/features/identity/user/schemas/user-response.schema';
 import { i18n } from '@src/shared/i18n';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { OverlayProvider } from '@src/shared/ui';
 import {
   createAnalyticsStub,
   createHttpClientStub,
@@ -21,13 +19,14 @@ import {
   createRouteParamsFake,
   createTestDi,
   createTestQueryClient,
+  getTrackedEvents,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { onlineManager } from '@tanstack/react-query';
 import { act, fireEvent, screen, userEvent, waitFor, within } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
-import SubscriptionRoute from '../../../../../app/(app)/(tabs)/(me,memos,todos)/settings/subscription';
+import SubscriptionScreen from '../../../../../app/(app)/(tabs)/(me,memos,todos)/settings/subscription';
 import { ENTITLEMENT_QUERY_KEYS } from '../queries/entitlement-query-keys';
 import { createEntitlementSnapshot, createEntitlementSnapshotDto } from './entitlement.fixtures';
 
@@ -119,19 +118,12 @@ async function renderSubscriptionScreen(
   // 결제 Provider처럼 결제 SDK에 로그인해 둔다. 로그인 전 결제는 막힌다
   await di.purchasesSession.logIn('user-1');
 
-  await renderScreen(
-    <LocalDateProvider>
-      <OverlayProvider>
-        <SubscriptionRoute />
-      </OverlayProvider>
-    </LocalDateProvider>,
-    { di },
-  );
+  await renderScreen(<SubscriptionScreen />, { di, withLocalDate: true, withOverlay: true });
 
   return { purchases, analytics };
 }
 
-describe('구독 화면', () => {
+describe('SubscriptionScreen', () => {
   afterEach(async () => {
     onlineManager.setOnline(true);
     await i18n.changeLanguage('ko');
@@ -242,15 +234,10 @@ describe('구독 화면', () => {
 
     // Then
     expect(await screen.findByRole('button', { name: '월간으로 시작하기' })).toBeTruthy();
-    const selectedEvents = analytics.trackEvent.mock.calls.filter(
-      ([eventName]) => eventName === 'paywall_plan_selected',
-    );
-    expect(selectedEvents).toEqual([
-      ['paywall_plan_selected', { plan_type: 'monthly', is_trial: false }],
+    expect(getTrackedEvents(analytics, 'paywall_plan_selected')).toEqual([
+      { plan_type: 'monthly', is_trial: false },
     ]);
-    expect(
-      analytics.trackEvent.mock.calls.filter(([eventName]) => eventName === 'paywall_viewed'),
-    ).toHaveLength(1);
+    expect(getTrackedEvents(analytics, 'paywall_viewed')).toHaveLength(1);
   });
 
   it('링크가 월간 요금제를 미리 골랐으면 월간이 골라진 채로 열린다', async () => {
@@ -313,7 +300,7 @@ describe('구독 화면', () => {
   it('스토어 연결이 끊겨 결제를 마치지 못하면 문의할 수 있는 다이얼로그를 띄운다', async () => {
     // Given
     const user = userEvent.setup();
-    const { purchases } = await renderSubscriptionScreen(FREE, () =>
+    const { purchases, analytics } = await renderSubscriptionScreen(FREE, () =>
       Promise.resolve(MONTHLY_AND_ANNUAL),
     );
     purchases.purchase.mockRejectedValue(new PurchasesGatewayError('network', null, 'offline'));
@@ -326,6 +313,10 @@ describe('구독 화면', () => {
     expect(
       screen.getByRole('button', { name: i18n.t('subscription:failure.contactSupport') }),
     ).toBeTruthy();
+    expect(getTrackedEvents(analytics, 'purchase_failed')).toEqual([
+      { reason: 'network', plan_type: 'annual', is_trial: false },
+    ]);
+    expect(getTrackedEvents(analytics, 'subscription_started')).toEqual([]);
   });
 
   describe('결제 뒤 시작 화면', () => {
@@ -350,6 +341,9 @@ describe('구독 화면', () => {
       expect(within(welcome).getByText(/전까지 모든 기능을 무료로 써요$/)).toBeTruthy();
       expect(within(welcome).getByText('연 ₩29,900')).toBeTruthy();
       expect(within(welcome).getByText(/ · 연 ₩29,900$/)).toBeTruthy();
+      expect(getTrackedEvents(analytics, 'subscription_started')).toEqual([
+        { product_id: 'annual', plan_type: 'annual', is_trial: true },
+      ]);
       expect(
         await screen.findAllByText('결제가 반영되기까지 잠시 걸릴 수 있어요'),
       ).not.toHaveLength(0);

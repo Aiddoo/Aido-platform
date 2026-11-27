@@ -51,10 +51,7 @@ export class SessionCleanupService {
   readonly #pushNotification: SessionCleanupServicePorts['pushNotification'];
   readonly #signOutEpoch: SessionCleanupServicePorts['signOutEpoch'];
   readonly #logger: SessionCleanupServicePorts['logger'];
-  /**
-   * 서버가 지웠을 수 있는 탈퇴. 응답을 기다리거나(`requested`) 응답 없이 끝났다(`unanswered`). 계정 id를 몰라도 남겨
-   * 세션이 끝날 때 로그아웃처럼 지운다. 모르는 것은 지운 것이 아니라 계정이 살아 있다는 증거가 오면 잊는다
-   */
+  /** 서버가 지웠을 수 있는 탈퇴라 계정 id를 몰라도 남겨 세션이 끝날 때 지우고, 계정이 살아 있다는 증거가 오면 잊는다 */
   #pendingAccountDeletion: {
     accountId: string | null;
     status: 'requested' | 'unanswered';
@@ -103,10 +100,7 @@ export class SessionCleanupService {
     }
   };
 
-  /**
-   * 탈퇴 요청 직전. 응답을 받지 못해도 서버는 지웠을 수 있어 이어서 세션이 끝나면 로그아웃처럼 지운다.
-   * 안내 기록은 계정 id가 있어야 지울 수 있어 모르면 남긴다
-   */
+  /** 응답이 없어도 서버는 지웠을 수 있어 세션이 끝나면 로그아웃처럼 지운다. 안내 기록은 계정 id가 있어야 지울 수 있다 */
   beforeAccountDeletion = (accountId: string | null): void => {
     if (accountId == null) {
       this.#logger.warn(AUTH_LOG_EVENT.ACCOUNT_DELETION_OWNER_UNKNOWN);

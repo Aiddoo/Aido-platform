@@ -1,31 +1,18 @@
-import { findOAuthCode, toOAuthProvider, toOAuthProviderSlug } from './oauth.mapper';
-
-describe('toOAuthProvider', () => {
-  it.each([
-    ['apple', 'APPLE'],
-    ['google', 'GOOGLE'],
-    ['kakao', 'KAKAO'],
-    ['naver', 'NAVER'],
-  ] as const)('경로 이름 %s는 서버 업체 %s다', (slug, expected) => {
-    // When
-    const provider = toOAuthProvider(slug);
-
-    // Then
-    expect(provider).toBe(expected);
-  });
-});
+import { findOAuthCode, toOAuthProviderSlug } from './oauth.mapper';
 
 describe('toOAuthProviderSlug', () => {
-  it.each(['APPLE', 'GOOGLE', 'KAKAO', 'NAVER'] as const)(
-    '서버 업체 %s를 경로 이름으로 바꾸면 다시 같은 업체로 돌아온다',
-    (provider) => {
-      // When
-      const slug = toOAuthProviderSlug(provider);
+  it.each([
+    ['APPLE', 'apple'],
+    ['GOOGLE', 'google'],
+    ['KAKAO', 'kakao'],
+    ['NAVER', 'naver'],
+  ] as const)('서버 업체 %s는 경로 이름 %s다', (provider, expected) => {
+    // When
+    const slug = toOAuthProviderSlug(provider);
 
-      // Then
-      expect(toOAuthProvider(slug)).toBe(provider);
-    },
-  );
+    // Then
+    expect(slug).toBe(expected);
+  });
 });
 
 describe('findOAuthCode', () => {

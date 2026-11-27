@@ -6,7 +6,7 @@ App Store·Google Play 등록 정보의 단일 원본이에요. 한국어와 영
 ```sh
 pnpm --filter @aido/mobile store:check                  # 글자 수·키워드·용어·ko/en 짝 검사
 pnpm --filter @aido/mobile store:export --out <폴더>    # <폴더>/text/…txt + 검토용 *.ko-en.md
-pnpm --filter @aido/mobile test:store-listing
+pnpm --filter @aido/mobile test:node                    # store-listing 테스트 포함
 ```
 
 ## 구조
@@ -16,7 +16,7 @@ pnpm --filter @aido/mobile test:store-listing
 | 스토어      | 로캘             | 필드                                                                                                                |
 | ----------- | ---------------- | ------------------------------------------------------------------------------------------------------------------- |
 | App Store   | `ko`, `en-US`    | `name`(30) `subtitle`(30) `promotional_text`(170) `description`(4000) `keywords`(100) `release_notes`(4000) `*_url` |
-| App Store   | `en-GB`          | `keywords`만. 나머지는 `en-US`를 물려받아요                                                                         |
+| App Store   | `en-GB`          | `keywords`·`release_notes`만. 나머지는 `en-US`를 물려받아요                                                         |
 | Google Play | `ko-KR`, `en-US` | `title`(30) `short_description`(80) `full_description`(4000) `release_notes`(500)                                   |
 
 - `release_notes`는 요약 한 줄 + `../<버전>/release.json`의 항목 그대로예요. 두 스토어 문안이 같아야 해요.

@@ -10,7 +10,7 @@ export type TrialScheduleStep =
   | { kind: 'charge'; dateKey: DateKey; stamp: 'empty' };
 
 /** 체험 일정 도장 줄. 체험이 없으면 null이고, 알림일이 오늘이거나 지났으면 알림 도장을 빼고 둘이다 */
-export function toTrialScheduleSteps(
+export function getTrialScheduleSteps(
   plan: SubscriptionPlan,
   todayKey: DateKey,
 ): TrialScheduleStep[] | null {
@@ -29,10 +29,7 @@ export function toTrialScheduleSteps(
   ];
 }
 
-/**
- * 페이월을 처음 그릴 때는 도장만 조용히 찍고, 사용자가 체험 요금제로 바꿔 일정이 새로 나타날 때만 손끝으로 알린다.
- * `wasVisible`이 null이면 처음 확인하는 때다
- */
+/** 체험 요금제로 바꿔 일정이 새로 나타날 때만 손끝으로 알린다. `wasVisible`이 null이면 처음 확인하는 때다 */
 export function shouldBuzzOnTrialStamp(wasVisible: boolean | null, isVisible: boolean): boolean {
   return wasVisible === false && isVisible;
 }

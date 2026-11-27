@@ -1,3 +1,4 @@
+import { INVITEE_REWARDS } from '@aido/api/vocabulary';
 import Check from '@expo/material-symbols/check.xml';
 import Edit from '@expo/material-symbols/edit.xml';
 import Search from '@expo/material-symbols/search.xml';
@@ -12,7 +13,7 @@ import {
   FRIEND_LIST_VIEW,
   friendListViewSchema,
 } from '@src/features/social/friend/schemas/friend-params.schema';
-import { INVITEE_PREMIUM_DAYS } from '@src/features/social/invite/constants/invite.constants';
+import { InviteRewardPolicy } from '@src/features/social/invite/domains/invite-reward.model';
 import { useIsInviteAvailable } from '@src/features/social/invite/hooks/use-is-invite-available';
 import { useOpenMyInvite } from '@src/features/social/invite/hooks/use-open-my-invite';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -24,7 +25,7 @@ import {
   StyledSafeAreaView,
   ViewTabs,
 } from '@src/shared/ui';
-import { Stack, router } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { Tabs } from 'heroui-native';
 import { Suspense } from 'react';
 import { match } from 'ts-pattern';
@@ -35,7 +36,8 @@ const EDIT_ICON = process.env.EXPO_OS === 'ios' ? undefined : Edit;
 const DONE_ICON = process.env.EXPO_OS === 'ios' ? undefined : Check;
 
 export default function FriendsScreen() {
-  const push = useSingleTap(router.push);
+  const router = useRouter();
+  const pushOnce = useSingleTap(router.push);
 
   const { t } = useTranslation(['friend', 'common']);
   const [view, setView] = useFriendListView();
@@ -50,7 +52,7 @@ export default function FriendsScreen() {
         <Stack.Toolbar.Button
           icon={SEARCH_ICON}
           accessibilityLabel={t('search.title')}
-          onPress={() => push('/friends/search')}
+          onPress={() => pushOnce('/friends/search')}
         >
           {t('search.title')}
         </Stack.Toolbar.Button>
@@ -87,7 +89,7 @@ export default function FriendsScreen() {
                   <Suspense fallback={<FriendList.Loading />}>
                     <FriendList
                       onInvite={isInviteAvailable ? () => openMyInvite('friends_empty') : undefined}
-                      inviteWelcomeDays={INVITEE_PREMIUM_DAYS}
+                      inviteWelcomeDays={InviteRewardPolicy.getPremiumDays(INVITEE_REWARDS)}
                     />
                   </Suspense>
                 </QueryErrorBoundary>

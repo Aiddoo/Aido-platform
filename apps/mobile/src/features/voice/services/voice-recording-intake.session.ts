@@ -15,7 +15,10 @@ interface VoiceRecordingIntakeSessionPorts {
   accountId: string;
   draftId: string;
   draftRepository: Pick<VoiceNoteDraftRepository, 'find' | 'save'>;
-  recordingRepository: Pick<VoiceRecordingRepository, 'remove' | 'removeSource' | 'save'>;
+  recordingRepository: Pick<
+    VoiceRecordingRepository,
+    'findSourceOwner' | 'releaseSource' | 'remove' | 'removeSource' | 'reserveSource' | 'save'
+  >;
   discard: VoiceNoteStorageService['discard'];
   /** 로그아웃·탈퇴하면 늦은 파일을 지운 계정 폴더·초안에 쓰지 않는다. 세션 만료는 같은 사람이 돌아오므로 받는다 */
   signOutEpoch: Pick<SignOutEpoch, 'current' | 'subscribe'>;
@@ -23,7 +26,11 @@ interface VoiceRecordingIntakeSessionPorts {
   onRecordingSaved: () => void;
 }
 
-/** 인식기 파일은 화면이 내려간 뒤에도 올 수 있어 React 밖에서 받는다. 지운 초안의 파일만 바로 지운다 */
+/**
+ * 인식기 파일은 화면이 내려간 뒤에도 올 수 있어 React 밖에서 받는다. 지운 초안의 파일만 바로 지운다.
+ * 세션을 만든 훅이 수명을 정한다: 붙을 때 `reclaim`, 놓을 때 `listenForLate`를 부른다. 놓은 뒤에는 기다리던 파일을
+ * 받거나 시간이 지나면 세션이 스스로 `dispose`한다
+ */
 export class VoiceRecordingIntakeSession {
   readonly #deps: VoiceRecordingIntakeSessionPorts;
   readonly #segmentStarts = new Map<string, number>();
@@ -33,6 +40,8 @@ export class VoiceRecordingIntakeSession {
   #partCount = 0;
   #notifyArrived: (() => void) | null = null;
   #stopLateListening: (() => void) | null = null;
+  /** 늦은 파일을 듣고 있는 인식기 구독 함수. 같은 인식기를 화면이 다시 들으면 이 듣기를 거둔다 */
+  #lateSubscribe: SpeechRecognizer['subscribe'] | null = null;
   /** 정리 화면으로 넘겼다. 이제 초안의 주인은 그 화면이라 녹음 조각만 더한다 */
   #hasHandedOff = false;
   /** 사용자가 초안을 지웠다. 뒤늦은 글자·파일이 초안을 되살리지 않게 막는다 */
@@ -45,16 +54,17 @@ export class VoiceRecordingIntakeSession {
 
   segmentStarted = (uri: string, startMs: number): void => {
     this.#segmentStarts.set(uri, startMs);
+    this.#deps.recordingRepository.reserveSource(uri, this.#deps.draftId);
   };
 
   receive = (uri: string, fallbackStartMs: number): void => {
+    const { draftId, recordingRepository } = this.#deps;
     const startMs = this.#segmentStarts.get(uri) ?? fallbackStartMs;
     this.#segmentStarts.delete(uri);
-    if (this.#hasDiscarded || this.#hasSignedOut()) {
-      this.#deps.recordingRepository.removeSource(uri);
-    } else {
-      const saving = this.#save(uri, startMs).finally(() => this.#pendingSaves.delete(saving));
-      this.#pendingSaves.add(saving);
+    const owner = recordingRepository.findSourceOwner(uri);
+    // 다른 초안이 맡은 파일은 이 화면의 구독이 먼저 받아도 옮기거나 지우지 않는다. 기다리던 끝내기만 아래에서 풀어 준다
+    if (owner == null || owner === draftId) {
+      this.#take(uri, startMs);
     }
     if (this.#segmentStarts.size === 0) {
       this.#notifyArrived?.();
@@ -112,9 +122,15 @@ export class VoiceRecordingIntakeSession {
       unsubscribeSignOut();
       if (this.#stopLateListening === stop) {
         this.#stopLateListening = null;
+        this.#lateSubscribe = null;
       }
     };
     this.#stopLateListening = stop;
+    this.#lateSubscribe = subscribe;
+    const finish = () => {
+      stop();
+      this.dispose();
+    };
     const unsubscribe = subscribe((event) => {
       // 30초 안에 새 녹음을 시작하면 그 파일의 이벤트도 여기로 온다. 옮기면 새 녹음의 조각이 사라진다
       if (event.type !== 'recording-saved' || !this.#segmentStarts.has(event.uri)) {
@@ -122,12 +138,46 @@ export class VoiceRecordingIntakeSession {
       }
       this.receive(event.uri, 0);
       if (this.#segmentStarts.size === 0) {
-        stop();
+        finish();
       }
     });
     // 로그아웃하면 그 계정의 늦은 파일을 기다리지 않는다
-    const unsubscribeSignOut = this.#deps.signOutEpoch.subscribe(stop);
-    const timer = setTimeout(stop, VOICE_RECORDING_LATE_WAIT_MS);
+    const unsubscribeSignOut = this.#deps.signOutEpoch.subscribe(finish);
+    const timer = setTimeout(finish, VOICE_RECORDING_LATE_WAIT_MS);
+  };
+
+  /**
+   * 화면이 같은 인식기를 다시 듣기 시작했다(StrictMode·Fast Refresh로 effect가 다시 돈 경우). 앞 정리가 건 늦은 파일
+   * 듣기를 거둬 같은 파일을 화면의 구독과 함께 두 번 받지 않는다. 인식기가 바뀌었으면 옛 인식기의 파일은 화면이 듣지
+   * 못하므로 그 듣기는 그대로 둔다
+   */
+  reclaim = (subscribe: SpeechRecognizer['subscribe']): void => {
+    if (this.#lateSubscribe === subscribe) {
+      this.#stopLateListening?.();
+    }
+  };
+
+  // 구독과 타이머만 정리하고 받기는 막지 않는다. 훅이 다시 붙으면(`reclaim`) 그 뒤의 녹음 조각도 저장해야 한다
+  dispose = (): void => {
+    const { draftId, recordingRepository } = this.#deps;
+    this.#stopLateListening?.();
+    this.#notifyArrived?.();
+    // 더 기다리지 않는 파일은 놓는다. 맡아 둔 채 두면 늦게 온 파일을 다른 녹음도 받지 못한다
+    for (const uri of this.#segmentStarts.keys()) {
+      recordingRepository.releaseSource(uri, draftId);
+    }
+  };
+
+  #take = (uri: string, startMs: number): void => {
+    const { draftId, recordingRepository } = this.#deps;
+    if (this.#hasDiscarded || this.#hasSignedOut()) {
+      recordingRepository.removeSource(uri);
+      recordingRepository.releaseSource(uri, draftId);
+      return;
+    }
+    // 맡은 표시는 옮기기가 끝날 때 저장소가 놓는다. 그때까지 같은 파일을 뒤이어 받은 화면은 옮기려 하지 않는다
+    const saving = this.#save(uri, startMs).finally(() => this.#pendingSaves.delete(saving));
+    this.#pendingSaves.add(saving);
   };
 
   #save = async (sourceUri: string, startMs: number): Promise<void> => {

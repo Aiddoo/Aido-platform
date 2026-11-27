@@ -1,8 +1,6 @@
-import { useTrack } from '@src/shared/analytics';
 import { useTranslation } from '@src/shared/i18n';
 import { APP_LOCALES } from '@src/shared/i18n/app-locales';
-import { isLanguageMode } from '@src/shared/preferences/language.preference';
-import { useLanguage } from '@src/shared/providers/language-provider';
+import { useLanguageModeSetting } from '@src/shared/preferences/use-language-mode-setting';
 import {
   DeviceDuoIcon,
   EnglishDuoIcon,
@@ -13,18 +11,9 @@ import {
 import { Stack } from 'expo-router';
 import { RadioGroup } from 'heroui-native';
 
-function LanguageSettingsScreen() {
-  const { languageMode, setLanguageMode } = useLanguage();
+export default function LanguageSettingsScreen() {
+  const { languageMode, changeLanguageMode } = useLanguageModeSetting();
   const { t } = useTranslation('settings');
-  const { trackEvent } = useTrack();
-
-  const handleChange = (value: string) => {
-    if (!isLanguageMode(value)) {
-      return;
-    }
-    setLanguageMode(value);
-    trackEvent('settings_changed', { setting: 'language', value });
-  };
 
   return (
     <>
@@ -32,7 +21,7 @@ function LanguageSettingsScreen() {
 
       <SettingsScreenLayout>
         <SettingsListGroup label={t('language.label')}>
-          <RadioGroup value={languageMode} onValueChange={handleChange} className="gap-0">
+          <RadioGroup value={languageMode} onValueChange={changeLanguageMode} className="gap-0">
             <SettingsListGroup.Radio
               value="system"
               label={t('language.system')}
@@ -61,5 +50,3 @@ function LanguageSettingsScreen() {
     </>
   );
 }
-
-export default LanguageSettingsScreen;

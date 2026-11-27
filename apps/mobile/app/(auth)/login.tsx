@@ -17,11 +17,12 @@ import {
   TextButton,
   VStack,
 } from '@src/shared/ui';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
 
 export default function LoginScreen() {
-  const push = useSingleTap(router.push);
+  const router = useRouter();
+  const pushOnce = useSingleTap(router.push);
   const { t } = useTranslation(['auth', 'invite']);
 
   return (
@@ -58,10 +59,14 @@ export default function LoginScreen() {
         <Spacing size={24} />
 
         <AuthLinkRow>
-          <TextButton size="medium" onPress={() => push('/sign-up')}>
+          <TextButton size="medium" onPress={() => pushOnce('/sign-up')}>
             {t('login.signUp')}
           </TextButton>
-          <TextButton size="medium" onPress={() => push('/email-login')} testID="login-email-entry">
+          <TextButton
+            size="medium"
+            onPress={() => pushOnce('/email-login')}
+            testID="login-email-entry"
+          >
             {t('login.emailLogin')}
           </TextButton>
         </AuthLinkRow>
@@ -70,7 +75,7 @@ export default function LoginScreen() {
 
         {/* iOS는 설치 전 링크의 코드를 넘길 수 없어 웹에서 본 코드를 여기서 입력한다 */}
         <HStack justify="center">
-          <TextButton size="small" variant="underline" onPress={() => push('/invite')}>
+          <TextButton size="small" variant="underline" onPress={() => pushOnce('/invite')}>
             {t('invite:entry.haveInviteCode')}
           </TextButton>
         </HStack>

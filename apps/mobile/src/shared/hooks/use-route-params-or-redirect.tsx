@@ -6,10 +6,7 @@ type RouteParamsOrRedirect<TParams> =
   | { params: TParams; redirect: null }
   | { params: null; redirect: ReactElement };
 
-/**
- * route 파일의 params 검증. 틀리면 `fallbackHref`로 바꾸는 `<Redirect>`를 돌려주고 route는 그것만 그린다.
- * 안쪽 화면은 같은 스키마의 튜플 훅으로 좁혀진 값을 읽는다
- */
+/** 틀리면 `<Redirect>`를 돌려주고 route는 그것만 그린다. 안쪽 화면은 같은 스키마의 튜플 훅으로 좁혀진 값을 읽는다 */
 export function useRouteParamsOrRedirect<TSchema extends z.ZodObject>(
   schema: TSchema,
   { fallbackHref }: { fallbackHref: Href },

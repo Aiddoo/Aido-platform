@@ -2,11 +2,21 @@ import type { SyncStorage } from '@src/core/ports/sync-storage';
 import { type Instant } from '@src/shared/date/instant';
 import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
 
-import { ActivationPolicy, type ActivationUser } from '../domains/activation.model';
+import {
+  ActivationPolicy,
+  calculateDaysSinceSignup,
+  isInChecklistWindow,
+} from '../domains/activation.model';
 import { activationProgressStoredValue } from '../schemas/activation-progress-storage.schema';
 
+/** 진행을 남길 계정. 아직 받지 않았으면 비어 있고 기록하지 않는다 */
+interface ActivationAccount {
+  id: string;
+  createdAt: Instant;
+}
+
 interface ActivationActionInput {
-  user: ActivationUser | undefined;
+  user: ActivationAccount | undefined;
   now: Instant;
 }
 
@@ -27,7 +37,7 @@ export class ActivationService {
   }
 
   recordTodoCreated = ({ user, now }: ActivationActionInput): void => {
-    if (user == null || !ActivationPolicy.isInChecklistWindow(user, now)) {
+    if (user == null || !isInChecklistWindow(user.createdAt, now)) {
       return;
     }
     const progress = readStoredValue(this.#storage, activationProgressStoredValue, user.id);
@@ -42,7 +52,7 @@ export class ActivationService {
     isCompleted,
     now,
   }: TodoCompletionInput): TodoCompletionResult => {
-    if (!isCompleted || user == null || !ActivationPolicy.isInChecklistWindow(user, now)) {
+    if (!isCompleted || user == null || !isInChecklistWindow(user.createdAt, now)) {
       return { status: 'skipped' };
     }
     const progress = readStoredValue(this.#storage, activationProgressStoredValue, user.id);
@@ -61,6 +71,6 @@ export class ActivationService {
     ) {
       return { status: 'skipped' };
     }
-    return { status: 'activated', daysSinceSignup: ActivationPolicy.getDaysSinceSignup(user, now) };
+    return { status: 'activated', daysSinceSignup: calculateDaysSinceSignup(user.createdAt, now) };
   };
 }

@@ -6,13 +6,12 @@ import type { ComponentProps } from 'react';
 import Svg, { Path } from 'react-native-svg';
 import { match, P } from 'ts-pattern';
 
-import { ALERT_GLYPH_COLORS } from '../constants/weather-colors.constants';
+import { ALERT_GLYPH_COLORS, SUN_COLORS } from '../constants/weather-colors.constants';
 
 const StyledSvg = createStyledIcon(Svg);
 
 /** 흰 면은 currentColor로 그려 on-sky 토큰(colorClassName)을 따른다. */
 const WHITE = 'currentColor';
-const SUN_YELLOW = '#FFD54A';
 const RAIN_BLUE = '#6CC0FF';
 const MOON_CREAM = '#F3EEDB';
 const SUNSET_ORANGE = '#FFB35C';
@@ -68,8 +67,8 @@ const WARNING_MARK = 'M12 9v4.5M12 16.8v.01';
 const GLYPHS = {
   sun: {
     color: [
-      { d: circlePath(12, 12, 4.6), fill: SUN_YELLOW },
-      { d: SUN_RAYS, stroke: SUN_YELLOW, strokeWidth: 1.9 },
+      { d: circlePath(12, 12, 4.6), fill: SUN_COLORS.yellow },
+      { d: SUN_RAYS, stroke: SUN_COLORS.yellow, strokeWidth: 1.9 },
     ],
     mono: 'M12 7.5a4.5 4.5 0 1 0 0 9a4.5 4.5 0 1 0 0-9M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4',
   },
@@ -79,10 +78,10 @@ const GLYPHS = {
   },
   partlyCloudy: {
     color: [
-      { d: circlePath(8.6, 8.4, 3.6), fill: SUN_YELLOW },
+      { d: circlePath(8.6, 8.4, 3.6), fill: SUN_COLORS.yellow },
       {
         d: 'M8.6 2.4v1.3M2.6 8.4h1.3M4.4 4.2l.9.9M12.8 4.2l-.9.9',
-        stroke: SUN_YELLOW,
+        stroke: SUN_COLORS.yellow,
         strokeWidth: 1.7,
       },
       { d: catCloudPath(3, 4.6, 0.8), fill: WHITE },
@@ -120,7 +119,7 @@ const GLYPHS = {
   thunder: {
     color: [
       { d: catCloudPath(0, -1.5, 1), fill: WHITE },
-      { d: 'M13.2 14.2l-3.4 4.8h2.8l-1.4 3.8 4.2-5.6h-2.8l1.8-3z', fill: SUN_YELLOW },
+      { d: 'M13.2 14.2l-3.4 4.8h2.8l-1.4 3.8 4.2-5.6h-2.8l1.8-3z', fill: SUN_COLORS.yellow },
     ],
     mono: `${MONO_RAIN_CLOUD}M12.5 14l-2 3.5h3l-2 3.5`,
   },
@@ -247,16 +246,13 @@ export function WeatherIcon({ condition, isDaylight, ...props }: WeatherIconProp
   return <GlyphIcon glyph={GLYPHS[toGlyphName({ condition, isDaylight })]} {...props} />;
 }
 
-WeatherIcon.Sunrise = function Sunrise(props: GlyphIconProps) {
-  return <GlyphIcon glyph={GLYPHS.sunrise} {...props} />;
-};
+interface NamedGlyphIconProps extends GlyphIconProps {
+  glyph: Extract<GlyphName, 'sunrise' | 'sunset' | 'warning'>;
+}
 
-WeatherIcon.Sunset = function Sunset(props: GlyphIconProps) {
-  return <GlyphIcon glyph={GLYPHS.sunset} {...props} />;
-};
-
-WeatherIcon.Warning = function Warning(props: GlyphIconProps) {
-  return <GlyphIcon glyph={GLYPHS.warning} {...props} />;
+/** 날씨 상태가 아닌 그림(일출·일몰·특보)은 쓰는 곳이 이름으로 고른다 */
+WeatherIcon.Glyph = function Glyph({ glyph, ...props }: NamedGlyphIconProps) {
+  return <GlyphIcon glyph={GLYPHS[glyph]} {...props} />;
 };
 
 interface CardIconProps extends Omit<

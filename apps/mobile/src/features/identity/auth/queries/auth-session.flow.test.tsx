@@ -2,7 +2,6 @@ import { ErrorCode } from '@aido/api/errors';
 import { resolveInitialAuthStatus } from '@src/bootstrap/auth/resolve-initial-auth-status';
 import { useClaimDeviceDataForUser } from '@src/bootstrap/hooks/use-claim-device-data-for-user';
 import { useSyncUserIdentity } from '@src/bootstrap/hooks/use-sync-user-identity';
-import { ApiError } from '@src/core/errors/api-error';
 import { fail, ok } from '@src/core/errors/result';
 import { emitSessionConfirmed } from '@src/core/events/session-confirmed';
 import { emitSessionExpired } from '@src/core/events/session-expired';
@@ -14,11 +13,11 @@ import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import { useUpdateProfileMutationOptions } from '@src/features/identity/user/queries/user.mutations';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
-import { useCreateTodoMutationOptions } from '@src/features/planning/composer/queries/todo-composer.mutations';
 import {
   createTodoDto,
   createTodoFormValues,
 } from '@src/features/planning/todo/__tests__/todo.fixtures';
+import { useCreateTodoMutationOptions } from '@src/features/planning/todo/queries/todo.mutations';
 import { pendingRedemptionStoredValue } from '@src/features/social/invite/schemas/pending-redemption-storage.schema';
 import { toInstant } from '@src/shared/date/instant';
 import { createDraftKey } from '@src/shared/draft/draft.model';
@@ -36,6 +35,7 @@ import {
   createAnalyticsStub,
   createPendingResponse,
   respondByPath,
+  createApiError,
 } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
@@ -50,10 +50,10 @@ import {
   createDeleteAccountDto,
 } from '../__tests__/auth.fixtures';
 import { AUTH_LOG_EVENT } from '../constants/auth-log-events';
-import { useAuthSession } from '../hooks/use-auth-session';
 import { useAuthStatus } from '../hooks/use-auth-status';
 import { LOGOUT_REQUEST_TIMEOUT_MS } from '../services/log-out-device.service';
 import {
+  useAuthSession,
   useDeleteAccountMutationOptions,
   useEmailLoginMutationOptions,
   useExchangeCodeMutationOptions,
@@ -106,7 +106,10 @@ describe('로그아웃', () => {
 
   it.each([
     ['서버 성공', async () => ok({ message: '로그아웃되었습니다.' })],
-    ['서버 거부', async () => fail(new ApiError(ErrorCode.SESSION_0701, '세션 없음', 401))],
+    [
+      '서버 거부',
+      async () => fail(createApiError(ErrorCode.SESSION_0701, { message: '세션 없음' })),
+    ],
     ['서버 장애', () => Promise.reject(new ServerError(503))],
     ['시간 초과', () => Promise.reject(new TimeoutError())],
     ['연결 실패', () => Promise.reject(new NetworkError())],
@@ -455,7 +458,7 @@ describe('계정을 떠날 때의 Analytics 정리 순서', () => {
     // Given
     const { session, calls } = givenRecordedAnalytics();
     session.authHttp.delete.mockResolvedValue(
-      fail(new ApiError(ErrorCode.USER_0602, '비밀번호 불일치', 400)),
+      fail(createApiError(ErrorCode.USER_0602, { message: '비밀번호 불일치', status: 400 })),
     );
     const { result } = await session.renderSession(
       () => useMutation(useDeleteAccountMutationOptions()),
@@ -523,7 +526,7 @@ describe('탈퇴', () => {
       'authenticated',
     );
     await act(async () => {
-      await session.queryClient.fetchQuery(result.current.meOptions);
+      await session.queryClient.query(result.current.meOptions);
     });
 
     // When
@@ -558,7 +561,7 @@ describe('탈퇴', () => {
       'authenticated',
     );
     await act(async () => {
-      await session.queryClient.fetchQuery(result.current.meOptions);
+      await session.queryClient.query(result.current.meOptions);
     });
     session.draftService.save(memoDraftKey, { content: '작성 중' });
     await act(async () => {
@@ -765,7 +768,7 @@ describe('탈퇴', () => {
     const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });
     session.authHttp.delete.mockImplementation(async (url) =>
       url === 'v1/auth/account'
-        ? fail(new ApiError(ErrorCode.USER_0602, '비밀번호 불일치', 400))
+        ? fail(createApiError(ErrorCode.USER_0602, { message: '비밀번호 불일치', status: 400 }))
         : ok({}),
     );
     const { result } = await session.renderSession(useDeleteProbe, 'authenticated');
@@ -793,7 +796,7 @@ describe('탈퇴', () => {
     const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });
     session.authHttp.delete.mockImplementation(async (url) =>
       url === 'v1/auth/account'
-        ? fail(new ApiError(ErrorCode.USER_0602, '비밀번호 불일치', 400))
+        ? fail(createApiError(ErrorCode.USER_0602, { message: '비밀번호 불일치', status: 400 }))
         : ok({}),
     );
     const { result } = await session.renderSession(useDeleteProbe, 'authenticated');
@@ -820,7 +823,7 @@ describe('탈퇴 실패와 푸시', () => {
     const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });
     session.authHttp.delete.mockImplementation(async (url) =>
       url === 'v1/auth/account'
-        ? fail(new ApiError(ErrorCode.USER_0602, '비밀번호 불일치', 400))
+        ? fail(createApiError(ErrorCode.USER_0602, { message: '비밀번호 불일치', status: 400 }))
         : ok({}),
     );
     const { result } = await session.renderSession(
@@ -1005,7 +1008,7 @@ describe('로그아웃 뒤 늦게 끝난 변경', () => {
   const ME_KEY = USER_QUERY_KEYS.me();
   const ACCOUNT_A = createCurrentUserDto({ userId: 'clz7x5p8k0001qz0z8z8z8z8a' });
   const ACCOUNT_B = createCurrentUserDto({ userId: 'clz7x5p8k0001qz0z8z8z8z8b' });
-  const REJECTED = fail(new ApiError(ErrorCode.SYS_0001, '실패', 400));
+  const REJECTED = fail(createApiError(ErrorCode.SYS_0001, { message: '실패', status: 400 }));
 
   function givenSignedInAccountA() {
     const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });

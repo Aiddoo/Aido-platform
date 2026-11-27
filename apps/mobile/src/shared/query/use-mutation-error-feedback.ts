@@ -14,10 +14,7 @@ interface MutationErrorFeedbackOptions extends Pick<
   description?: string;
 }
 
-/**
- * mutation 실패를 햅틱·토스트 한 번으로 알리고 예상하지 못한 것만 보고한다. 전역 `meta.errorFeedback`이 쓰는 그 본체다.
- * `errorFeedback: false`인 mutation(실패 이유마다 다른 안내)과 여러 요청을 묶은 일괄 작업이 이것 하나로 알린다
- */
+/** 전역 `meta.errorFeedback`의 본체로, `errorFeedback: false`인 mutation과 여러 요청을 묶은 일괄 작업도 이것으로 알린다 */
 export function useMutationErrorFeedback() {
   const haptics = useHaptics();
   const toast = useAppToast();

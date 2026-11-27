@@ -16,12 +16,13 @@ import { createOptimisticId } from '@src/shared/utils/create-optimistic-id';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import { pick } from 'es-toolkit';
 
+import { TodoCategoriesPolicy, type TodoCategoryWithCount } from '../domains/todo-categories.model';
 import type {
   TodoCategoryDeletionRequest,
   TodoCategoryDeletionResult,
 } from '../domains/todo-category-deletion.model';
 import { isDeletionPreviewOutdatedError } from '../domains/todo-category.error';
-import { TodoCategoryPolicy, type TodoCategoryWithCount } from '../domains/todo-category.model';
+import { TodoCategoryPolicy } from '../domains/todo-category.model';
 import type { TodoCategoryFormValues } from '../schemas/todo-category-form.schema';
 import type {
   TodoCategoryChange,
@@ -41,11 +42,7 @@ import {
   type OptimisticTodoCategoryWithCount,
   removeDeletedCategory,
   settleTodoCategoryChange,
-  updateCachedTodoCategories,
-  withCategoryAdded,
-  withCategoryChanged,
-  withCategoryRemoved,
-  withCategorySaved,
+  setTodoCategoriesInCache,
 } from './todo-category-cache';
 import { TODO_CATEGORY_MUTATION_KEYS } from './todo-category-mutation-keys';
 
@@ -64,34 +61,34 @@ export function useCreateTodoCategoryMutationOptions() {
     onMutate: async (input) => {
       await cancelTodoCategories(queryClient);
 
-      const lastSortOrder = getCachedTodoCategories(queryClient)?.categories.at(-1)?.sortOrder ?? 0;
-
       const optimisticCategory: OptimisticTodoCategoryWithCount = {
         id: createOptimisticId(),
         name: input.name,
         color: input.color,
-        sortOrder: lastSortOrder + 1,
+        sortOrder: TodoCategoryPolicy.calculateNextSortOrder(
+          getCachedTodoCategories(queryClient)?.categories,
+        ),
         todoCount: 0,
         optimistic: true,
       };
 
-      updateCachedTodoCategories(queryClient, (result) =>
-        withCategoryAdded(result, optimisticCategory),
+      setTodoCategoriesInCache(queryClient, (result) =>
+        TodoCategoriesPolicy.withCategoryAdded(result, optimisticCategory),
       );
 
       return { optimisticCategoryId: optimisticCategory.id };
     },
     onSuccess: (savedCategory, variables, { optimisticCategoryId }) => {
-      updateCachedTodoCategories(queryClient, (result) =>
-        withCategorySaved(result, optimisticCategoryId, savedCategory),
+      setTodoCategoriesInCache(queryClient, (result) =>
+        TodoCategoriesPolicy.withCategorySaved(result, optimisticCategoryId, savedCategory),
       );
       toast.success(t('todo:toast.categoryAdded'));
       trackEvent('category_created', { color: toCategoryColorParam(variables.color) });
     },
     onError: (_error, _variables, context) => {
       if (context != null) {
-        updateCachedTodoCategories(queryClient, (result) =>
-          withCategoryRemoved(result, context.optimisticCategoryId),
+        setTodoCategoriesInCache(queryClient, (result) =>
+          TodoCategoriesPolicy.withCategoryRemoved(result, context.optimisticCategoryId),
         );
       }
     },
@@ -129,6 +126,7 @@ export function useUpdateTodoCategoryMutationOptions() {
   const toast = useAppToast();
 
   return mutationOptions({
+    // 오프라인에 멈추면 시트가 잠긴 채 남고 연결되는 순간 이름·색이 바뀐다. 바로 실패해 되돌린다
     networkMode: 'always',
     mutationKey: TODO_CATEGORY_MUTATION_KEYS.writes(),
     mutationFn: async ({ id, input }: UpdateTodoCategoryVariables) =>
@@ -138,11 +136,13 @@ export function useUpdateTodoCategoryMutationOptions() {
       await cancelTodoCategories(queryClient);
 
       const previous = TodoCategoryPolicy.findCategory(
-        getCachedTodoCategories(queryClient)?.categories ?? [],
+        getCachedTodoCategories(queryClient)?.categories,
         id,
       );
 
-      updateCachedTodoCategories(queryClient, (result) => withCategoryChanged(result, id, input));
+      setTodoCategoriesInCache(queryClient, (result) =>
+        TodoCategoriesPolicy.withCategoryChanged(result, id, input),
+      );
 
       return { previous, startedWithOthers };
     },
@@ -157,8 +157,8 @@ export function useUpdateTodoCategoryMutationOptions() {
     onError: (_error, { id }, context) => {
       const previous = context?.previous;
       if (previous != null) {
-        updateCachedTodoCategories(queryClient, (result) =>
-          withCategoryChanged(result, id, pick(previous, ['name', 'color'])),
+        setTodoCategoriesInCache(queryClient, (result) =>
+          TodoCategoriesPolicy.withCategoryChanged(result, id, pick(previous, ['name', 'color'])),
         );
       }
     },
@@ -182,10 +182,9 @@ interface DeleteTodoCategoryVariables {
   deletion: TodoCategoryDeletionRequest;
 }
 
-/** 옮기거나 함께 지운 할 일이 있으면 그 결과를, 없으면 삭제만 알린다 */
 function getCategoryDeletedMessage(
   deletionResult: TodoCategoryDeletionResult,
-  categories: readonly TodoCategoryWithCount[],
+  categories: readonly TodoCategoryWithCount[] | undefined,
   categoryId: number,
 ) {
   if (deletionResult.todoCount === 0) {
@@ -221,12 +220,13 @@ export function useDeleteTodoCategoryMutationOptions() {
   const toast = useAppToast();
 
   return mutationOptions({
+    mutationKey: TODO_CATEGORY_MUTATION_KEYS.deleteTodoCategory(),
     // 오프라인에 멈춰 두면 삭제 중 표시가 끝나지 않는다. 바로 실패해 시트를 그대로 두고 알린다
     networkMode: 'always',
     mutationFn: async ({ id, deletion }: DeleteTodoCategoryVariables) =>
       unwrap(await todoCategoryApi.deleteCategory(id, deletion)),
     // 되돌릴 수 없는 삭제라 목록에서 미리 빼지 않고, 결과 안내에 쓸 이름만 지우기 전 목록에서 잡아 둔다
-    onMutate: () => ({ categories: getCachedTodoCategories(queryClient)?.categories ?? [] }),
+    onMutate: () => ({ categories: getCachedTodoCategories(queryClient)?.categories }),
     onSuccess: (deletionResult, { id, deletion }, context) => {
       trackEvent('category_deleted', {
         todo_handling: getCategoryDeletedTodoHandling(deletion),
@@ -247,8 +247,7 @@ export function useDeleteTodoCategoryMutationOptions() {
         invalidateTodoCategories(queryClient);
         return;
       }
-      // 그 카테고리의 할 일이 옮겨지거나 지워져 어느 날짜(목록·달력의 완료 기록)·상세가 바뀌었는지 모른다.
-      // 카테고리 목록은 응답으로 고쳐 다시 받지 않는다
+      // 할 일이 옮겨지거나 지워져 어느 날짜·상세가 바뀌었는지 모르고, 카테고리 목록은 응답으로 고쳐 다시 받지 않는다
       invalidateCategorizedTodos(queryClient);
       invalidateTodoDependentQueries(queryClient);
       // 카테고리 수가 한도(TODO_CATEGORY)를 돌려받으므로 남은 개수를 다시 받는다
@@ -269,6 +268,7 @@ export function useReorderTodoCategoryMutationOptions() {
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
 
   return mutationOptions({
+    mutationKey: TODO_CATEGORY_MUTATION_KEYS.reorderTodoCategory(),
     // 저장하는 동안 목록이 끌기 전 순서를 붙잡는다. 오프라인에 멈춰 두면 연결될 때까지 묶이니 바로 실패해 제자리로 돌리고 알린다
     networkMode: 'always',
     mutationFn: async ({ id, input }: ReorderTodoCategoryVariables) =>

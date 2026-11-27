@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { match, P } from 'ts-pattern';
 
-import { type EntitlementFeature } from '../domains/entitlement.model';
 import { EntitlementPolicy } from '../domains/entitlement.model';
+import { type EntitlementFeature } from '../domains/feature-quota.model';
 import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
 
 export type FeatureAccessStatus = 'loading' | 'error' | 'premium' | 'free';

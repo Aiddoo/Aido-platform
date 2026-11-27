@@ -4,7 +4,7 @@ import type { TimedTodoReadModel } from "../read-models/timed-todo.read-model.js
 
 export interface TimedTodoQuery {
   readonly userIds: readonly UserId[];
-  /** `timezone`의 오늘 */
+  /** 조회할 달력 날짜. 호출자가 정한 오늘이다(날씨 알림은 발송 시간대의 오늘) */
   readonly date: Temporal.PlainDate;
   /** 할 일을 저장한 기기 시간대. 여러 날 할 일의 벽시계를 순간으로 바꾼다 */
   readonly timezone: string;

@@ -10,7 +10,7 @@ import { MyPagePaneLayout } from '@src/features/identity/user/components/my-page
 import { ProfileRow } from '@src/features/identity/user/components/profile-row';
 import { MyPageMenuNavigationProvider } from '@src/features/identity/user/hooks/use-my-page-menu-navigation';
 import { PushStatusValue } from '@src/features/notification/components/push-status-value';
-import { TodoImportMenuItem } from '@src/features/planning/todo-import/components/todo-import-menu-item';
+import { ActiveTodoImportValue } from '@src/features/planning/todo-import/components/active-todo-import-value';
 import { FriendCountValue } from '@src/features/social/friend/components/friend-count-value';
 import { InviteRewardButton } from '@src/features/social/invite/components/invite-reward-button';
 import { useIsInviteAvailable } from '@src/features/social/invite/hooks/use-is-invite-available';
@@ -25,6 +25,7 @@ import {
   BadgeDuoIcon,
   BellDuoIcon,
   BlockedDuoIcon,
+  CalendarImportDuoIcon,
   CategoryDuoIcon,
   CrownDuoIcon,
   AppIconDuoIcon,
@@ -47,7 +48,7 @@ import { Suspense } from 'react';
 
 /** 좁은 화면은 마이 탭 첫 화면이, 넓은 화면은 마이 탭 화면마다 왼쪽 칸이 그린다 */
 export function MyPageMenuPane() {
-  const { t } = useTranslation(['user', 'settings']);
+  const { t } = useTranslation(['user', 'settings', 'todoImport']);
   const isInviteAvailable = useIsInviteAvailable();
   const isCompact = usePaneSizeClass() === 'compact';
 
@@ -123,7 +124,12 @@ export function MyPageMenuPane() {
               pathname="/settings/category-settings"
             />
             <SettingsListGroup.Separator />
-            <TodoImportMenuItem />
+            <MyPageMenuItem
+              Icon={CalendarImportDuoIcon}
+              label={t('todoImport:entry.menu')}
+              pathname="/todo-import"
+              value={<ActiveTodoImportValue />}
+            />
             <SettingsListGroup.Separator />
             <MyPageMenuItem
               Icon={ThemeDuoIcon}

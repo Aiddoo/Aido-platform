@@ -10,20 +10,24 @@ export { i18n };
 
 export const t = i18n.t.bind(i18n);
 
-/**
- * 런타임에 결정되는 키(에러 코드 등)를 조회한다.
- * 키가 없으면 defaultValue를 반환하며, 타입 검증 대상이 아니다.
- */
-export function tDynamic(namespace: Namespace, key: string, defaultValue = ''): string {
-  if (!isTranslationKey(namespace, key)) {
+/** 런타임에 정해지는 키(에러 코드 등)라 타입 검증 대상이 아니고, 키가 없으면 defaultValue다 */
+export function tDynamic(
+  namespace: Namespace,
+  key: string,
+  defaultValue = '',
+  values?: Record<string, number>,
+): string {
+  if (!isTranslationKey(namespace, key, values)) {
     return defaultValue;
   }
-  return i18n.t(key, { ns: namespace });
+  return i18n.t(key, { ns: namespace, ...values });
 }
 
 function isTranslationKey<TNamespace extends Namespace>(
   namespace: TNamespace,
   key: string,
+  values?: Record<string, number>,
 ): key is ParseKeys<TNamespace> {
-  return i18n.exists(key, { ns: namespace });
+  // 복수형만 있는 키(en `_one`·`_other`)는 count를 함께 넘겨야 찾는다
+  return i18n.exists(key, { ns: namespace, ...values });
 }

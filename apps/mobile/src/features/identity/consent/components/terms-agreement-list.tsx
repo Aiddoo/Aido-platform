@@ -47,3 +47,15 @@ export function TermsAgreementList(props: SettingsSectionProps) {
     </SettingsListGroup>
   );
 }
+
+TermsAgreementList.Loading = function Loading(props: SettingsSectionProps) {
+  return (
+    <SettingsListGroup {...props}>
+      <SettingsListGroup.Item.Loading descriptionLines={2} />
+      <SettingsListGroup.Separator />
+      <SettingsListGroup.Item.Loading descriptionLines={2} />
+    </SettingsListGroup>
+  );
+};
+
+TermsAgreementList.Error = SettingsListGroup.Error;

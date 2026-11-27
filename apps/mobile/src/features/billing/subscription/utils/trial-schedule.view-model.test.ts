@@ -1,9 +1,9 @@
 import { createDateKey } from '@src/testing/date-key';
 
 import { createSubscriptionPlan } from '../__tests__/subscription.fixtures';
-import { shouldBuzzOnTrialStamp, toTrialScheduleSteps } from './trial-schedule.view-model';
+import { shouldBuzzOnTrialStamp, getTrialScheduleSteps } from './trial-schedule.view-model';
 
-describe('toTrialScheduleSteps', () => {
+describe('getTrialScheduleSteps', () => {
   it.each([
     ['2주 체험', { periodUnit: 'week', periodNumberOfUnits: 2 }, '2026-11-20', '2026-11-23'],
     [
@@ -21,7 +21,7 @@ describe('toTrialScheduleSteps', () => {
       const plan = createSubscriptionPlan({ freeTrial });
 
       // When
-      const steps = toTrialScheduleSteps(plan, createDateKey('2026-11-09'));
+      const steps = getTrialScheduleSteps(plan, createDateKey('2026-11-09'));
 
       // Then
       expect(steps).toEqual([
@@ -37,7 +37,7 @@ describe('toTrialScheduleSteps', () => {
     const plan = createSubscriptionPlan({ freeTrial: null });
 
     // When
-    const steps = toTrialScheduleSteps(plan, createDateKey('2026-11-09'));
+    const steps = getTrialScheduleSteps(plan, createDateKey('2026-11-09'));
 
     // Then
     expect(steps).toBeNull();
@@ -50,7 +50,7 @@ describe('toTrialScheduleSteps', () => {
     });
 
     // When
-    const steps = toTrialScheduleSteps(plan, createDateKey('2026-11-09'));
+    const steps = getTrialScheduleSteps(plan, createDateKey('2026-11-09'));
 
     // Then
     expect(steps).toEqual([

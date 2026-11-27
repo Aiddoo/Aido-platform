@@ -2,10 +2,7 @@ import { clamp } from 'react-native-reanimated';
 
 export type ScrollProgressState = 'hidden' | 'scrolling' | 'end';
 
-/**
- * 원래 RN 배치와 같은 값이다. 막대는 바깥 면 안쪽 4(margin)에 좌우 padding 10이고,
- * 트랙은 막대 안쪽 폭(padding 뺀 폭)의 60%다(Yoga는 % 폭을 부모의 안쪽 폭으로 잰다)
- */
+/** 원래 RN 배치와 같은 값이다. 트랙은 막대 안쪽 폭의 60%다(Yoga는 % 폭을 부모의 안쪽 폭으로 잰다) */
 const BAR_INSET = 4;
 const BAR_PADDING_X = 10;
 const TRACK_WIDTH_RATIO = 0.6;

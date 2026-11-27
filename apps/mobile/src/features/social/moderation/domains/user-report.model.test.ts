@@ -1,12 +1,9 @@
-import { createTodoDetails } from '@src/features/planning/todo/__tests__/todo.fixtures';
-
 import {
   createCheerMessageReportTarget,
   createCommentReportTarget,
   createNudgeMessageReportTarget,
   createProfileReportTarget,
   createTodoReportTarget,
-  TodoReportPolicy,
 } from './user-report.model';
 
 const USER_ID = 'clz7x5p8k0001qz0z8z8z8z8z';
@@ -50,7 +47,7 @@ describe('createProfileReportTarget', () => {
     const target = createProfileReportTarget(user);
 
     // Then
-    expect(target).toEqual({ targetUserId: USER_ID, targetType: 'PROFILE' });
+    expect(target).toEqual({ targetUserId: USER_ID, targetType: 'PROFILE', targetId: null });
   });
 });
 
@@ -83,33 +80,5 @@ describe('메시지 신고 대상', () => {
       targetType: 'CHEER_MESSAGE',
       targetId: '9',
     });
-  });
-});
-
-describe('canReportTodo', () => {
-  it('수정할 수 없는 남의 할 일은 신고할 수 있다', () => {
-    // Given
-    const details = createTodoDetails({
-      permissions: { canEdit: false, canComment: true, canNudge: true, canThank: false },
-    });
-
-    // When
-    const result = TodoReportPolicy.canReportTodo(details);
-
-    // Then
-    expect(result).toBe(true);
-  });
-
-  it('수정할 수 있는 내 할 일은 신고할 수 없다', () => {
-    // Given
-    const details = createTodoDetails({
-      permissions: { canEdit: true, canComment: true, canNudge: true, canThank: false },
-    });
-
-    // When
-    const result = TodoReportPolicy.canReportTodo(details);
-
-    // Then
-    expect(result).toBe(false);
   });
 });

@@ -1,13 +1,7 @@
-import { INVITE_QUALIFICATION } from '@aido/api/vocabulary';
-import { useFriendApi, useHaptics } from '@src/bootstrap/providers/di-context';
+import { useFriendApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { isLimitedFeatureError } from '@src/features/billing/subscription/domains/entitlement.error';
-import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
-import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
-import {
-  getCachedEntitlements,
-  invalidateEntitlements,
-} from '@src/features/billing/subscription/queries/entitlement-cache';
+import { invalidateEntitlements } from '@src/features/billing/subscription/queries/entitlement-cache';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
 import { t } from '@src/shared/i18n';
@@ -15,12 +9,9 @@ import { isLastMutation } from '@src/shared/query/is-last-mutation';
 import { useAppToast } from '@src/shared/ui';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-import { findFriendLimit } from '../domains/friend.error';
-import { getFriendLimit } from '../domains/friend.model';
 import type { ReorderFriendInput } from '../schemas/friend-request.schema';
 import {
   cancelFriendList,
-  findFriendPlacement,
   getCachedFriendList,
   invalidateFriendList,
   invalidateFriends,
@@ -28,11 +19,10 @@ import {
   invalidateReceivedFriendRequests,
   invalidateSentFriendRequests,
   patchSearchedUser,
-  updateFriendListInCache,
-  withFriendRemoved,
-  withFriendRestored,
+  setFriendListInCache,
 } from './friend-cache';
 import { FRIEND_MUTATION_KEYS } from './friend-mutation-keys';
+import { findFriendPlacement, withFriendRemoved, withFriendRestored } from './friend-pages-cache';
 
 export function useAcceptRequestMutationOptions() {
   const friendApi = useFriendApi();
@@ -41,6 +31,7 @@ export function useAcceptRequestMutationOptions() {
   const toast = useAppToast();
 
   return mutationOptions({
+    mutationKey: FRIEND_MUTATION_KEYS.acceptRequest(),
     // 오프라인에 멈춘 채 나중에 실행되지 않게 바로 실패해 안내한다
     networkMode: 'always',
     mutationFn: async (userId: string) => {
@@ -51,8 +42,7 @@ export function useAcceptRequestMutationOptions() {
       toast.success(t('friend:toast.requestAccepted'));
       trackEvent('friend_request_accepted');
     },
-    // 친구 수가 한도(FRIEND)를 써 남은 횟수도 다시 받는다. 화면에 머무는 목록이라 행이 사라질 때까지
-    // 버튼을 꺼 둬 다시 눌러 요청이 또 가지 않게 한다
+    // 친구 수가 한도(FRIEND)를 써 남은 횟수도 다시 받고, 행이 사라질 때까지 버튼을 꺼 둬 요청이 또 가지 않게 한다
     onSettled: () =>
       Promise.all([invalidateEntitlements(queryClient), invalidateFriends(queryClient)]),
     meta: { errorFeedback: { feature: 'friend' } },
@@ -65,6 +55,7 @@ export function useCancelRequestMutationOptions() {
   const { trackEvent } = useTrack();
 
   return mutationOptions({
+    mutationKey: FRIEND_MUTATION_KEYS.cancelRequest(),
     // 오프라인에 멈춘 채 나중에 실행되지 않게 바로 실패해 안내한다
     networkMode: 'always',
     mutationFn: async (userId: string) => {
@@ -88,6 +79,7 @@ export function useRejectRequestMutationOptions() {
   const toast = useAppToast();
 
   return mutationOptions({
+    mutationKey: FRIEND_MUTATION_KEYS.rejectRequest(),
     // 오프라인에 멈춘 채 나중에 실행되지 않게 바로 실패해 안내한다
     networkMode: 'always',
     mutationFn: async (userId: string) => {
@@ -121,7 +113,7 @@ export function useRemoveFriendMutationOptions() {
       await cancelFriendList(queryClient);
       const cachedFriends = getCachedFriendList(queryClient);
       const placement = cachedFriends == null ? null : findFriendPlacement(cachedFriends, userId);
-      updateFriendListInCache(queryClient, (pages) => withFriendRemoved(pages, userId));
+      setFriendListInCache(queryClient, (pages) => withFriendRemoved(pages, userId));
       return { placement };
     },
     onSuccess: () => {
@@ -131,11 +123,10 @@ export function useRemoveFriendMutationOptions() {
     onError: (_error, _userId, context) => {
       const placement = context?.placement;
       if (placement != null) {
-        updateFriendListInCache(queryClient, (pages) => withFriendRestored(pages, placement));
+        setFriendListInCache(queryClient, (pages) => withFriendRestored(pages, placement));
       }
     },
-    // 친구 수가 한도(FRIEND)를 돌려받아 남은 횟수를 다시 받는다. 목록은 앞 지우기 뒤에 다시 받으면
-    // 아직 지우는 중인 친구가 돌아오므로 마지막 지우기가 받는다
+    // 목록은 앞 지우기 뒤에 다시 받으면 아직 지우는 중인 친구가 돌아오므로 마지막 지우기가 받는다
     onSettled: () => {
       invalidateEntitlements(queryClient);
       if (isLastMutation(queryClient, FRIEND_MUTATION_KEYS.writes())) {
@@ -158,6 +149,7 @@ export function useReorderFriendMutationOptions() {
   const queryClient = useQueryClient();
 
   return mutationOptions({
+    mutationKey: FRIEND_MUTATION_KEYS.reorderFriend(),
     // 순서를 저장하는 동안 끌기가 막힌다. 오프라인에 멈춰 두면 연결될 때까지 막히니 바로 실패해 제자리로 돌린다
     networkMode: 'always',
     mutationFn: async ({ followId, input }: ReorderFriendVariables) => {
@@ -173,18 +165,15 @@ export function useReorderFriendMutationOptions() {
   });
 }
 
-/** `onFriendLimitInvite`는 친구 한도 안내에 덧붙일 "초대로 자리 늘리기" 길이다. 초대를 쓸 수 없으면 넘기지 않는다 */
-export function useSendRequestByTagMutationOptions({
-  onFriendLimitInvite,
-}: { onFriendLimitInvite?: () => void } = {}) {
-  const haptics = useHaptics();
+/** 한도(FOLLOW_0909)에 막힌 실패는 부른 쪽이 `useFriendLimitPrompt`로 한도 안내를 띄운다 */
+export function useSendRequestByTagMutationOptions() {
   const friendApi = useFriendApi();
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
-  const gate = useEntitlementGate('FRIEND', { surface: 'friend_request' });
 
   return mutationOptions({
+    mutationKey: FRIEND_MUTATION_KEYS.sendRequestByTag(),
     // 저장 후 떠나는 폼이라 오프라인에서도 멈춰 기다리지 않고 바로 실패해 입력값을 남긴 채 안내한다
     networkMode: 'always',
     mutationFn: async (userTag: string) => {
@@ -211,32 +200,6 @@ export function useSendRequestByTagMutationOptions({
         invalidateReceivedFriendRequests(queryClient);
         invalidateFriendList(queryClient);
         invalidateEntitlements(queryClient);
-      }
-    },
-    onError: (error) => {
-      if (isLimitedFeatureError(error)) {
-        haptics.notify('error');
-        const snapshot = getCachedEntitlements(queryClient);
-        const knownLimit =
-          snapshot == null ? null : EntitlementPolicy.findLimit(snapshot, 'FRIEND');
-        gate.promptIfBlockedError(
-          error,
-          onFriendLimitInvite == null
-            ? {}
-            : {
-                description: t('invite:entry.friendLimitDescription', {
-                  limit: getFriendLimit({
-                    serverLimit: findFriendLimit(error),
-                    knownLimit,
-                  }),
-                  activeDays: INVITE_QUALIFICATION.MIN_ACTIVE_DAYS,
-                }),
-                alternativeAction: {
-                  label: t('invite:entry.growFriendLimit'),
-                  onPress: onFriendLimitInvite,
-                },
-              },
-        );
       }
     },
     meta: {

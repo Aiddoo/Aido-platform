@@ -15,21 +15,19 @@ iOS는 Expo SDK 58의 `expo-widgets`(`createWidget` + props + `updateTimeline`),
 
 ## 구조
 
-| 위치                           | 책임                                                                   |
-| ------------------------------ | ---------------------------------------------------------------------- |
-| schemas                        | snapshot v2 Zod 계약, props, 탐색 명령, 저장 값 정의(키)               |
-| domains                        | day 선택 Policy(`WidgetSnapshotPolicy.getDay`), 탐색 명령 유효성(5분)  |
-| utils                          | 첫 동기화 전 props, 탐색 링크 변환(번들이 별칭을 못 풀어 상대 경로)    |
-| constants                      | Android 위젯 정의·탐색 action                                          |
-| apis                           | summary → snapshot → props mapper                                      |
-| services                       | `WidgetSyncService`: 쓰기 직렬화·generation·중복 제거, 결과를 돌려준다 |
-| repositories                   | Android 위젯 저장소의 snapshot·소유자, 탐색 명령                       |
-| bridge                         | iOS timeline(+ timeline mapper) / Android snapshot·HeadlessJS / 미지원 |
-| components/widgets.ios.tsx     | 격리된 SwiftUI renderer(`expo-widgets`)                                |
-| components/widgets.android.tsx | 격리된 FlexWidget·TextWidget·SvgWidget renderer                        |
-| hooks                          | `AuthBootProvider`가 소유하는 계정·날짜(오늘·내일)·언어 동기화와 보고  |
+| 위치                           | 책임                                                                                                                                                                           |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| domains                        | 어느 날을 보일지 고르는 snapshot 모델(`state`·`date`)과 `WidgetSnapshotPolicy.getDay`, 탐색 목적지·명령 유효성(5분)                                                            |
+| schemas                        | 모델을 `extend`한 저장 모양(`widgetSnapshotStorageSchema`, 키 `aido_widget_snapshot_v1`), props, 탐색 명령 저장 모양, 저장 값 정의                                             |
+| utils                          | 표시 값(view-model): 쓰기 시점에 구울 문구·주간 달력, 첫 동기화 전 로그인 안내 문구(카탈로그). Android 칸 크기(geometry)                                                       |
+| apis                           | mapper: summary·구운 문구 → 저장 모양, 저장 day → props·첫 props·HEX 색, snapshot → iOS timeline, 위젯 URI → 목적지(`parseWidgetNavigation`) → 앱 진입(`toWidgetEntry`)        |
+| services                       | `WidgetSyncService`(view-model과 mapper를 잇는 조립, 쓰기 직렬화·generation·중복 제거), iOS `WidgetTimelineService`, Android `AndroidWidgetService`·`AndroidWidgetTaskService` |
+| repositories                   | Android 위젯 저장소의 snapshot·소유자, 탐색 명령                                                                                                                               |
+| components/widgets.ios.tsx     | 격리된 SwiftUI renderer(`expo-widgets`)                                                                                                                                        |
+| components/widgets.android.tsx | 격리된 FlexWidget·TextWidget·SvgWidget renderer                                                                                                                                |
+| hooks                          | `AuthBootProvider`가 소유하는 계정·날짜(오늘·내일)·언어 동기화와 보고                                                                                                          |
 
-`create-widget-bridge.ios.ts` / `.android.ts`, `widget-storage.android.ts`와 noop fallback, `register-widget-task-handler.android.ts`와 noop fallback을 쓴다. iOS Metro graph에 Android renderer·HeadlessJS·MMKV widget adapter가 들어가지 않도록 platform module로 나눈다.
+플랫폼 조립은 `bootstrap/providers/create-widget-bridge.ios.ts` / `.android.ts`와 noop fallback, `shared/infra/storage/widget-storage.android.ts`와 noop fallback, 위젯만 깨어난 Android 프로세스의 진입점 `bootstrap/providers/register-widget-task-handler.android.ts`(`index.ts`가 등록)와 noop fallback이다. iOS Metro graph에 Android renderer·HeadlessJS·MMKV widget adapter가 들어가지 않도록 platform module로 나눈다. iOS 위젯 번들(`widgets.ios.tsx`)이 부르는 `widget-props.mapper`·`widget-initial-copy.view-model`은 별칭 없이 상대 경로·타입 import만 쓴다.
 
 ## 데이터 흐름과 소유권
 
@@ -51,7 +49,7 @@ useWidgetSnapshotSync(authState)
 - native 쓰기와 오류 관측 실패는 앱 인증·startup을 reject하지 않는다.
 - 앱 없이 깨어난 Android 위젯 프로세스의 실패는 Sentry를 올리지 않고 저장 값(`aido_widget_headless_failure_v1`)에 남겼다가 다음 앱 시작 때 동기화 훅이 읽어 `ErrorReporter`로 보낸다. 서비스는 Sentry를 부르지 않는다([관측](./observability.md#event-captureexception-capturemessage)).
 - 공식 `requestWidgetUpdate`의 완료는 launcher가 bitmap을 표시한 시점까지 보장하지 않는다. 실제 갱신은 native QA에서 확인한다.
-- 저장 키 `aido_widget_snapshot_v1`을 그대로 쓴다. 값은 v2 JSON이고 `widgetSnapshotSchema`가 읽는다. v1 JSON은 읽지 않아 앱이 다시 쓸 때까지 첫 화면이다. snapshot이 없거나 소유자를 알 수 없으면 개인 목록을 추측하지 않고 앱 열기 안내를 보이고, 앱이 현재 계정 요약을 동기화한 뒤 정상 표시한다.
+- 저장 키 `aido_widget_snapshot_v1`을 그대로 쓴다. 값은 v2 JSON이고 `widgetSnapshotStorageSchema`가 읽는다. v1 JSON은 읽지 않아 앱이 다시 쓸 때까지 첫 화면이다. snapshot이 없거나 소유자를 알 수 없으면 개인 목록을 추측하지 않고 앱 열기 안내를 보이고, 앱이 현재 계정 요약을 동기화한 뒤 정상 표시한다.
 
 ## 위젯 목록과 identity
 
@@ -74,14 +72,14 @@ OS 갤러리의 이름·설명은 앱 i18n이 아니라 Expo `locales`(`native-l
 
 ## 날짜와 OS 갱신
 
-`LocalDateProvider`가 자정 timer, foreground, `useCalendars()`의 날짜 재평가를 소유한다. 자정은 Intl 기기 시간대로 계산한다(`getNextLocalMidnight`). Provider 밖의 위젯 경계도 `readDeviceLocalDateState()`로 오늘 key를 계산한다([날짜](./dates-and-i18n.md#날짜와-시간)).
+`LocalDateProvider`가 자정 timer, foreground, `useCalendars()`의 날짜 재평가를 소유한다. 자정은 앱 시간대(`getAppTimezone`)로 계산한다(`getNextLocalMidnight`). Provider 밖의 위젯 경계도 `readLocalDateState()`로 오늘 key를 계산한다([날짜](./dates-and-i18n.md#날짜와-시간)).
 
 - iOS: `toWidgetTimelineEntries`가 [지금: 오늘] → [다음 자정: 내일] → [그다음 자정: stale]을 `updateTimeline`에 넣는다. 내일 day가 없으면 다음 자정부터 stale이다.
 - Android: renderer가 저장된 days에서 오늘 key와 같은 day를 고른다. 세 provider는 공식 plugin의 `updatePeriodMillis: 1800000`을 쓴다. Doze·launcher 정책 때문에 정확한 자정이나 30분 이내 갱신을 보장하지 않는다.
 
 ## 디자인과 렌더링
 
-같은 WidgetProps, 브랜드 #FF6B43, 밝은 배경 #FFFFFF, 어두운 배경 #171310이다. 작은 위젯은 0/1·진행률·연속 기록과 밝은 주황 두 발자국, 중간은 오늘 할 일 2개와 만들기, 큰 위젯은 7일 달력·4개 할 일·초과 개수와 만들기다.
+같은 WidgetProps, 브랜드 #FF6B43(앱 `--main`과 같은 값), 밝은 배경 #FFFFFF, 어두운 배경 #171310이다. Android 색은 `widget.constants.ts`(`ANDROID_WIDGET_PALETTES`·`ANDROID_WIDGET_FIXED_COLORS`)에 두고, iOS는 격리된 위젯 함수 안에 같은 값을 적는다. 작은 위젯은 0/1·진행률·연속 기록과 밝은 주황 두 발자국, 중간은 오늘 할 일 2개와 만들기, 큰 위젯은 7일 달력·4개 할 일·초과 개수와 만들기다.
 
 - iOS는 공식 SwiftUI primitive와 SF `pawprint.fill`을 쓴다.
 - Android는 공식 FlexWidget / TextWidget / SvgWidget과 기존 paw SVG path를 쓴다.
@@ -91,7 +89,7 @@ OS 갤러리의 이름·설명은 앱 i18n이 아니라 Expo `locales`(`native-l
 - Android TextWidget는 취소선을 제공하지 않는다. 완료는 흐린 제목과 체크 표시로 나타내고 글자 폭을 추측해 선을 그리지 않는다.
 - 첫 snapshot 부재(갤러리 미리보기·첫 배치)는 카탈로그의 로그인 안내를 기기 언어(ko, 그 밖은 en)로 렌더링한다. 동기화 뒤에는 앱 언어로 만든 snapshot 문구를 쓴다.
   - iOS `initialProps`는 빌드 시점에 고정되므로 영어 문구와 `localizeStateCopy`를 넘기고, 렌더러가 `Text markdownEnabled`(`LocalizedStringKey`)로 `Localizable.strings`를 조회한다. SwiftUI Text는 환경 locale의 lproj가 없으면 키를 그대로 보이므로 이 키는 영어여야 한다. 갤러리 이름은 OS가 번들 언어로 해석하므로 한국어 원문 키를 쓴다.
-  - Android는 headless 렌더 시 `getDeviceLanguage()`로 `createInitialWidgetProps` 언어를 고른다.
+  - Android는 headless 렌더 시 `getDeviceLanguage()`로 `getInitialWidgetCopy` 언어를 고른다.
 
 ## Android 위젯에서 앱으로 이동
 
@@ -108,7 +106,7 @@ OS 갤러리의 이름·설명은 앱 i18n이 아니라 Expo `locales`(`native-l
 
 종료된 process와 recents task가 함께 남은 Android에서 Expo의 startup `onNewIntent` 처리 전에 URI가 유실되는 경우가 재현됐다. launchMode 변경이나 OTA 비활성화로 회피하지 않고, 공식 custom action과 기존 저장소 포트로 정확한 목적지를 먼저 저장한 뒤 앱 준비 후 소비한다.
 
-- domain model은 허용 scheme/feed date/action/todo id만 해석한다. Href·분석 값·이미 보이는지는 `findWidgetEntry`의 `match` 한 줄이 목적지마다 정한다. 새 목적지는 스키마 항목 하나와 그 한 줄이다([앱 밖에서 들어오는 길](./architecture/state-and-routing.md#앱-밖에서-들어오는-길)).
+- 허용 scheme/feed date/action/todo id는 `widgetNavigationUriSchema`(`schemas/widget-navigation-payload.schema.ts`)만 해석한다. 피드 query는 엄격하게 읽어 목적지 종류를 바꾸지 못한다. 저장 명령 검증과 mapper `parseWidgetNavigation`이 이 스키마를 쓴다. Href·분석 값·이미 보이는지는 `toWidgetEntry`의 `match` 한 줄이 목적지마다 정한다. 새 목적지는 스키마 항목 하나와 그 한 줄이다([앱 밖에서 들어오는 길](./architecture/state-and-routing.md#앱-밖에서-들어오는-길)).
 - command는 5분 TTL, 미래 timestamp 거부, 현재 `me.id`와 소유자 일치 검사를 통과해야 한다. 로그아웃·계정 불일치·만료·손상 명령은 개인 화면 이동 없이 제거한다.
 - 저장한 command의 만든 시각은 출시한 앱과 같은 에포크 ms 숫자다. 저장 스키마(`widgetNavigationCommandStorageSchema`)의 codec이 읽을 때 `Instant`로, 쓸 때 숫자로 바꾼다(repository는 apis를 import하지 않는다). 정책과 HeadlessJS 시계(`getNowInstant`)는 `Instant`로 잰다.
 - 정확한 목적지와 생성 action은 native wake URI에 넣지 않는다. 이전 계정의 위젯이어도 현재 계정 가드를 통과하기 전에 개인 화면으로 자동 이동하지 않는다.
@@ -125,7 +123,7 @@ pnpm --filter @aido/mobile exec jest --runInBand src/features/device/widget src/
 pnpm lint && pnpm format:check && pnpm typecheck
 ```
 
-실제 native QA는 [릴리스 문서](./releases/)의 최신 증거를 기준으로 한다. 종료 process + retained recents task는 force-stop/fresh task와 따로 확인하고 실제 launcher tap 뒤 Activity·목적 화면·뒤로가기를 본다. 세 크기·라이트/다크·긴 문구·빈 상태·계정 전환·오프라인·생성 반복을 확인한다. OEM launcher, 실물 기기 push, 실제 결제 영수증을 에뮬레이터 검증으로 대체해 통과했다고 주장하지 않는다. 관측은 `ErrorReporter`의 `feature: 'widget'` 이벤트와 `category: 'widget'` breadcrumb다.
+실제 native QA는 [릴리스 문서](../../../docs/releases/)의 최신 증거를 기준으로 한다. 종료 process + retained recents task는 force-stop/fresh task와 따로 확인하고 실제 launcher tap 뒤 Activity·목적 화면·뒤로가기를 본다. 세 크기·라이트/다크·긴 문구·빈 상태·계정 전환·오프라인·생성 반복을 확인한다. OEM launcher, 실물 기기 push, 실제 결제 영수증을 에뮬레이터 검증으로 대체해 통과했다고 주장하지 않는다. 관측은 `ErrorReporter`의 `feature: 'widget'` 이벤트와 `category: 'widget'` breadcrumb다.
 
 ## 공식 근거
 

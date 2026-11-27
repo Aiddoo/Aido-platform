@@ -1,17 +1,17 @@
 import { nudgeThanksPreviewResponseSchema } from '@aido/api/contracts/nudge/v1';
 import { ErrorCode, HttpStatus } from '@aido/api/errors';
 import '@src/shared/i18n/init';
-import { ApiError } from '@src/core/errors/api-error';
 import { fail, ok } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http-client';
 import { createPreferenceDto } from '@src/features/identity/preference/__tests__/preference.fixtures';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import {
+  createTodoDetailsDto,
   createTodoDto,
   createTodoItemResponseDto,
   createTodoListResponseDto,
 } from '@src/features/planning/todo/__tests__/todo.fixtures';
-import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
+import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { updateCachedTodo } from '@src/features/planning/todo/queries/todo-cache';
 import { invalidateAfterBlockChange } from '@src/features/social/moderation/queries/moderation-cache';
 import { DRAFT_SAVE_DELAY_MS } from '@src/shared/draft/use-form-draft-autosave';
@@ -26,6 +26,8 @@ import {
   createTestDi,
   deliverQueryNotifications,
   respondByPath,
+  createApiError,
+  setupViewMeasurePerTest,
 } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
@@ -34,7 +36,6 @@ import { onlineManager } from '@tanstack/react-query';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect } from 'react';
-import { View } from 'react-native';
 import { KeyboardController } from 'react-native-keyboard-controller';
 
 import TodoDetailRoute from '../../../../../app/(app)/todo/[todoId]';
@@ -90,10 +91,12 @@ const OWNER_PERMISSIONS = { canEdit: true, canComment: true, canNudge: false, ca
 
 function createDetailsDto(overrides: Record<string, unknown> = {}) {
   return {
-    todo: createTodoDto({ id: TODO_ID, userId: USER_ID, title: '운동하기' }),
-    owner: { id: USER_ID, name: '나', userTag: 'TEST2025', profileImage: null },
-    permissions: OWNER_PERMISSIONS,
-    metrics: { viewCount: 3, commentCount: 1 },
+    ...createTodoDetailsDto({
+      todo: createTodoDto({ id: TODO_ID, userId: USER_ID, title: '운동하기' }),
+      owner: { id: USER_ID, name: '나', userTag: 'TEST2025', profileImage: null },
+      permissions: OWNER_PERMISSIONS,
+      metrics: { viewCount: 3, commentCount: 1 },
+    }),
     ...overrides,
   };
 }
@@ -240,7 +243,7 @@ describe('TodoDetailRoute', () => {
 
       // Then
       expect(await screen.findByTestId('todo-comment-composer-target')).toBeOnTheScreen();
-      expect(screen.getByPlaceholderText('답글 달기…')).toBeOnTheScreen();
+      expect(screen.getByPlaceholderText('답글 달기')).toBeOnTheScreen();
 
       // When
       const [headerBack] = screen.getAllByLabelText('작성 닫기');
@@ -258,7 +261,7 @@ describe('TodoDetailRoute', () => {
     it('서버가 거절해 댓글을 못 보내도 입력값이 그대로 남는다', async () => {
       // Given
       const { httpClient } = await renderTodoDetail();
-      httpClient.post.mockResolvedValue(fail(new ApiError('SYS_0002', '거절', 400)));
+      httpClient.post.mockResolvedValue(fail(createApiError('SYS_0002', { message: '거절' })));
 
       // When
       await fireEvent.changeText(screen.getByTestId('todo-comment-input-0'), '남아야 하는 글');
@@ -410,7 +413,7 @@ describe('TodoDetailRoute', () => {
       const httpClient = createHttpClientStub();
       httpClient.get.mockImplementation(async (path: string) => {
         if (path === `v1/todos/${TODO_ID}/details`) {
-          return fail(new ApiError(ErrorCode.TODO_0801, '없음', HttpStatus.NOT_FOUND));
+          return fail(createApiError(ErrorCode.TODO_0801, { message: '없음' }));
         }
         return ok({ items: [], pagination: PAGINATION, anchor: null });
       });
@@ -439,7 +442,7 @@ describe('TodoDetailRoute', () => {
       const httpClient = createHttpClientStub();
       httpClient.get.mockImplementation(async (path: string) => {
         if (path === `v1/todos/${TODO_ID}/details`) {
-          return fail(new ApiError(ErrorCode.TODO_0801, '없음', HttpStatus.NOT_FOUND));
+          return fail(createApiError(ErrorCode.TODO_0801, { message: '없음' }));
         }
         return ok({ items: [], pagination: PAGINATION, anchor: null });
       });
@@ -605,18 +608,8 @@ describe('TodoDetailRoute', () => {
   describe('댓글 정렬', () => {
     const POPULAR_COMMENT_ID = 'ckcomment0002';
 
-    // 정렬 메뉴는 누른 자리를 재야 열린다. 테스트에는 레이아웃이 없어 자리를 준다
-    beforeEach(() => {
-      jest.spyOn(View.prototype, 'measure').mockImplementation((callback) => {
-        if (typeof callback === 'function') {
-          callback(0, 0, 32, 24, 300, 200);
-        }
-      });
-    });
-
-    afterEach(() => {
-      jest.mocked(View.prototype.measure).mockReset();
-    });
+    // 정렬 메뉴는 누른 자리를 재야 열린다
+    setupViewMeasurePerTest({ measure: [0, 0, 32, 24, 300, 200] });
 
     function toThreadItem(comment: typeof COMMENT_DTO) {
       return {
@@ -685,7 +678,7 @@ describe('TodoDetailRoute', () => {
       const respond = httpClient.get.getMockImplementation();
       httpClient.get.mockImplementation(async (path, config) => {
         if (path === `v1/todos/${TODO_ID}/details`) {
-          return fail(new ApiError(ErrorCode.TODO_0801, '없음', HttpStatus.NOT_FOUND));
+          return fail(createApiError(ErrorCode.TODO_0801, { message: '없음' }));
         }
         if (respond == null) {
           throw new Error('응답을 정하지 않았습니다');
@@ -747,7 +740,7 @@ describe('TodoDetailRoute', () => {
       const { httpClient } = await renderTodoDetail({
         details: { todo: createTodoDto({ id: TODO_ID, ...PRIVATE_TODO }) },
       });
-      httpClient.patch.mockResolvedValue(fail(new ApiError('SYS_0002', '거절', 400)));
+      httpClient.patch.mockResolvedValue(fail(createApiError('SYS_0002', { message: '거절' })));
 
       // When
       await fireEvent.press(await screen.findByTestId('todo-detail-checkbox'));
@@ -789,7 +782,7 @@ describe('TodoDetailRoute', () => {
           queryClient,
           { date: createDateKey(todo.startDate), todoId: TODO_ID },
           (cached) =>
-            SubTodoPolicy.withSubTodoAdded(cached, {
+            TodoPolicy.withSubTodoAdded(cached, {
               id: -1,
               title: '스트레칭',
               completed: false,
@@ -896,18 +889,8 @@ describe('TodoDetailRoute', () => {
   });
 
   describe('댓글 삭제', () => {
-    // ⋯ 메뉴는 누른 칸과 그려진 자리를 재야 열리고 눌린다. 테스트에는 레이아웃이 없어 자리를 준다
-    beforeEach(() => {
-      jest.spyOn(View.prototype, 'measure').mockImplementation((callback) => {
-        if (typeof callback === 'function') {
-          callback(0, 0, 32, 24, 300, 200);
-        }
-      });
-    });
-
-    afterEach(() => {
-      jest.mocked(View.prototype.measure).mockReset();
-    });
+    // ⋯ 메뉴는 누른 칸과 그려진 자리를 재야 열리고 눌린다
+    setupViewMeasurePerTest({ measure: [0, 0, 32, 24, 300, 200] });
 
     async function confirmDeleteWhileRequestIsOpen() {
       const { httpClient } = await renderTodoDetail();
@@ -962,7 +945,12 @@ describe('TodoDetailRoute', () => {
       // When
       await act(async () => {
         removal.resolve(
-          fail(new ApiError(ErrorCode.TODO_0833, '이미 삭제됨', HttpStatus.NOT_FOUND)),
+          fail(
+            createApiError(ErrorCode.TODO_0833, {
+              message: '이미 삭제됨',
+              status: HttpStatus.NOT_FOUND,
+            }),
+          ),
         );
         await confirmPress();
       });

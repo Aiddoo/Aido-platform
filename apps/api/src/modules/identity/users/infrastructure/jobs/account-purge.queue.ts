@@ -1,14 +1,12 @@
 import { z } from "zod";
 
+import { JOB_SCHEDULE_TIMEZONE } from "#api/shared/application/job-schedule-timezone";
 import { defineQueue, JOB_POLLING_SECONDS } from "#api/shared/application/ports/job-queue.port";
 import { DAY_SECONDS } from "#api/shared/domain/time/time-units";
 
 export const ACCOUNT_PURGE_JOB_NAME = "purge-accounts";
-/** 사용자 시간대와 무관한 운영 배치로, 한국 새벽 저트래픽 시간에 돈다 */
-const ACCOUNT_PURGE_TIMEZONE = "Asia/Seoul";
-
 export const ACCOUNT_PURGE_SCHEDULE = {
-  timezone: ACCOUNT_PURGE_TIMEZONE,
+  timezone: JOB_SCHEDULE_TIMEZONE,
   catchUpHour: 3,
 } as const;
 
@@ -29,7 +27,7 @@ export const ACCOUNT_PURGE_QUEUE = defineQueue({
     {
       key: "daily-account-purge-scheduler",
       cron: "0 3 * * *",
-      timezone: ACCOUNT_PURGE_TIMEZONE,
+      timezone: JOB_SCHEDULE_TIMEZONE,
       missed: "skip",
       payload: { name: ACCOUNT_PURGE_JOB_NAME },
     },

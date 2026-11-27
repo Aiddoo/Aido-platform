@@ -22,7 +22,7 @@ import {
   getShootingStarWindow,
   hashToUnit,
   placeSprite,
-} from '../../utils/weather-scene-particles.view-model';
+} from '../../utils/weather-scene-particles.geometry';
 import { getMoonIllumination } from '../../utils/weather-scene.view-model';
 import {
   PARTICLE_SAMPLING,
@@ -62,7 +62,7 @@ const SHOOTING_STAR = {
 } as const;
 const SHOOTING_STAR_ANGLE = Math.atan2(SHOOTING_STAR.travel.y, SHOOTING_STAR.travel.x);
 
-type NightSkyLayerProps = {
+interface NightSkyLayerProps {
   hasMoon: boolean;
   celestialCenter: { x: number; y: number };
   moonPhase: number;
@@ -75,7 +75,7 @@ type NightSkyLayerProps = {
   width: number;
   height: number;
   time: SharedValue<number>;
-};
+}
 
 /** 박자가 제각각인 별, 위상대로 차오른 달과 달무리, 가끔 지나가는 별똥별 */
 export function NightSkyLayer({
@@ -114,7 +114,11 @@ export function NightSkyLayer({
   );
 }
 
-type SkyAreaProps = { width: number; height: number; time: SharedValue<number> };
+interface SkyAreaProps {
+  width: number;
+  height: number;
+  time: SharedValue<number>;
+}
 
 NightSkyLayer.Stars = function Stars({
   clouds,
@@ -255,12 +259,12 @@ NightSkyLayer.ShootingStar = function ShootingStar({ width, height, time }: SkyA
     const window = getShootingStarWindow(time.get());
     const [minX, maxX] = SHOOTING_STAR.startX;
     const [minY, maxY] = SHOOTING_STAR.startY;
-    const k = Math.max(0, progress.get());
+    const travelProgress = Math.max(0, progress.get());
     const x = width * (minX + hashToUnit(window * 3 + 1) * (maxX - minX));
     const y = height * (minY + hashToUnit(window * 3 + 2) * (maxY - minY));
     return [
-      { translateX: x + k * SHOOTING_STAR.travel.x },
-      { translateY: y + k * SHOOTING_STAR.travel.y },
+      { translateX: x + travelProgress * SHOOTING_STAR.travel.x },
+      { translateY: y + travelProgress * SHOOTING_STAR.travel.y },
       { rotate: SHOOTING_STAR_ANGLE },
     ];
   });

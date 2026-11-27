@@ -23,12 +23,17 @@ import {
   CHART_LABEL_GAP_PT,
   CHART_REVEAL_EASING,
   CHART_TAP_MAX_DISTANCE_PT,
-  DAILY_CHART_ASPECT_RATIO,
-  DAILY_CHART_BAR,
 } from '../constants/report-chart.constants';
-import { toBarIndex, toBarRects } from '../utils/bar-chart.geometry';
+import { type BarShape, toBarIndex, toBarRects } from '../utils/bar-chart.geometry';
 
 const ACCESSIBILITY_ACTIONS = [{ name: 'increment' }, { name: 'decrement' }];
+// 차트와 .Loading이 같은 비율을 써야 받은 뒤 자리가 움직이지 않는다
+const DAILY_CHART_ASPECT_RATIO = 3;
+const DAILY_CHART_BAR = {
+  widthRatio: 0.55,
+  cornerRadius: 8,
+  minHeight: 4,
+} as const satisfies BarShape;
 
 interface DailyCompletionChartProps {
   values: readonly { total: number; completed: number; isUpcoming?: boolean }[];

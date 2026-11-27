@@ -7,24 +7,34 @@ import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpecte
 import { useMutation } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 
+import { toVoiceNoteDigestInput } from '../apis/voice-plan.mapper';
 import { PlanRequestPolicy, type PreparedPlanRequest } from '../domains/plan-request.model';
-import {
-  type VoiceNoteDigestInput,
-  VoiceNotePolicy,
-  createDigestInput,
-} from '../domains/voice-note.model';
-import { getVoicePlanFailureCause, type VoicePlanFailureCause } from '../domains/voice.error';
+import { createPlanReviewDraft } from '../domains/plan-review-draft.model';
+import { VoiceNotePolicy } from '../domains/voice-note.model';
+import { getVoicePlanFailure, type VoicePlanFailure } from '../domains/voice.error';
 import { useCreateVoiceNoteDigestMutationOptions } from '../queries/voice.mutations';
-import { createPlanReviewDraft } from '../utils/plan-review-draft';
+import type { VoiceNoteDigestInput } from '../schemas/voice-note-digest-request.schema';
 
 export interface VoiceNoteDigestFailure {
-  cause: VoicePlanFailureCause;
+  cause: VoicePlanFailure;
   /** 서버가 차감하지 않았다고 알렸을 때만 true다. 아니면 차감에 대해 말하지 않는다 */
   isFreeOfCharge: boolean;
 }
 
+interface VoiceNoteDigestActions {
+  digest: () => Promise<void>;
+  isPending: boolean;
+  failure: VoiceNoteDigestFailure | null;
+}
+
 /** 멱등 키를 초안에 함께 저장해 떠나거나 앱을 다시 켜고 다시 눌러도 한 번만 차감된다 */
-export function useVoiceNoteDigest({ accountId, draftId }: { accountId: string; draftId: string }) {
+export function useVoiceNoteDigest({
+  accountId,
+  draftId,
+}: {
+  accountId: string;
+  draftId: string;
+}): VoiceNoteDigestActions {
   const drafts = useVoiceNoteDraftRepository();
   const idGenerator = useIdGenerator();
   const gate = useEntitlementGate('VOICE_NOTE', { surface: 'voice_note' });
@@ -61,7 +71,7 @@ export function useVoiceNoteDigest({ accountId, draftId }: { accountId: string; 
     }
 
     setFailure(null);
-    const input = createDigestInput(note);
+    const input = toVoiceNoteDigestInput(note);
     const request: PreparedPlanRequest<VoiceNoteDigestInput> = {
       fingerprint: JSON.stringify(input),
       input,
@@ -87,13 +97,15 @@ export function useVoiceNoteDigest({ accountId, draftId }: { accountId: string; 
         return;
       }
       saveRequest(PlanRequestPolicy.findRequestToRetry(request, error));
+      // 서버가 한도로 막았으면 안내 시트를 띄운다. 아래에서 실패 카드는 그리지 않는다
+      gate.promptIfBlockedError(error);
       if (isAiDataSharingConsentRequiredError(error) && !hasAskedConsentRef.current) {
         hasAskedConsentRef.current = true;
         if (await aiConsent.requestAgreement()) {
           return requestDigest();
         }
       }
-      const cause = getVoicePlanFailureCause(error);
+      const cause = getVoicePlanFailure(error);
       // 정리 실패는 화면이 직접 보여 mutation이 알리지 않으므로 예상하지 못한 실패는 여기서 보고한다
       reportUnexpectedError(error);
       setFailure(cause === 'limit' ? null : { cause, isFreeOfCharge: isFreeOfChargeError(error) });

@@ -3,10 +3,8 @@ import {
   createContext,
   Fragment,
   type ReactNode,
-  useCallback,
   useId,
   useLayoutEffect,
-  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -37,35 +35,32 @@ export function OverlayProvider({
   const [overlays, setOverlays] = useState<Map<string, OverlayEntry>>(new Map());
   const versionRef = useRef(0);
   const hostName = useId();
-  const portalTarget = useMemo(
-    () => ({ hostName, disableFullWindowOverlay }),
-    [hostName, disableFullWindowOverlay],
-  );
+  const portalTarget = { hostName, disableFullWindowOverlay };
 
   useLayoutEffect(() => {
     // oxlint-disable-next-line react/set-state-in-effect -- resetKey(화면 경로)가 바뀌면 떠 있던 오버레이를 한 번에 걷는다
     setOverlays((previous) => (previous.size === 0 ? previous : new Map()));
   }, [resetKey]);
 
-  const mount = useCallback((id: string, element: ReactNode) => {
+  const mount = (id: string, element: ReactNode) => {
     const version = ++versionRef.current;
     setOverlays((previous) => {
       const next = new Map(previous);
       next.set(id, { element, version });
       return next;
     });
-  }, []);
+  };
 
-  const unmount = useCallback((id: string) => {
+  const unmount = (id: string) => {
     setOverlays((previous) => {
       const next = new Map(previous);
       next.delete(id);
       return next;
     });
-  }, []);
+  };
 
-  const controller = useMemo(() => ({ mount, unmount }), [mount, unmount]);
-  const state = useMemo(() => ({ hasActiveOverlay: overlays.size > 0 }), [overlays.size]);
+  const controller = { mount, unmount };
+  const state = { hasActiveOverlay: overlays.size > 0 };
 
   return (
     <OverlayContext value={controller}>

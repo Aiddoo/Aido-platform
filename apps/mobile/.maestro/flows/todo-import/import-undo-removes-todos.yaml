@@ -1,0 +1,126 @@
+appId: ${MAESTRO_APP_ID}
+name: 기기 캘린더 일정을 가져오면 할 일이 생기고 결과 화면에서 되돌리면 사라진다
+tags:
+  - regression
+  - todo-import
+  - ios-only
+onFlowStart:
+  - runFlow: ../../subflows/app/load-helpers.yaml
+  - evalScript: ${output.main = output.api.signIn('main')}
+  - evalScript: ${output.eventPrefix = 'E2E import '}
+  - evalScript: ${output.eventTitle = output.eventPrefix + output.config.runId}
+  - evalScript: ${output.main.removeTodosStartingWith(output.eventPrefix)}
+  # 새 시뮬레이터 캘린더에는 일정이 없고 일정 없는 캘린더는 고를 수 없다(TodoImportCollectionPolicy.isSelectable).
+  # 공휴일 구독 캘린더는 처음에 고르지 않은 채로 두고(isDefaultSelected) 기간에 공휴일이 있는지도 날짜마다 달라,
+  # 기본 로컬 캘린더(이 기기에 저장, 처음부터 선택됨)에 오늘 일정 하나를 캘린더 앱으로 심는다.
+  # store-screenshots 도구는 가져오기 화면을 찍지 않아 기기 캘린더를 심는 방법이 없다
+  - runFlow:
+      label: iOS 캘린더 앱에 오늘 일정 하나를 넣는다
+      when:
+        platform: iOS
+      commands:
+        - launchApp:
+            appId: ${output.labels.iosCalendar.appId}
+            stopApp: true
+        # 확인 필요: 캘린더 앱을 처음 열면 새 기능 안내가 뜬다. 문구가 다르면 이 줄의 글자를 고친다
+        - extendedWaitUntil:
+            visible: ${output.labels.iosCalendar.welcomeContinue}
+            timeout: 5000
+            optional: true
+        - runFlow:
+            when:
+              visible: ${output.labels.iosCalendar.welcomeContinue}
+            commands:
+              - tapOn: ${output.labels.iosCalendar.welcomeContinue}
+        # 확인 필요: 오른쪽 위 + 버튼의 접근성 라벨이 Add|추가인지 inspect_screen으로 본다
+        - tapOn: ${output.labels.iosCalendar.addButton}
+        - tapOn: ${output.labels.iosCalendar.titleField}
+        - inputText: ${output.eventTitle}
+        # 확인 필요: 새 일정 시트의 저장 버튼도 Add|추가라 뒤 화면의 + 버튼과 겹치면 index로 고른다.
+        # 시작 시각은 기본값(다음 정각)이라 가져오기 기본 기간(오늘부터 30일) 안이다
+        - tapOn: ${output.labels.iosCalendar.addButton}
+        - extendedWaitUntil:
+            notVisible: ${output.labels.iosCalendar.titleField}
+            timeout: 10000
+        - stopApp: ${output.labels.iosCalendar.appId}
+  - runFlow: ../../subflows/app/launch-fresh.yaml
+  # launch-fresh는 알림 말고 모든 권한을 거절한다. 허용으로 바꾸는 것은 앱을 끝내지 않는다
+  - setPermissions:
+      permissions:
+        calendar: allow
+onFlowComplete:
+  - evalScript: ${output.main && output.main.removeTodosStartingWith(output.eventPrefix)}
+---
+# 지키는 것: 1.17.0 가져오기 4단계(권한을 이미 주면 캘린더부터) → 진행·결과 → 되돌리기가 서버에 그대로 반영된다
+# (app/(app)/(tabs)/(me,memos,todos)/todo-import/index.tsx·[importId].tsx)
+- runFlow:
+    label: iOS에서만 확인한다(Android 에뮬레이터는 기기 캘린더에 일정을 심을 방법이 없어 수동 확인)
+    when:
+      platform: iOS
+    commands:
+      # Given: 캘린더 권한을 준 계정으로 로그인했다
+      - runFlow:
+          file: ../../subflows/auth/sign-in.yaml
+          env:
+            EMAIL: ${output.main.email}
+            PASSWORD: ${output.main.password}
+
+      # When: 가져오기를 열어 기본 기간·기본 캘린더·기본 넣을 곳(첫 카테고리)·기본 옵션으로 가져온다
+      - openLink: ${output.config.appScheme}://todo-import
+      - extendedWaitUntil:
+          visible:
+            id: ${output.ids.todoImport.calendarsStep}
+          timeout: 20000
+      # 캘린더 목록을 다 읽고 고른 일정이 있어야 버튼이 켜진다
+      - extendedWaitUntil:
+          visible:
+            id: ${output.ids.todoImport.next}
+            enabled: true
+          timeout: 20000
+      - tapOn:
+          id: ${output.ids.todoImport.next}
+          enabled: true
+      - extendedWaitUntil:
+          visible:
+            id: ${output.ids.todoImport.categoriesStep}
+          timeout: 10000
+      - extendedWaitUntil:
+          visible:
+            id: ${output.ids.todoImport.next}
+            enabled: true
+          timeout: 20000
+      - tapOn:
+          id: ${output.ids.todoImport.next}
+          enabled: true
+      - extendedWaitUntil:
+          visible:
+            id: ${output.ids.todoImport.optionsStep}
+          timeout: 10000
+      - tapOn:
+          id: ${output.ids.todoImport.start}
+
+      # Then: 결과 화면이 열리고 서버에 일정 제목의 할 일이 생긴다
+      - extendedWaitUntil:
+          visible: ${output.labels.todoImport.completedTitle}
+          timeout: 60000
+      - evalScript: ${output.main.waitForTodoTitled(output.eventTitle)}
+
+      # When: 결과 화면에서 되돌리기를 누르고 확인한다
+      - tapOn:
+          id: ${output.ids.todoImport.undo}
+      - extendedWaitUntil:
+          visible: ${output.labels.todoImport.undoConfirmTitle}
+          timeout: 10000
+      # 확인 창은 testID를 받지 않고 화면의 되돌리기 버튼과 글자가 같아 취소 버튼 오른쪽의 것을 누른다(src/shared/ui/confirm-dialog/confirm-dialog.tsx)
+      - tapOn:
+          text: ${output.labels.todoImport.undoButton}
+          rightOf:
+            text: ${output.labels.todoImport.cancelButton}
+
+      # Then: 되돌린 결과가 보이고 서버에서 그 할 일이 사라진다
+      - extendedWaitUntil:
+          visible: ${output.labels.todoImport.undoneTitle}
+          timeout: 60000
+      - evalScript: ${output.main.waitForTodoTitledGone(output.eventTitle)}
+      - assertNotVisible:
+          id: ${output.ids.app.rootError}

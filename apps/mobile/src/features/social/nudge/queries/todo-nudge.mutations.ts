@@ -1,7 +1,6 @@
 import { useHaptics, useTodoNudgeApi } from '@src/bootstrap/providers/di-context';
 import { emitNotificationsChanged } from '@src/core/events/notifications-changed';
 import { isLimitedFeatureError } from '@src/features/billing/subscription/domains/entitlement.error';
-import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { invalidateEntitlements } from '@src/features/billing/subscription/queries/entitlement-cache';
 import { invalidateTodoDetails } from '@src/features/planning/todo/queries/todo-cache';
 import { useTrack } from '@src/shared/analytics';
@@ -24,6 +23,7 @@ import {
   invalidateRemindNudgeCooldown,
   setNudgeInteractionInCache,
 } from './todo-nudge-cache';
+import { TODO_NUDGE_MUTATION_KEYS } from './todo-nudge-mutation-keys';
 
 export function useReplyToNudgeMutationOptions() {
   const todoNudgeApi = useTodoNudgeApi();
@@ -31,6 +31,7 @@ export function useReplyToNudgeMutationOptions() {
   const { trackEvent } = useTrack();
 
   return mutationOptions({
+    mutationKey: TODO_NUDGE_MUTATION_KEYS.replyToNudge(),
     // 화면에 머물며 답장 버튼이 응답까지 꺼진다. 오프라인에 멈춰 두면 연결되는 순간 몰래 보내므로 바로 실패해 안내한다
     networkMode: 'always',
     mutationFn: async ({ nudgeId, input }: { nudgeId: number; input: ReplyToNudgeInput }) =>
@@ -55,6 +56,7 @@ export function useSendNudgeThanksMutationOptions() {
   const { trackEvent } = useTrack();
 
   return mutationOptions({
+    mutationKey: TODO_NUDGE_MUTATION_KEYS.sendNudgeThanks(),
     // 감사 버튼이 응답까지 돈다. 답장과 같은 이유로 오프라인에서 멈추지 않는다
     networkMode: 'always',
     mutationFn: async ({ todoId, input }: { todoId: number; input: SendNudgeThanksInput }) =>
@@ -84,6 +86,7 @@ export function useSendRemindNudgeMutationOptions() {
   const toast = useAppToast();
 
   return mutationOptions({
+    mutationKey: TODO_NUDGE_MUTATION_KEYS.sendRemindNudge(),
     // 저장 후 떠나는 시트라 오프라인에서도 멈춰 기다리지 않고 바로 실패해 안내한다
     networkMode: 'always',
     mutationFn: async (input: CreateRemindNudgeInput) =>
@@ -105,9 +108,10 @@ export function useSendTodoNudgeMutationOptions() {
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
-  const gate = useEntitlementGate('NUDGE', { surface: 'todo_nudge' });
 
+  // 한도에 막힌 실패는 부른 시트가 한도 안내를 띄운다
   return mutationOptions({
+    mutationKey: TODO_NUDGE_MUTATION_KEYS.sendTodoNudge(),
     networkMode: 'always',
     mutationFn: async (input: CreateNudgeInput) => unwrap(await todoNudgeApi.sendNudge(input)),
     // 남은 횟수는 보낸 뒤에만 바뀐다. 한도에 막힌 실패는 한도 시트가 받은 한도로 스냅샷을 맞춘다
@@ -116,11 +120,6 @@ export function useSendTodoNudgeMutationOptions() {
       invalidateEntitlements(queryClient);
       toast.success(t('todo:toast.nudgeSent'));
       trackEvent('nudge_sent');
-    },
-    onError: (error) => {
-      if (gate.promptIfBlockedError(error)) {
-        haptics.notify('error');
-      }
     },
     // 할 일 상세의 콕 버튼은 서버가 계산한 permissions.canNudge를 따른다
     onSettled: (_data, _error, { todoId }) => invalidateTodoDetails(queryClient, { todoId }),

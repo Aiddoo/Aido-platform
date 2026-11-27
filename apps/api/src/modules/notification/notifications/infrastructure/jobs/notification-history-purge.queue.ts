@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { JOB_SCHEDULE_TIMEZONE } from "#api/shared/application/job-schedule-timezone";
 import {
   defineQueue,
   JOB_POLLING_SECONDS,
@@ -27,7 +28,7 @@ export const NOTIFICATION_HISTORY_PURGE_QUEUE = defineQueue({
     {
       key: "daily-notification-history-purge-scheduler",
       cron: "50 3 * * *",
-      timezone: "Asia/Seoul",
+      timezone: JOB_SCHEDULE_TIMEZONE,
       missed: "skip",
       payload: {},
     },

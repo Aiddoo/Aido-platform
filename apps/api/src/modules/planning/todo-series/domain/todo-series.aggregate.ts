@@ -2,8 +2,8 @@ import type { TodoVisibility } from "@aido/api/vocabulary";
 
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
+import { localDateIn } from "#api/shared/domain/time/timezone-name";
 
-import { localDateAt } from "../../shared/domain/todo-calendar.domain-service.js";
 import { TodoTitle } from "../../shared/domain/todo-title.vo.js";
 import { ChecklistTemplate, type ChecklistTemplateItem } from "./checklist-template.vo.js";
 import { occurrenceHorizon } from "./occurrence-horizon.domain-service.js";
@@ -188,7 +188,7 @@ export class TodoSeries extends AggregateRoot<TodoSeriesId, TodoSeriesProps, Tod
   /** 새로 시작하는 규칙만 확인한다. 분할은 이미 있던 규칙을 잇는 것이라 지난 회차 수와 상관없다. */
   assertWithinPastLimit(now: Temporal.Instant): void {
     const { rule, startDate, timezone } = this.props;
-    if (rule.countBefore(startDate, localDateAt(now, timezone)) > MAX_PAST_OCCURRENCES_ON_START) {
+    if (rule.countBefore(startDate, localDateIn(now, timezone)) > MAX_PAST_OCCURRENCES_ON_START) {
       throw invalidRepeatRule("startDate");
     }
   }
@@ -360,7 +360,7 @@ export class TodoSeries extends AggregateRoot<TodoSeriesId, TodoSeriesProps, Tod
   // 그 횟수의 날짜가 다 지났으면 끝난다. 규칙 행을 고쳤는지(updatedAt)는 채운 시점과 상관없어 보지 않는다
   skipDormantGap(now: Temporal.Instant): boolean {
     const { nextOccurrenceDate, generatedCount, rule, startDate, timezone } = this.props;
-    const today = localDateAt(now, timezone);
+    const today = localDateIn(now, timezone);
     if (nextOccurrenceDate == null || Temporal.PlainDate.compare(nextOccurrenceDate, today) >= 0) {
       return false;
     }

@@ -84,7 +84,7 @@ describe('PushDeliverySettings', () => {
     await userEvent.press(pushToggle);
 
     // Then
-    expect(await screen.findAllByText('푸시 알림을 먼저 활성화해주세요')).not.toHaveLength(0);
+    expect(await screen.findAllByText('푸시 알림을 먼저 켜주세요')).not.toHaveLength(0);
     expect(pushNotification.requestPermission).not.toHaveBeenCalled();
     expect(getPushPermissionEvents()).toEqual([]);
   });

@@ -1,4 +1,4 @@
-import { REWARD_TYPE, REWARD_TYPE_UNKNOWN } from '@aido/api/vocabulary';
+import { REWARD_TYPE, REWARD_TYPE_UNKNOWN, type RewardType } from '@aido/api/vocabulary';
 import { sumBy } from 'es-toolkit';
 import { z } from 'zod';
 
@@ -9,32 +9,20 @@ export const inviteRewardSchema = z.object({
 });
 export type InviteReward = z.infer<typeof inviteRewardSchema>;
 
-export function isPremiumDaysReward(reward: InviteReward) {
-  return reward.rewardType === REWARD_TYPE.PREMIUM_DAYS;
+function sumQuantity(rewards: readonly InviteReward[], rewardType: RewardType) {
+  return sumBy(
+    rewards.filter((reward) => reward.rewardType === rewardType),
+    (reward) => reward.quantity,
+  );
 }
 
-function isFriendSlotReward(reward: InviteReward) {
-  return reward.rewardType === REWARD_TYPE.FRIEND_SLOT;
-}
-
-export function calculateRewardQuantity(
-  rewards: readonly InviteReward[],
-  isTarget: (reward: InviteReward) => boolean,
-) {
-  return sumBy(rewards.filter(isTarget), (reward) => reward.quantity);
-}
-
-export function getPremiumDays(rewards: readonly InviteReward[]) {
-  return calculateRewardQuantity(rewards, isPremiumDaysReward);
-}
-
-export function getFriendSlots(rewards: readonly InviteReward[]) {
-  return calculateRewardQuantity(rewards, isFriendSlotReward);
-}
-
+// 초대·단계·수락 결과가 실은 보상 목록을 같은 규칙으로 더한다
 export const InviteRewardPolicy = {
-  getPremiumDays,
-  getFriendSlots,
-  isPremiumDaysReward,
-  calculateRewardQuantity,
-} as const;
+  getPremiumDays(rewards: readonly InviteReward[]): number {
+    return sumQuantity(rewards, REWARD_TYPE.PREMIUM_DAYS);
+  },
+
+  getFriendSlots(rewards: readonly InviteReward[]): number {
+    return sumQuantity(rewards, REWARD_TYPE.FRIEND_SLOT);
+  },
+};

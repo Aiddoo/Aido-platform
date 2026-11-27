@@ -1,11 +1,10 @@
 import Add from '@expo/material-symbols/add.xml';
-import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { CategoryList } from '@src/features/planning/category/components/category-list';
+import { useOpenCategoryCreate } from '@src/features/planning/category/hooks/use-open-category-create';
 import {
   CATEGORY_SETTINGS_VIEW,
   categorySettingsViewSchema,
 } from '@src/features/planning/category/schemas/category-settings-params.schema';
-import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useView } from '@src/shared/hooks/use-view';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -16,7 +15,7 @@ import {
   StyledSafeAreaView,
   ViewTabs,
 } from '@src/shared/ui';
-import { Stack, router } from 'expo-router';
+import { Stack } from 'expo-router';
 import { Tabs } from 'heroui-native';
 import { Suspense } from 'react';
 import { match } from 'ts-pattern';
@@ -25,17 +24,8 @@ const ADD_ICON = process.env.EXPO_OS === 'ios' ? 'plus' : Add;
 
 export default function TodoCategorySettingsScreen() {
   const { t } = useTranslation('settings');
-  const push = useSingleTap(router.push);
   const [view, setView] = useView('view', categorySettingsViewSchema);
-  const gate = useEntitlementGate('TODO_CATEGORY', { surface: 'category_create' });
-
-  // 이름을 다 쓴 뒤에 막히지 않게 시트를 열기 전에 확인한다
-  const handleAddPress = () => {
-    if (gate.promptIfBlocked()) {
-      return;
-    }
-    push('/todo-categories/new');
-  };
+  const openCategoryCreate = useOpenCategoryCreate();
 
   // 목록이 스스로 스크롤해 `SettingsScreenLayout`(ScrollView) 대신 같은 여백의 고정 틀을 쓴다
   return (
@@ -46,7 +36,7 @@ export default function TodoCategorySettingsScreen() {
         <Stack.Toolbar.Button
           icon={ADD_ICON}
           accessibilityLabel={t('categorySettings.add')}
-          onPress={handleAddPress}
+          onPress={openCategoryCreate}
         >
           {t('categorySettings.add')}
         </Stack.Toolbar.Button>

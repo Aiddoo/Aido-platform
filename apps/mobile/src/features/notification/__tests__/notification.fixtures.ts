@@ -7,13 +7,16 @@ import {
   unreadCountResponseSchema,
 } from '@aido/api/contracts/notification/v1';
 import type { ErrorCodeType } from '@aido/api/errors';
-import { ApiError } from '@src/core/errors/api-error';
 import type { PushPermissionResponse } from '@src/core/ports/push-notification-gateway';
 import { fromEpochMs } from '@src/shared/date/instant';
+import { createApiError } from '@src/testing/api-error';
 import { defineFixture } from '@src/testing/fixture';
 
 import { notificationSchema } from '../domains/notification.model';
-import type { PushNotificationResponse } from '../domains/push-notification-response.model';
+import {
+  type PushNotificationResponse,
+  pushNotificationResponseSchema,
+} from '../domains/push-notification-response.model';
 import { pushNotificationSchema } from '../domains/push-notification.model';
 import { pushPermissionSchema } from '../domains/push-permission.model';
 import { pushRegistrationSchema } from '../domains/push-registration.model';
@@ -107,11 +110,10 @@ export const createNotification = defineFixture(notificationSchema, {
 export function createNotificationApiError(
   overrides?: Partial<{ code: ErrorCodeType; message: string; status: number }>,
 ) {
-  return new ApiError(
-    overrides?.code ?? 'NOTIFICATION_1001',
-    overrides?.message ?? '알림을 찾을 수 없어요',
-    overrides?.status ?? 400,
-  );
+  return createApiError(overrides?.code ?? 'NOTIFICATION_1001', {
+    message: overrides?.message ?? '알림을 찾을 수 없어요',
+    status: overrides?.status ?? 400,
+  });
 }
 
 export const createPushNotification = defineFixture(pushNotificationSchema, {
@@ -130,10 +132,11 @@ export const createPushRegistration = defineFixture(pushRegistrationSchema, {
   releaseRequestedAt: null,
 });
 
+/** 상태마다 칸이 달라 넘긴 값까지 모델 스키마로 검증한다 */
 export function createPushNotificationResponse(
   overrides: Partial<PushNotificationResponse> = {},
 ): PushNotificationResponse {
-  return {
+  return pushNotificationResponseSchema.parse({
     id: 'response-1',
     notificationIdentifier: 'notification-request-1',
     actionIdentifier: 'expo.modules.notifications.actions.DEFAULT',
@@ -143,5 +146,5 @@ export function createPushNotificationResponse(
     appState: 'background',
     activeSince: null,
     ...overrides,
-  };
+  });
 }

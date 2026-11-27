@@ -3,19 +3,19 @@ import { IDEMPOTENCY_KEY_HEADER } from '@aido/api/vocabulary';
 import type { ApiError } from '@src/core/errors/api-error';
 import { ok, type Result } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http-client';
-import { MINUTE_MS } from '@src/shared/constants/time-units';
+import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time-units';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
-import type { VoiceNoteDigestInput } from '../domains/voice-note.model';
+import type { PlannedAction } from '../domains/planned-action.model';
+import type { VoiceNoteDigestResult } from '../domains/voice-note-digest.model';
 import type {
   AppliedPlanResult,
-  PlannedAction,
   QuickPlanResult,
-  VoiceNoteDigestResult,
   VoicePlanSource,
 } from '../domains/voice-plan.model';
 import type { CreateQuickPlanInput } from '../schemas/quick-plan-request.schema';
+import type { VoiceNoteDigestInput } from '../schemas/voice-note-digest-request.schema';
 import {
   lenientQuickPlanResponseSchema,
   lenientVoiceNoteDigestResponseSchema,
@@ -30,7 +30,7 @@ import {
 } from './voice-plan.mapper';
 
 // 서버 AI 제한(빠른 계획 24초, 노트 정리 45초)보다 길어야 앱이 먼저 끊지 않고 환불된 오류(charged:false)를 받는다
-const QUICK_PLAN_TIMEOUT_MS = 30_000;
+const QUICK_PLAN_TIMEOUT_MS = 30 * SECOND_MS;
 const DIGEST_TIMEOUT_MS = MINUTE_MS;
 
 export class VoiceApi {

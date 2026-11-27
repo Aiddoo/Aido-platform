@@ -9,6 +9,7 @@ import {
   createIncomingLinkGatewayStub,
   createTestDi,
   createTestQueryClient,
+  getTrackedEvents,
   type TestDi,
 } from '@src/testing/core';
 // 생성된 typed routes가 없는 CI에서는 useSegments 반환이 [string]으로 좁아져 공용 mock의 jest.fn을 직접 쓴다
@@ -39,11 +40,7 @@ async function openLink(url: string) {
   });
 }
 
-function widgetOpenedCalls() {
-  return analytics.trackEvent.mock.calls.filter(([name]) => name === 'widget_opened');
-}
-
-describe('종료된 앱의 위젯 명령 복원', () => {
+describe('useWidgetAppEntry', () => {
   setupFakeTimersPerTest({ now: new Date('2026-10-05T00:00:00Z') });
 
   let queryClient: QueryClient;
@@ -129,11 +126,11 @@ describe('종료된 앱의 위젯 명령 복원', () => {
       params: { todoId: '12' },
     });
     expect(di.widgetNavigationRepository.findPendingCommand()).toBeNull();
-    expect(widgetOpenedCalls()).toEqual([['widget_opened', { destination: 'todo' }]]);
+    expect(getTrackedEvents(analytics, 'widget_opened')).toEqual([{ destination: 'todo' }]);
     await hook.rerender(undefined);
     await flushFrames();
     expect(router.navigate).toHaveBeenCalledTimes(1);
-    expect(widgetOpenedCalls()).toHaveLength(1);
+    expect(getTrackedEvents(analytics, 'widget_opened')).toHaveLength(1);
   });
 
   it('이동 frame 전에 연속으로 누르면 마지막 명령만 실행한다', async () => {
@@ -180,7 +177,7 @@ describe('종료된 앱의 위젯 명령 복원', () => {
 
     // Then
     expect(router.navigate).toHaveBeenCalledTimes(1);
-    expect(widgetOpenedCalls()).toHaveLength(2);
+    expect(getTrackedEvents(analytics, 'widget_opened')).toHaveLength(2);
   });
 
   it('켜진 앱에 명령 없이 들어온 위젯 링크는 Router가 열고 탭마다 센다', async () => {
@@ -198,10 +195,10 @@ describe('종료된 앱의 위젯 명령 복원', () => {
 
     // Then
     expect(router.navigate).not.toHaveBeenCalled();
-    expect(widgetOpenedCalls()).toEqual([
-      ['widget_opened', { destination: 'feed' }],
-      ['widget_opened', { destination: 'feed' }],
-      ['widget_opened', { destination: 'add_todo' }],
+    expect(getTrackedEvents(analytics, 'widget_opened')).toEqual([
+      { destination: 'feed' },
+      { destination: 'feed' },
+      { destination: 'add_todo' },
     ]);
   });
 
@@ -220,7 +217,7 @@ describe('종료된 앱의 위젯 명령 복원', () => {
       await flushFrames();
 
       // Then
-      expect(widgetOpenedCalls()).toEqual([['widget_opened', { destination: 'todo' }]]);
+      expect(getTrackedEvents(analytics, 'widget_opened')).toEqual([{ destination: 'todo' }]);
     });
 
     it('링크가 명령 복원 뒤에 와도 명령 목적지로 한 번만 센다', async () => {
@@ -237,7 +234,7 @@ describe('종료된 앱의 위젯 명령 복원', () => {
       await openLink('aido://feed?date=today');
 
       // Then
-      expect(widgetOpenedCalls()).toEqual([['widget_opened', { destination: 'todo' }]]);
+      expect(getTrackedEvents(analytics, 'widget_opened')).toEqual([{ destination: 'todo' }]);
     });
 
     it('복원하고 한참 뒤 들어온 피드 링크는 새 탭으로 센다', async () => {
@@ -255,9 +252,9 @@ describe('종료된 앱의 위젯 명령 복원', () => {
       await openLink('aido://feed?date=today');
 
       // Then
-      expect(widgetOpenedCalls()).toEqual([
-        ['widget_opened', { destination: 'todo' }],
-        ['widget_opened', { destination: 'feed' }],
+      expect(getTrackedEvents(analytics, 'widget_opened')).toEqual([
+        { destination: 'todo' },
+        { destination: 'feed' },
       ]);
     });
   });
@@ -290,7 +287,7 @@ describe('종료된 앱의 위젯 명령 복원', () => {
       // Then
       expect(router.navigate).not.toHaveBeenCalled();
       expect(di.widgetNavigationRepository.findPendingCommand()).toBeNull();
-      expect(widgetOpenedCalls()).toEqual([]);
+      expect(getTrackedEvents(analytics, 'widget_opened')).toEqual([]);
     },
   );
 

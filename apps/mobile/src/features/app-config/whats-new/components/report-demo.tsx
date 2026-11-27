@@ -1,21 +1,20 @@
-import { USER_PREFERENCE_DEFAULTS } from '@aido/api/vocabulary';
-import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
+import {
+  selectTimeFormat,
+  useGetPreferenceQueryOptions,
+} from '@src/features/identity/preference/queries/preference.queries';
 import { ActivityReport } from '@src/features/insights/report/components/activity-report';
 import { CompletionHourChart } from '@src/features/insights/report/components/completion-hour-chart';
 import { CompletionRateHeadline } from '@src/features/insights/report/components/completion-rate-headline';
-import { DailyCompletionChart } from '@src/features/insights/report/components/daily-completion-chart';
-import type { AiReport } from '@src/features/insights/report/domains/report.model';
+import { ThisWeekRecordChart } from '@src/features/insights/report/components/this-week-record-chart';
 import {
-  formatDailyValueLine,
-  getHourlyCompletionCounts,
-} from '@src/features/insights/report/utils/report-chart.view-model';
-import {
-  getWeeklyRecordDays,
-  type WeeklyRecordDay,
-} from '@src/features/insights/report/utils/weekly-record.view-model';
+  type AiReport,
+  type DailyCompletion,
+  ReportPolicy,
+} from '@src/features/insights/report/domains/report.model';
 import { HOURS_PER_DAY } from '@src/shared/constants/time-units';
-import { addDaysToDateKey } from '@src/shared/date/date-key';
-import { formatDateKeyLabel, formatHourLabel } from '@src/shared/date/format/date-format';
+import { addDaysToDateKey, dateKeySchema } from '@src/shared/date/date-key';
+import { formatHourLabel } from '@src/shared/date/format/date-format';
+import { toInstant } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, DashedDivider, ScallopedContainer, Text, VStack } from '@src/shared/ui';
@@ -23,21 +22,64 @@ import { useQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { useState } from 'react';
 
-import { DEMO_REPORT, DEMO_SCRIPT_MS, DEMO_THIS_WEEK } from '../constants/release-1-16-0.constants';
+import { DEMO_SCRIPT_MS } from '../constants/release-1-16-0.constants';
 import { useDemoScript } from '../hooks/use-demo-script';
 import { WhatsNewStep } from './whats-new-step';
 
-const DEMO_REPORT_DAYS: readonly WeeklyRecordDay[] = DEMO_REPORT.dailyCompletions.map(
-  (day, offset) => ({
-    ...day,
-    date: addDaysToDateKey(DEMO_REPORT.startDate, offset),
-    isUpcoming: false,
-  }),
-);
+/** 지난주 주간 리포트다. 날짜를 고정해 연·주차가 기간과 맞는다 */
+const DEMO_REPORT = {
+  year: 2026,
+  period: 46,
+  startDate: dateKeySchema.parse('2026-11-09'),
+  endDate: dateKeySchema.parse('2026-11-15'),
+  generatedAt: toInstant('2026-11-15T15:00:00.000Z'),
+  stats: {
+    totalTodos: 32,
+    completedTodos: 25,
+    completionRate: 78,
+    prevCompletionRate: 66,
+    streakDays: 7,
+    perfectDays: 2,
+  },
+  dailyCompletions: [
+    { total: 5, completed: 4 },
+    { total: 6, completed: 6 },
+    { total: 4, completed: 3 },
+    { total: 5, completed: 5 },
+    { total: 6, completed: 4 },
+    { total: 3, completed: 2 },
+    { total: 3, completed: 1 },
+  ],
+  timePatterns: [
+    { hour: 7, count: 6 },
+    { hour: 8, count: 4 },
+    { hour: 9, count: 2 },
+    { hour: 12, count: 3 },
+    { hour: 13, count: 1 },
+    { hour: 18, count: 2 },
+    { hour: 21, count: 5 },
+    { hour: 22, count: 2 },
+  ],
+  peakHour: 7,
+} as const;
+
+/** 무료로 보는 이번 주 기록이다. 목요일을 오늘로 두어 금·토·일은 아직 오지 않은 날로 보인다 */
+const DEMO_THIS_WEEK = {
+  todayKey: dateKeySchema.parse('2026-11-19'),
+  completionsByDate: {
+    '2026-11-16': { totalTodos: 4, completedTodos: 3 },
+    '2026-11-17': { totalTodos: 5, completedTodos: 5 },
+    '2026-11-18': { totalTodos: 3, completedTodos: 2 },
+    '2026-11-19': { totalTodos: 4, completedTodos: 1 },
+  },
+} as const;
+
+const DEMO_REPORT_DAYS: DailyCompletion[] = DEMO_REPORT.dailyCompletions.map((day, offset) => ({
+  ...day,
+  date: addDaysToDateKey(DEMO_REPORT.startDate, offset),
+}));
 
 export function ReportSummaryDemo() {
-  const { t } = useTranslation('ai');
-
   const report = useDemoReport();
 
   return (
@@ -49,9 +91,10 @@ export function ReportSummaryDemo() {
           </Box>
           <DashedDivider />
           <Box className="py-4">
-            <DemoDailyCompletions
-              title={t('report.detail.dailyCompletions')}
-              days={DEMO_REPORT_DAYS}
+            {/* 예시라 막대를 눌러도 지표를 남기지 않는다 */}
+            <ActivityReport.DailyCompletions
+              reportType="WEEKLY"
+              dailyCompletions={DEMO_REPORT_DAYS}
             />
           </Box>
         </VStack>
@@ -91,51 +134,20 @@ export function FreeRecordDemo() {
     <WhatsNewStep.Stage>
       <ScallopedContainer>
         <Box className="px-4 py-2">
-          <DemoDailyCompletions
-            title={t('report.thisWeek.title')}
-            days={getWeeklyRecordDays(DEMO_THIS_WEEK.completionsByDate, DEMO_THIS_WEEK.todayKey)}
-          />
+          <VStack gap={16}>
+            <Text size="b3" weight="semibold" shade={9}>
+              {t('report.thisWeek.title')}
+            </Text>
+            {/* 예시라 막대를 눌러도 지표를 남기지 않는다 */}
+            <ThisWeekRecordChart
+              completionsByDate={DEMO_THIS_WEEK.completionsByDate}
+              todayKey={DEMO_THIS_WEEK.todayKey}
+              accessibilityLabel={t('report.thisWeek.title')}
+            />
+          </VStack>
         </Box>
       </ScallopedContainer>
     </WhatsNewStep.Stage>
-  );
-}
-
-interface DemoDailyCompletionsProps {
-  title: string;
-  days: readonly WeeklyRecordDay[];
-}
-
-/** 리포트의 날마다 끝낸 할 일·무료 이번 주 기록과 같은 모양이다. 예시라 막대를 눌러도 지표를 남기지 않는다 */
-function DemoDailyCompletions({ title, days }: DemoDailyCompletionsProps) {
-  const dateFormatContext = useDateFormatContext();
-
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-
-  const valueLine = formatDailyValueLine(
-    selectedIndex == null ? null : (days[selectedIndex] ?? null),
-    dateFormatContext,
-  );
-
-  return (
-    <VStack gap={16}>
-      <Text size="b3" weight="semibold" shade={9}>
-        {title}
-      </Text>
-      <VStack gap={8}>
-        <DailyCompletionChart
-          values={days}
-          labels={days.map((day) => formatDateKeyLabel(day.date, 'weekday', dateFormatContext))}
-          selectedIndex={selectedIndex}
-          onSelectedIndexChange={setSelectedIndex}
-          accessibilityLabel={title}
-          accessibilityValue={{ text: valueLine }}
-        />
-        <Text size="b4" shade={7} className="tabular-nums">
-          {valueLine}
-        </Text>
-      </VStack>
-    </VStack>
   );
 }
 
@@ -160,9 +172,9 @@ function DemoCompletionHours({ report, peakHour }: DemoCompletionHoursProps) {
     startDelayMs: DEMO_SCRIPT_MS.peakHourSelectDelay,
   });
 
-  const timeFormat = preference?.timeFormat ?? USER_PREFERENCE_DEFAULTS.TIME_FORMAT;
+  const timeFormat = selectTimeFormat(preference);
   const selectedHour = touchedHour ?? (peakShownCount === 0 ? null : peakHour);
-  const hourlyCounts = getHourlyCompletionCounts(report);
+  const hourlyCounts = ReportPolicy.getHourlyCompletionCounts(report);
   const hourLabels = range(HOURS_PER_DAY).map((hour) =>
     formatHourLabel(hour, timeFormat, dateFormatContext),
   );

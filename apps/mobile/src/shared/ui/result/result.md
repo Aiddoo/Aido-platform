@@ -10,8 +10,8 @@ import { Result } from '@src/shared/ui';
 // 기본 사용
 <Result
   title="다시 접속해주세요"
-  description={`페이지를 불러올 수 없습니다\n다시 시도해주세요`}
-  button={<Result.Button onPress={handleRetry}>재시도</Result.Button>}
+  description={`페이지를 불러오지 못했어요\n다시 시도해주세요`}
+  button={<Result.Button onPress={handleRetry}>다시 시도</Result.Button>}
 />
 
 // 아이콘 포함

@@ -15,5 +15,4 @@ export const sampleReportParamsSchema = z.object({
   periodsAgo: routeIntegerStringSchema.pipe(z.coerce.number().int().max(SAMPLE_REPORT_COUNT)),
 });
 
-/** 리포트 목록의 주간·월간 탭. `?type=` */
 export const reportListTypeSchema = reportTypeSchema.catch('WEEKLY');

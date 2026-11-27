@@ -6,7 +6,7 @@ import { isLastMutation } from '@src/shared/query/is-last-mutation';
 import { createOptimisticId } from '@src/shared/utils/create-optimistic-id';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-import { SubTodoPolicy } from '../domains/sub-todo.model';
+import { TodoPolicy } from '../domains/todo.model';
 import {
   beginTodoWrite,
   findCachedTodo,
@@ -49,7 +49,7 @@ export function useToggleSubTodoMutationOptions() {
       });
       const span = getCachedTodoDateSpan(queryClient, { date, todoId });
       updateCachedTodo(queryClient, { date, todoId }, (todo) =>
-        SubTodoPolicy.withSubTodoCompleted(todo, subTodoId, isCompleted),
+        TodoPolicy.withSubTodoCompleted(todo, subTodoId, isCompleted),
       );
 
       return { ticket, span };
@@ -63,7 +63,7 @@ export function useToggleSubTodoMutationOptions() {
     },
     onError: (_error, { todoId, subTodoId, isCompleted, date }) => {
       updateCachedTodo(queryClient, { date, todoId }, (todo) =>
-        SubTodoPolicy.withSubTodoCompleted(todo, subTodoId, !isCompleted),
+        TodoPolicy.withSubTodoCompleted(todo, subTodoId, !isCompleted),
       );
     },
     onSettled: (_data, error, { todoId, date }, context) => {
@@ -83,7 +83,6 @@ export function useToggleSubTodoMutationOptions() {
 interface DeleteSubTodoVariables {
   todoId: number;
   subTodoId: number;
-  /** 바꾼 목록의 날짜. 여러 날 할 일은 시작일이 아니라 보고 있는 날짜 목록을 고친다 */
   date: DateKey;
 }
 
@@ -106,15 +105,16 @@ export function useDeleteSubTodoMutationOptions() {
         todoId,
         isCompletionAffected: false,
       });
-      const subTodos = findCachedTodo(queryClient, { date, todoId })?.subTodos ?? [];
-      const index = subTodos.findIndex((subTodo) => subTodo.id === subTodoId);
+      const removed = TodoPolicy.findSubTodoSnapshot(
+        findCachedTodo(queryClient, { date, todoId }),
+        subTodoId,
+      );
       updateCachedTodo(queryClient, { date, todoId }, (todo) =>
-        SubTodoPolicy.withSubTodoRemoved(todo, subTodoId),
+        TodoPolicy.withSubTodoRemoved(todo, subTodoId),
       );
 
       return {
-        removed: subTodos[index],
-        index,
+        removed,
         ticket,
         span: getCachedTodoDateSpan(queryClient, { date, todoId }),
       };
@@ -124,9 +124,9 @@ export function useDeleteSubTodoMutationOptions() {
     },
     onError: (_error, { todoId, date }, context) => {
       if (context?.removed != null) {
-        const { removed, index } = context;
+        const { removed } = context;
         updateCachedTodo(queryClient, { date, todoId }, (todo) =>
-          SubTodoPolicy.withSubTodoRestored(todo, removed, index),
+          TodoPolicy.withSubTodoRestored(todo, removed),
         );
       }
     },
@@ -147,7 +147,6 @@ export function useDeleteSubTodoMutationOptions() {
 interface ReorderSubTodosVariables {
   todoId: number;
   subTodoIds: number[];
-  /** 바꾼 목록의 날짜. 여러 날 할 일은 시작일이 아니라 보고 있는 날짜 목록을 고친다 */
   date: DateKey;
 }
 
@@ -174,7 +173,7 @@ export function useReorderSubTodosMutationOptions() {
         (subTodo) => subTodo.id,
       );
       updateCachedTodo(queryClient, { date, todoId }, (todo) =>
-        SubTodoPolicy.withSubTodosOrdered(todo, subTodoIds),
+        TodoPolicy.withSubTodosOrdered(todo, subTodoIds),
       );
 
       return {
@@ -190,7 +189,7 @@ export function useReorderSubTodosMutationOptions() {
       const previousIds = context?.previousIds;
       if (previousIds != null) {
         updateCachedTodo(queryClient, { date, todoId }, (todo) =>
-          SubTodoPolicy.withSubTodosOrdered(todo, previousIds),
+          TodoPolicy.withSubTodosOrdered(todo, previousIds),
         );
       }
     },
@@ -211,7 +210,6 @@ export function useReorderSubTodosMutationOptions() {
 interface AddSubTodoVariables {
   todoId: number;
   title: string;
-  /** 바꾼 목록의 날짜. 여러 날 할 일은 시작일이 아니라 보고 있는 날짜 목록을 고친다 */
   date: DateKey;
 }
 
@@ -239,7 +237,7 @@ export function useAddSubTodoMutationOptions() {
       const optimisticId = createOptimisticId();
       const span = getCachedTodoDateSpan(queryClient, { date, todoId });
       updateCachedTodo(queryClient, { date, todoId }, (todo) =>
-        SubTodoPolicy.withSubTodoAdded(todo, {
+        TodoPolicy.withSubTodoAdded(todo, {
           id: optimisticId,
           title,
           completed: false,
@@ -254,7 +252,7 @@ export function useAddSubTodoMutationOptions() {
     },
     onSuccess: (saved, { todoId, date }, { optimisticId }) => {
       updateCachedTodo(queryClient, { date, todoId }, (todo) =>
-        SubTodoPolicy.withSubTodoConfirmed(todo, optimisticId, saved),
+        TodoPolicy.withSubTodoConfirmed(todo, optimisticId, saved),
       );
       trackEvent('todo_item_added', { todo_id: todoId });
     },
@@ -266,7 +264,7 @@ export function useAddSubTodoMutationOptions() {
       const shouldRestoreCompletion =
         context.wasCompleted && isLastMutation(queryClient, TODO_MUTATION_KEYS.listWrites());
       updateCachedTodo(queryClient, { date, todoId }, (todo) => ({
-        ...SubTodoPolicy.withSubTodoRemoved(todo, context.optimisticId),
+        ...TodoPolicy.withSubTodoRemoved(todo, context.optimisticId),
         completed: shouldRestoreCompletion || todo.completed,
       }));
       if (shouldRestoreCompletion) {
@@ -293,7 +291,6 @@ interface UpdateSubTodoVariables {
   todoId: number;
   subTodoId: number;
   title: string;
-  /** 바꾼 목록의 날짜. 여러 날 할 일은 시작일이 아니라 보고 있는 날짜 목록을 고친다 */
   date: DateKey;
 }
 
@@ -320,7 +317,7 @@ export function useUpdateSubTodoMutationOptions() {
         (subTodo) => subTodo.id === subTodoId,
       );
       updateCachedTodo(queryClient, { date, todoId }, (todo) =>
-        SubTodoPolicy.withSubTodoRenamed(todo, subTodoId, title),
+        TodoPolicy.withSubTodoRenamed(todo, subTodoId, title),
       );
 
       return {
@@ -336,7 +333,7 @@ export function useUpdateSubTodoMutationOptions() {
       const previousTitle = context?.previousTitle;
       if (previousTitle != null) {
         updateCachedTodo(queryClient, { date, todoId }, (todo) =>
-          SubTodoPolicy.withSubTodoRenamed(todo, subTodoId, previousTitle),
+          TodoPolicy.withSubTodoRenamed(todo, subTodoId, previousTitle),
         );
       }
     },

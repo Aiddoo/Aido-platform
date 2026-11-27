@@ -1,6 +1,12 @@
 import { ok } from '@src/core/errors/result';
 import type { AuthStatus } from '@src/core/session/auth-status';
+import { lastReadTimezoneStoredValue } from '@src/shared/date/schemas/last-read-timezone-storage.schema';
 import { NetworkError } from '@src/shared/errors/infra-error';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
+import { getAppTimezone, refreshAppTimezone } from '@src/shared/infra/localization/app-timezone';
+import { deviceSyncStorage } from '@src/shared/infra/storage/device-sync-storage';
+import { useLocalDate } from '@src/shared/providers/local-date-provider';
+import { removeStoredValue } from '@src/shared/storage/define-stored-value';
 import {
   createAppLifecycleGatewayStub,
   createHttpClientStub,
@@ -12,6 +18,7 @@ import {
 import { renderScreenHook } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act } from '@testing-library/react-native';
+import { getCalendars } from 'expo-localization';
 
 import {
   createNotificationApiError,
@@ -24,11 +31,25 @@ interface SyncProps {
   deviceTimezone?: string;
 }
 
+const deviceCalendars = jest.mocked(getCalendars).getMockImplementation();
+
+function setDeviceTimezone(timezone: string | null) {
+  jest
+    .mocked(getCalendars)
+    .mockReturnValue([
+      { calendar: null, uses24hourClock: false, firstWeekday: 1, timeZone: timezone },
+    ]);
+}
+
 describe('usePushDeviceSync', () => {
   setupFakeTimersPerTest();
 
   afterEach(() => {
     jest.restoreAllMocks();
+    // randomize로 다음 테스트가 기기 달력·마지막으로 읽은 시간대·정해 둔 앱 시간대를 물려받지 않게 되돌린다
+    jest.mocked(getCalendars).mockImplementation(deviceCalendars);
+    removeStoredValue(deviceSyncStorage, lastReadTimezoneStoredValue);
+    refreshAppTimezone();
   });
 
   async function setup(authStatus: AuthStatus = 'authenticated') {
@@ -295,6 +316,63 @@ describe('usePushDeviceSync', () => {
       expect.objectContaining({ token: 'ExponentPushToken[device-123]' }),
     );
     expect(httpClient.put).not.toHaveBeenCalled();
+  });
+
+  it('서울 → LA → 못 읽음 → 서울에서 오늘 key·기기 보고가 함께 바뀌고 바뀔 때마다 한 번만 보고한다', async () => {
+    // Given
+    // 서울 11-26 01:00이자 LA 11-25 08:00인 순간
+    jest.setSystemTime(new Date('2026-11-25T16:00:00.000Z'));
+    removeStoredValue(deviceSyncStorage, lastReadTimezoneStoredValue);
+    setDeviceTimezone('Asia/Seoul');
+    const appLifecycle = createAppLifecycleGatewayStub();
+    const httpClient = createHttpClientStub();
+    // 기기 보고의 시간대는 요청 헤더(X-Timezone)로 간다. 헤더와 같은 함수로 보낸 순간의 값을 남긴다
+    const reportedTimezones: string[] = [];
+    httpClient.put.mockImplementation(async () => {
+      reportedTimezones.push(getAppTimezone());
+      return { ok: true, value: createPushDeviceResponseDto() };
+    });
+    const di = createTestDi({
+      ports: {
+        httpClient,
+        appLifecycle,
+        deviceIdStore: createMemoryDeviceIdStore('ios_device-123'),
+        // 운영처럼 오늘 계산(LocalDateProvider)과 기기 보고가 같은 함수로 시간대를 읽는다
+        getTimezone: getAppTimezone,
+      },
+    });
+    const { result } = await renderScreenHook(
+      () => {
+        const { currentTimezone } = useLocalDate();
+        usePushDeviceSync({ authStatus: 'authenticated', deviceTimezone: currentTimezone });
+        return useTodayKey();
+      },
+      { di, withLocalDate: true },
+    );
+    await act(() => jest.advanceTimersByTimeAsync(0));
+    const moveTo = async (timezone: string | null) => {
+      // 앱에서처럼 복귀로 바뀐 시간대를 먼저 그린 뒤에 복귀 보고의 대기 시간이 지난다
+      await act(() => {
+        appLifecycle.emit('background');
+        setDeviceTimezone(timezone);
+        appLifecycle.emit('active');
+      });
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+      return { todayKey: result.current, reportCount: httpClient.put.mock.calls.length };
+    };
+
+    // When
+    const inLosAngeles = await moveTo('America/Los_Angeles');
+    const unread = await moveTo(null);
+    const backInSeoul = await moveTo('Asia/Seoul');
+
+    // Then
+    expect([inLosAngeles, unread, backInSeoul]).toEqual([
+      { todayKey: '2026-11-25', reportCount: 2 },
+      { todayKey: '2026-11-25', reportCount: 2 },
+      { todayKey: '2026-11-26', reportCount: 3 },
+    ]);
+    expect(reportedTimezones).toEqual(['Asia/Seoul', 'America/Los_Angeles', 'Asia/Seoul']);
   });
 
   it('언마운트하면 모든 구독을 해제하고 기다리던 보고도 보내지 않는다', async () => {

@@ -28,7 +28,7 @@ API 컨테이너 자리는 둘이다: blue(`127.0.0.1:8080`)와 green(`127.0.0.1
 
 - ①~③에서 실패하면 새 컨테이너만 지운다. ④에서 `nginx -t`나 reload가 실패하면 upstream 파일을 옛 슬롯으로 되돌리고 새 컨테이너를 지운다. 어느 쪽이든 살아 있는 API는 건드리지 않는다.
 - ⑤를 두는 이유: `reload`는 비동기라 직후 잠깐은 옛 worker가 새 요청을 옛 슬롯으로 보낸다. 곧바로 옛 API를 내리면 그 요청이 502가 된다(로컬 전환 연습에서 확인).
-- ②~⑥ 동안 두 API가 같이 돌고 둘 다 worker를 돌린다. 작업 꺼내기(`SKIP LOCKED`)와 정기 작업 발행은 DB가 조정해 겹치지 않는다. 그 사이 옛 코드와 새 코드가 같은 DB를 쓰므로 migration은 옛 코드와 호환되어야 한다([영속성](persistence.md#마이그레이션)).
+- ②~⑥ 동안 두 API가 같이 돌고 둘 다 worker를 돌린다. 작업 꺼내기(`SKIP LOCKED`)와 정기 작업 발행은 DB가 조정해 겹치지 않는다. 그 사이 옛 코드와 새 코드가 같은 DB를 쓰므로 migration은 옛 코드와 호환되어야 한다([영속성](architecture/persistence.md#마이그레이션)).
 - 전환 뒤에 배포가 끊겨 옛 컨테이너가 남으면 다음 배포가 시작할 때 Nginx를 upstream 파일에 맞추고 그 슬롯을 치운다. 그때까지 두 컨테이너가 같이 돈다.
 - 겹치는 동안 두 프로세스의 메모리 캐시는 따로다. 그 사이 push token을 다시 등록한 기기는 다른 프로세스의 캐시(최대 5분)가 지날 때까지 알림을 옛 token으로 받을 수 있다.
 - 운영 compose는 `JOB_WORKER_ENABLED`를 `true`로 고정한다. env 파일에서 끄면 두 슬롯이 모두 worker를 끄기 때문이다. API와 worker를 나눌 때 compose에 worker 서비스를 더하며 바꾼다([확장](scaling.md#확장-단계)).
@@ -47,7 +47,7 @@ API container는 내부 포트 8080, memory 512M/CPU 1, Node heap 384MiB이고 �
 
 CI가 이미지를 만들지 않은 커밋(API 범위 밖 변경)을 배포하려면 `gh workflow run ci.yml --ref main`으로 CI를 다시 돌린다. 이미지가 발행되면 deploy workflow가 이어서 배포한다.
 
-Actions를 쓸 수 없을 때만 Mac에서 빌드한다. 서버(메모리 2GB)에서 빌드하면 swap을 쓰고 BuildKit cache가 5GB까지 쌓여 dockerd 메모리도 커졌다. 빌드 정의는 CI와 같은 [docker-bake.hcl](../../../docker-bake.hcl) 하나다.
+Actions를 쓸 수 없을 때만 Mac에서 빌드한다. 서버(메모리 2GB)에서 빌드하면 swap을 쓰고 BuildKit cache가 쌓여 dockerd 메모리가 커진다. 빌드 정의는 CI와 같은 [docker-bake.hcl](../../../docker-bake.hcl) 하나다.
 
 1. Mac: `origin/main`에 있는 커밋을 변경 없는 tree로 checkout하고 `docker login ghcr.io`(write:packages)를 해 둔다. CI와 같은 기준의 trivy 검사를 통과한 이미지만 올린다.
 
@@ -80,7 +80,7 @@ read -rs t && printf '%s\n' "$t" > ~/apps/deploy-state/ghcr-read-token; unset t
 
 ## DB 전환: API보다 먼저 적용
 
-migrate 이미지(`tooling/database-migrate`)는 Drizzle 마이그레이션 폴더와 DB guard만 가진다. 규칙은 [영속성](persistence.md#마이그레이션)을 따른다.
+migrate 이미지(`tooling/database-migrate`)는 Drizzle 마이그레이션 폴더와 DB guard만 가진다. 규칙은 [영속성](architecture/persistence.md#마이그레이션)을 따른다.
 
 `migrate.mjs`는 API·pg-boss URL을 먼저 검증한 뒤 pg-boss migration, Drizzle migration 순서로 실행한다. 원격 DB는 의도한 배포의 `AIDO_ALLOW_REMOTE_DB=1`일 때만 허용하며, DDL lock_timeout은 5초다. Drizzle은 미적용 마이그레이션을 한 트랜잭션에서 돌려 하나라도 실패하면 모두 되돌아가고 이전 API가 그대로 돈다. migrate 동안에도 이전 API가 트래픽을 받는다.
 
@@ -96,15 +96,15 @@ durable job은 PostgreSQL(pg-boss)만 쓴다. Redis는 `CACHE_TYPE=redis`·`PUSH
 
 job runtime의 기본 graceful 종료 대기는 `JOB_SHUTDOWN_TIMEOUT_MS=90000`이며 production Compose의 `stop_grace_period`는 120초다. 기본 작업 대기 뒤 HTTP·자원 종료 여유를 둔다. 종료 대기를 더 길게 설정한다면 Compose 유예도 함께 늘린다. 제한 시간을 넘는 작업의 완료나 모든 background 작업의 drain까지 보장하는 설정은 아니다. 실제 적용 값과 active 작업 상태는 배포 후 확인한다.
 
-delivery fence·receipt·남는 전달 한계는 [푸시 발송](push-delivery.md#deliveryreceipt)에 있다. 배포 중 리마인더·푸시를 잃지 않는 기준은 [작업과 이벤트](jobs-and-events.md#배포-중-내구성)에 있다.
+delivery fence·receipt·남는 전달 한계는 [푸시 발송](push-delivery.md#deliveryreceipt)에 있다. 배포 중 리마인더·푸시를 잃지 않는 기준은 [작업과 이벤트](architecture/jobs-and-events.md#배포-중-내구성)에 있다.
 
-배포 시각: 03:00~03:40 KST(일간 정리 작업)와 07:00~08:00 KST(아침 리마인더 몰림)를 피한다. 놓친 실행은 `missed`·워터마크가 보완하지만 사용량이 적은 시간을 고른다.
+배포 시각: 03:00~04:30 KST(일간 정리 작업)와 07:00~08:00 KST(아침 리마인더 몰림)를 피한다. 놓친 실행은 `missed`·워터마크가 보완하지만 사용량이 적은 시간을 고른다.
 
 ## 롤백의 범위
 
 실패한 배포는 살아 있는 API를 건드리지 않으므로 자동 롤백이 없다. 배포가 끝난 뒤 이전 버전으로 돌아가려면 그 SHA를 다시 배포한다: workflow 수동 실행에 SHA와 force를 주거나, 서버에서 `git reset --hard <sha> && DEPLOY_SHA=<sha> FORCE_DEPLOY=1 bash scripts/deploy.sh`다. 직전 배포 이미지는 서버에 남아 있어 pull 없이 된다. 이 배포도 migrate를 실행하지만 적용할 것이 없고, 이미지를 되돌려도 스키마와 업무 데이터는 되돌아가지 않는다.
 
-Blue-Green으로 바꾼 커밋 이전으로는 되돌리지 않는다. 그 이전의 배포 스크립트는 슬롯과 upstream 파일을 몰라 성공으로 끝나도 Nginx가 넘어가지 않는다. deploy workflow는 그런 SHA를 거절한다.
+Blue-Green 이전 커밋으로는 되돌리지 않는다. 그 커밋의 배포 스크립트는 슬롯과 upstream 파일을 몰라 성공으로 끝나도 Nginx가 넘어가지 않으므로 deploy workflow가 그런 SHA를 거절한다.
 
 배포 순서는 서버 → 안정화 확인 → 앱이다. 모바일은 최신 서버 응답만 읽으므로 앱 출시 뒤에는 서버를 그 릴리스 이전으로 되돌리지 않고 수정 배포로 대응한다. 릴리스마다 다른 되돌리기 SQL·배포 전 건수 확인은 그 릴리스 문서(`docs/releases/<버전>/`)에 둔다.
 
@@ -131,7 +131,7 @@ Blue-Green으로 바꾼 커밋 이전으로는 되돌리지 않는다. 그 이�
 - DB 백업은 서버 cron(03:00 UTC)이 [backup-database.sh](../../../scripts/ops/backup-database.sh)를 저장소 경로에서 바로 실행한다(`0 3 * * * bash ~/apps/Aido-platform/scripts/ops/backup-database.sh >> ~/backups/backup.log 2>&1`). 접속 주소·S3 경로는 `~/apps/backup.env`(권한 600), 비밀번호는 `~/.pgpass`에 둔다. RDS 자동 백업(7일)과 따로 도는 두 번째 사본이다.
 - 백업 버킷은 버전 관리를 켜 두고 [수명주기](../../../scripts/ops/s3/backup-lifecycle.json)가 지운다: `daily/`는 30일 뒤 만료하고, 만료되거나 지운 파일의 옛 버전은 버킷 전체에서 7일 뒤 완전히 지운다(`aws s3api put-bucket-lifecycle-configuration --bucket <버킷> --lifecycle-configuration file://scripts/ops/s3/backup-lifecycle.json`). 옛 버전 규칙이 없으면 만료된 덤프가 숨겨진 채 계속 남는다. 서버 역할은 올리기·읽기·목록만 갖고 지우지 못한다.
 - DB 접속 계정은 둘이다. API와 pg-boss는 최소 권한 역할 `aido_app`(`apps/api/.env`의 `DATABASE_URL`)으로 붙어 행을 읽고 쓰기만 한다. migration은 소유자 계정으로 돌고 그 주소는 `apps/api/.env.migrate`(`DATABASE_URL` 한 줄, 권한 600)에만 둔다. API 컨테이너는 이 파일을 받지 않는다. 역할의 정본은 [app-role.sql](../../../scripts/ops/db/app-role.sql)이고 소유자 계정으로 실행한다. 소유자가 migration으로 만드는 새 테이블에는 기본 권한이 자동으로 붙고, `public`·`pgboss` 밖에 schema를 새로 만들면 그 파일에 더한다.
-- AWS 경보는 CloudWatch 여섯 개이고 SNS 토픽 `aido-alerts`(이메일)로 간다. RDS 이벤트 구독 `aido-db-events`도 같은 토픽으로 받되 손댈 일이 있는 분류(`failure`·`failover`·`low storage`·`recovery`·`notification`)만 받는다. `maintenance`·`availability`는 유지보수 창마다 단계별로 10통 넘게 와서 뺐다(2026-11-16 OS·엔진 패치). 예정에 없던 DB 중단은 Sentry Uptime(`/health`가 DB 끊김에 503)이 잡는다.
+- AWS 경보는 CloudWatch 여섯 개이고 SNS 토픽 `aido-alerts`(이메일)로 간다. RDS 이벤트 구독 `aido-db-events`도 같은 토픽으로 받되 손댈 일이 있는 분류(`failure`·`failover`·`low storage`·`recovery`·`notification`)만 받는다. `maintenance`·`availability`는 유지보수 창마다 단계별로 여러 통 오므로 받지 않는다. 예정에 없던 DB 중단은 Sentry Uptime(`/health`가 DB 끊김에 503)이 잡는다.
 
   | 경보                           | 울리는 조건                   | 뜻                                             |
   | ------------------------------ | ----------------------------- | ---------------------------------------------- |

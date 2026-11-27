@@ -1,26 +1,32 @@
-import { withScheduleRepeat } from '@src/features/planning/todo/domains/todo.model';
+import { TodoSchedulePolicy } from '@src/features/planning/todo/domains/todo-schedule.model';
 import { useOpenTodoRepeatPicker } from '@src/features/planning/todo/hooks/use-open-todo-repeat-picker';
 import type { TodoFormValues } from '@src/features/planning/todo/schemas/todo-form.schema';
-import type { UseFormReturn } from 'react-hook-form';
+import type { UseFormGetValues, UseFormSetValue } from 'react-hook-form';
 
-import { useFocusTodoTitle } from './use-focus-todo-title';
+interface ReopenTodoRepeatPickerOptions {
+  getValues: UseFormGetValues<TodoFormValues>;
+  setValue: UseFormSetValue<TodoFormValues>;
+  /** 반복 시트가 닫히기 시작할 때 부른다. 제목 칸으로 포커스를 돌려준다 */
+  focusTitle: () => void;
+}
 
 /** 저장이 반복 때문에 거절됐을 때 제출 함수가 반복 시트를 다시 연다 */
-export function useReopenTodoRepeatPicker(
-  form: Pick<UseFormReturn<TodoFormValues>, 'getValues' | 'setFocus' | 'setValue'>,
-) {
+export function useReopenTodoRepeatPicker({
+  getValues,
+  setValue,
+  focusTitle,
+}: ReopenTodoRepeatPickerOptions) {
   const openRepeatPicker = useOpenTodoRepeatPicker();
-  const focusTitle = useFocusTodoTitle(form);
 
   return async () => {
-    const values = form.getValues();
+    const values = getValues();
     const next = await openRepeatPicker(values, { onCloseStart: focusTitle });
     if (next == null) {
       return;
     }
-    const { startDate, endDate, repeat } = withScheduleRepeat(values, next);
-    form.setValue('startDate', startDate, { shouldDirty: true });
-    form.setValue('endDate', endDate, { shouldDirty: true });
-    form.setValue('repeat', repeat, { shouldDirty: true });
+    const { startDate, endDate, repeat } = TodoSchedulePolicy.withRepeat(values, next);
+    setValue('startDate', startDate, { shouldDirty: true });
+    setValue('endDate', endDate, { shouldDirty: true });
+    setValue('repeat', repeat, { shouldDirty: true });
   };
 }

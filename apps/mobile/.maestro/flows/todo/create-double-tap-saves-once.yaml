@@ -1,0 +1,47 @@
+appId: ${MAESTRO_APP_ID}
+name: 할 일 추가 시트의 저장 버튼을 연달아 두 번 누르면 할 일이 하나만 생긴다
+tags:
+  - regression
+  - todo
+onFlowStart:
+  - runFlow: ../../subflows/app/load-helpers.yaml
+  - evalScript: ${output.main = output.api.signIn('main')}
+  - evalScript: ${output.main.removeE2eCategories()}
+  - evalScript: ${output.category = output.main.createCategory('double ' + output.config.runId)}
+  - evalScript: ${output.todoTitle = 'E2E double ' + output.config.runId}
+  - runFlow: ../../subflows/app/launch-fresh.yaml
+onFlowComplete:
+  - evalScript: ${output.main && output.main.removeE2eCategories()}
+---
+# 지키는 것: 저장 버튼은 useSingleTap(600ms)과 isSubmitting으로 같은 프레임의 두 번째 탭을 막는다
+# (src/features/planning/composer/components/todo-create-bottom-sheet.tsx handleSavePress)
+
+# Given: 빈 테스트 카테고리의 추가 시트에 제목을 썼다
+- runFlow:
+    file: ../../subflows/auth/sign-in.yaml
+    env:
+      EMAIL: ${output.main.email}
+      PASSWORD: ${output.main.password}
+- runFlow:
+    file: ../../subflows/todo/write-new.yaml
+    env:
+      CATEGORY_ID: ${output.category.id}
+      TODO_TITLE: ${output.todoTitle}
+
+# When: 저장 버튼을 100ms 간격으로 두 번 누른다
+- tapOn:
+    id: ${output.ids.todo.submitButton}
+    repeat: 2
+    delay: 100
+    # 확인 필요: 첫 탭에 버튼이 꺼지면(isDisabled) 두 번째 탭이 "변화 없음"으로 다시 눌리지 않게 한다
+    retryTapIfNoChange: false
+
+# Then: 시트가 닫히고 목록과 서버에 그 할 일이 하나뿐이다
+- extendedWaitUntil:
+    notVisible:
+      id: ${output.ids.todo.addSheet}
+    timeout: 10000
+- evalScript: ${output.main.waitForTodo(output.category.id, output.todoTitle, false)}
+- assertTrue:
+    condition: ${output.main.countTodos(output.category.id, output.todoTitle) === 1}
+    label: 서버에 같은 제목의 할 일이 하나만 있다

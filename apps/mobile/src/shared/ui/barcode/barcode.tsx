@@ -28,7 +28,6 @@ interface BarcodeProps {
   className?: string;
 }
 
-/** 영수증 카드 아래쪽 바코드 장식. 스크린 리더에서는 읽지 않는다. */
 export function Barcode({ height = 32, className }: BarcodeProps) {
   const { backgroundColor: fill } = useResolveClassNames('bg-gray-7');
 

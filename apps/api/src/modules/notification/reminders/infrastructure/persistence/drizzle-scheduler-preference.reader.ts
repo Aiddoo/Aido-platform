@@ -7,7 +7,6 @@ import { userDeliveryPreference } from "#api/modules/identity/user-preferences/i
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { normalizeIanaTimezone } from "#api/shared/domain/time/timezone-name";
 
 import {
   type RecipientLocaleOf,
@@ -38,9 +37,7 @@ export class DrizzleSchedulerPreferenceReader implements SchedulerPreferenceRead
         const rows = await this.#db
           .selectDistinct({ timezone: preference.timezone })
           .from(preference);
-        return rows.flatMap((row) =>
-          normalizeIanaTimezone(row.timezone) != null ? [row.timezone] : [],
-        );
+        return rows.map((row) => row.timezone);
       },
       ttlMs: REMINDER_CACHE_TTL_MS,
     });

@@ -21,17 +21,17 @@ describe("Timezone — 시간대", () => {
     const timezone = Timezone.create(raw);
 
     // Then
-    expect(timezone.equals(Timezone.SEOUL)).toBe(true);
+    expect(timezone.value).toBe("Asia/Seoul");
   });
 
-  it("UTC와 서울 기본값을 제공한다", () => {
-    // Given
-    const defaults = [Timezone.UTC, Timezone.SEOUL];
+  it.each(["Asia/Calcutta", "US/Pacific", "Etc/UTC"])(
+    "옛 이름·별칭 %s는 다른 이름으로 바꾸지 않고 그대로 만든다",
+    (raw) => {
+      // When
+      const timezone = Timezone.create(raw);
 
-    // When
-    const values = defaults.map((timezone) => timezone.value);
-
-    // Then
-    expect(values).toEqual(["UTC", "Asia/Seoul"]);
-  });
+      // Then
+      expect(timezone.value).toBe(raw);
+    },
+  );
 });

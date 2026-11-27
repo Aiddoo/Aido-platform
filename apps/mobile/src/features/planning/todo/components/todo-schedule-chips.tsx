@@ -1,12 +1,14 @@
-import { USER_PREFERENCE_DEFAULTS } from '@aido/api/vocabulary';
-import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
+import {
+  selectTimeFormat,
+  useGetPreferenceQueryOptions,
+} from '@src/features/identity/preference/queries/preference.queries';
 import { CategoryPickForm } from '@src/features/planning/category/components/category-pick-form';
 import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import type { DateKey } from '@src/shared/date/date-key';
 import { formatHHmmTime } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import {
   ActionButton,
@@ -15,24 +17,19 @@ import {
   ClockIcon,
   EyeIcon,
   EyeOffIcon,
+  type OpenSheetOptions,
   QueryErrorBoundary,
+  QueryErrorFallback,
   RepeatIcon,
   SheetChipRow,
-  type OpenSheetOptions,
   useOpenSheet,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { Suspense } from 'react';
 
-import {
-  findScheduledTime,
-  isPrivateVisibility,
-  type TodoSchedule,
-  withScheduleRepeat,
-  withScheduleStartDate,
-  withVisibilityToggled,
-} from '../domains/todo.model';
+import { type TodoSchedule, TodoSchedulePolicy } from '../domains/todo-schedule.model';
+import { getToggledVisibility, isPrivateVisibility } from '../domains/todo-visibility.model';
 import { useOpenTodoRepeatPicker } from '../hooks/use-open-todo-repeat-picker';
 import type { TodoFormValues } from '../schemas/todo-form.schema';
 import { formatTodoPeriod } from '../utils/todo-period.view-model';
@@ -60,7 +57,6 @@ interface TodoScheduleChipsProps {
   onPickerCloseStart?: () => void;
 }
 
-/** 할 일 작성·수정·메모 옮기기·음성 계획 고치기가 함께 쓰는 일정 칩 줄. 칩마다 고르기 시트를 띄우고 고른 값으로 onChange를 부른다 */
 export function TodoScheduleChips({
   value,
   onChange,
@@ -75,7 +71,10 @@ export function TodoScheduleChips({
       <DateChip
         value={value}
         onChange={(startDate) =>
-          onChange({ ...value, ...withScheduleStartDate(value, startDate, { isSeriesOccurrence }) })
+          onChange({
+            ...value,
+            ...TodoSchedulePolicy.withStartDate(value, startDate, { isSeriesOccurrence }),
+          })
         }
         sheetOptions={sheetOptions}
       />
@@ -87,13 +86,18 @@ export function TodoScheduleChips({
       {canChangeRepeat && (
         <RepeatChip
           value={value}
-          onChange={(repeat) => onChange({ ...value, ...withScheduleRepeat(value, repeat) })}
+          onChange={(repeat) =>
+            onChange({ ...value, ...TodoSchedulePolicy.withRepeat(value, repeat) })
+          }
           sheetOptions={sheetOptions}
         />
       )}
-      <VisibilityChip value={value} onChange={() => onChange(withVisibilityToggled(value))} />
+      <VisibilityChip
+        value={value}
+        onChange={() => onChange({ ...value, visibility: getToggledVisibility(value.visibility) })}
+      />
       {/* 루트 overlay에 그려지므로 칩 조회 실패가 앱 경계까지 올라가지 않게 칩만 숨긴다 */}
-      <QueryErrorBoundary fallback={() => null}>
+      <QueryErrorBoundary fallback={QueryErrorFallback.Hidden}>
         <Suspense fallback={<ActionButton.Loading />}>
           <CategoryChip
             value={value}
@@ -143,7 +147,7 @@ function TimeChip({
   const dateFormatContext = useDateFormatContext();
   // 루트 overlay라 경계로 터지지 않게 Suspense 대신 상태로 읽는다. 읽지 못하면 설정 기본 표기다
   const { data: preference, isError } = useQuery(useGetPreferenceQueryOptions());
-  const displayedTime = findScheduledTime(value);
+  const displayedTime = TodoSchedulePolicy.findScheduledTime(value);
 
   // 설정을 읽는 동안 다른 표기로 먼저 보였다가 바뀌지 않게 카테고리 칩과 같은 자리 잡기를 보인다
   if (displayedTime != null && preference == null && !isError) {
@@ -153,7 +157,7 @@ function TimeChip({
   const handlePress = async () => {
     const time = await openSheet<Pick<TodoSchedule, 'scheduledTime' | 'isAllDay'>>(
       (close) => (
-        <QueryErrorBoundary>
+        <QueryErrorBoundary fallback={TodoTimePicker.Error}>
           <Suspense fallback={<TodoTimePicker.Loading />}>
             <TodoTimePicker
               value={{ scheduledTime: value.scheduledTime, isAllDay: value.isAllDay }}
@@ -184,11 +188,7 @@ function TimeChip({
       label={
         displayedTime == null
           ? t('chip.allDay')
-          : formatHHmmTime(
-              displayedTime,
-              preference?.timeFormat ?? USER_PREFERENCE_DEFAULTS.TIME_FORMAT,
-              dateFormatContext,
-            )
+          : formatHHmmTime(displayedTime, selectTimeFormat(preference), dateFormatContext)
       }
       isActive={displayedTime != null}
       onPress={handlePress}
@@ -265,7 +265,7 @@ function CategoryChip({ value, onChange, sheetOptions }: ChipProps<number>) {
   const handlePress = async () => {
     const categoryId = await openSheet<number>(
       (close) => (
-        <QueryErrorBoundary>
+        <QueryErrorBoundary fallback={CategoryPickForm.Error}>
           <Suspense fallback={<CategoryPickForm.Loading />}>
             <CategoryPickForm
               defaultValue={value.categoryId}

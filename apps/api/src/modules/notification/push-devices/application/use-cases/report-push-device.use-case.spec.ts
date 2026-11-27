@@ -213,13 +213,12 @@ describe("ReportPushDeviceUseCase — 푸시 기기 보고", () => {
     expect(tokens.size).toBe(0);
   });
 
-  it("시간대·언어가 있을 때만 저장하고 설정 캐시를 비운다. 잘못된 시간대는 버린다", async () => {
+  it("시간대·언어가 있을 때만 저장하고 설정 캐시를 비운다", async () => {
     // Given
     const { settings, cache, useCase } = setup();
 
     // When
     await useCase.execute(createCommand());
-    await useCase.execute(createCommand({ timezone: "Mars/Olympus" }));
     await useCase.execute(createCommand({ timezone: "Asia/Seoul", locale: "en" }));
 
     // Then

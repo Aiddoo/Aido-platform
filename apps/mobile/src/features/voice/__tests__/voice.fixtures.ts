@@ -1,8 +1,11 @@
 import { voiceNoteDigestResponseSchema } from '@aido/api/contracts/voice/v1';
-import type { LocalFileEntry } from '@src/core/ports/local-file-system';
+import { createTodoDto } from '@src/features/planning/todo/__tests__/todo.fixtures';
+import { createDateKey } from '@src/testing/date-key';
 import { defineFixture } from '@src/testing/fixture';
 
+import type { PlannedMemo, PlannedTodo } from '../domains/planned-action.model';
 import { voiceCaptureStateSchema, type VoiceCaptureState } from '../domains/voice-capture.model';
+import { type VoicePlan, voicePlanIdSchema } from '../domains/voice-plan.model';
 import { createVoiceTranscript, voiceTranscriptSchema } from '../domains/voice-transcript.model';
 
 export const createTranscript = defineFixture(voiceTranscriptSchema, {
@@ -24,16 +27,6 @@ export function createCaptureState(input: CaptureStateInput): VoiceCaptureState 
   });
 }
 
-export function createLocalFileEntry(overrides: Partial<LocalFileEntry> = {}): LocalFileEntry {
-  return {
-    name: 'recording.m4a',
-    uri: 'file:///voice/recording.m4a',
-    sizeBytes: 1024,
-    modifiedAtMs: null,
-    ...overrides,
-  };
-}
-
 /** 말로 메모 정리 응답. 계획 카드가 없는 정리다 */
 export const createVoiceNoteDigestDto = defineFixture(voiceNoteDigestResponseSchema, {
   title: '온보딩 회의',
@@ -43,3 +36,42 @@ export const createVoiceNoteDigestDto = defineFixture(voiceNoteDigestResponseSch
   featureQuota: null,
   charged: true,
 });
+
+export function createPlannedTodo(overrides: Partial<PlannedTodo> = {}): PlannedTodo {
+  return {
+    type: 'create-todo',
+    actionId: 'a1',
+    title: '영양제 먹기',
+    startDate: createDateKey('2026-11-05'),
+    endDate: null,
+    scheduledTime: '08:00',
+    repeat: null,
+    visibility: null,
+    items: [],
+    categoryId: 1,
+    duplicateOfTodoId: null,
+    ...overrides,
+  };
+}
+
+export function createPlannedMemo(): PlannedMemo {
+  return { type: 'create-memo', actionId: 'm1', title: '', content: '내용' };
+}
+
+/** 고른 계획을 적용한 서버 응답. 제목마다 할 일을 차례 id로 하나씩 만들고 메모는 만들지 않는다 */
+export function createAppliedPlanDto(titles: readonly string[]) {
+  return {
+    todos: titles.map((title, index) => createTodoDto({ id: index + 1, title })),
+    memo: null,
+  };
+}
+
+export function createVoicePlan(...actions: VoicePlan['actions']): VoicePlan {
+  return {
+    planId: voicePlanIdSchema.parse('plan-1'),
+    source: 'quick-voice',
+    sourceMemoId: null,
+    actions,
+    omittedTodoCount: 0,
+  };
+}

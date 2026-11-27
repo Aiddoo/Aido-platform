@@ -2,7 +2,6 @@ import { unwrap } from '@src/core/errors/result';
 import { createHttpClientStub } from '@src/testing/core';
 
 import { createSearchUsersDto, createSendFriendRequestDto } from '../__tests__/friend.fixtures';
-import { FRIEND_ERROR_CODE } from '../domains/friend.error';
 import { FriendApi } from './friend.api';
 
 describe('FriendApi', () => {
@@ -15,26 +14,6 @@ describe('FriendApi', () => {
   });
 
   describe('sendRequestByTag', () => {
-    it('태그가 비어 있으면 EMPTY_TAG 오류를 반환한다', async () => {
-      // When
-      const result = await service.sendRequestByTag('  ');
-
-      // Then
-      expect(result).toEqual({ ok: false, error: expect.any(Error) });
-      expect(result).toMatchObject({ error: { code: FRIEND_ERROR_CODE.EMPTY_TAG } });
-      expect(httpClient.post).not.toHaveBeenCalled();
-    });
-
-    it('태그 형식이 틀리면 INVALID_TAG 오류를 반환한다', async () => {
-      // When
-      const result = await service.sendRequestByTag('abc');
-
-      // Then
-      expect(result).toEqual({ ok: false, error: expect.any(Error) });
-      expect(result).toMatchObject({ error: { code: FRIEND_ERROR_CODE.INVALID_TAG } });
-      expect(httpClient.post).not.toHaveBeenCalled();
-    });
-
     it('태그가 맞으면 요청 결과를 반환한다', async () => {
       // Given
       const dto = createSendFriendRequestDto();
@@ -53,16 +32,6 @@ describe('FriendApi', () => {
   });
 
   describe('searchUsers', () => {
-    it('검색어가 2자 미만이면 요청 없이 오류를 반환한다', async () => {
-      // When
-      const result = await service.searchUsers({ query: ' a ' });
-
-      // Then
-      expect(result).toEqual({ ok: false, error: expect.any(Error) });
-      expect(result).toMatchObject({ error: { code: FRIEND_ERROR_CODE.SEARCH_QUERY_TOO_SHORT } });
-      expect(httpClient.get).not.toHaveBeenCalled();
-    });
-
     it('검색어의 앞뒤 공백을 지우고 조회해 페이지를 반환한다', async () => {
       // Given
       const dto = createSearchUsersDto();

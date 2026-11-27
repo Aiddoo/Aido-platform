@@ -1,14 +1,26 @@
-import type { ExternalLinkGateway } from '@src/core/ports/external-link-gateway';
+import type { ExternalLinkGateway, SettingsApp } from '@src/core/ports/external-link-gateway';
 import type { IncomingLinkGateway } from '@src/core/ports/incoming-link-gateway';
 
 import { mockMethod } from '../mock-method';
 
-/** 어떤 링크든 열리는 기기가 기본값이다 */
-export function createExternalLinkGatewayStub(): jest.Mocked<ExternalLinkGateway> {
+interface ExternalLinkGatewayStubOptions {
+  /** false면 앱 설정 화면이 없는 Mac(Designed for iPad)이다 */
+  canOpenSettings?: boolean;
+  /** Mac(Designed for iPad)은 `{ device: 'desktop', hasAppsMenu: true }`다 */
+  settingsApp?: SettingsApp;
+}
+
+/** 어떤 링크든 열리고 앱 설정 화면이 있는, 설정 > 앱 메뉴가 있는 휴대폰이 기본값이다 */
+export function createExternalLinkGatewayStub({
+  canOpenSettings = true,
+  settingsApp = { device: 'phone', hasAppsMenu: true },
+}: ExternalLinkGatewayStubOptions = {}): jest.Mocked<ExternalLinkGateway> {
   return {
     open: mockMethod<ExternalLinkGateway['open']>(async () => {}),
     openInAppBrowser: mockMethod<ExternalLinkGateway['openInAppBrowser']>(async () => {}),
     openSettings: mockMethod<ExternalLinkGateway['openSettings']>(async () => {}),
+    canOpenSettings,
+    settingsApp,
   };
 }
 

@@ -3,16 +3,28 @@ import { useTodoApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
 import { MINUTE_MS } from '@src/shared/constants/time-units';
-import { readDeviceLocalDateState } from '@src/shared/date/clock';
+import { readLocalDateState } from '@src/shared/date/clock';
 import { addDaysToDateKey, type DateKey } from '@src/shared/date/date-key';
-import { useTodayKey } from '@src/shared/hooks/use-today';
-import { queryOptions } from '@tanstack/react-query';
-import { keyBy, take } from 'es-toolkit';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
+import { queryOptions, usePrefetchQuery } from '@tanstack/react-query';
+import { keyBy, orderBy, take } from 'es-toolkit';
 
 import type { TodoApi } from '../apis/todo.api';
 import { UPCOMING_TODO_WINDOW_DAYS } from '../constants/todo.constants';
-import { type DailyCompletionSummary } from '../domains/daily-completion.model';
-import type { CalendarDateRange, CompletionsByDate } from '../utils/calendar-grid.view-model';
+import {
+  type DailyCompletionRange,
+  type DailyCompletionsResult,
+  type DailyCompletionSummary,
+  getCompletionMonthRange,
+  getCompletionMonthsCovering,
+} from '../domains/daily-completion.model';
+import {
+  type TodoCategoryGroup,
+  TodoListPolicy,
+  type TodoListResult,
+} from '../domains/todo-list.model';
+import type { TodoOverview } from '../domains/todo-overview.model';
+import type { Todo } from '../domains/todo.model';
 import {
   getTodoSummaryRefetchInterval,
   isTodoSummaryDateRequestable,
@@ -37,28 +49,91 @@ export function useGetTodosByDateQueryOptions({ date }: { date: DateKey }) {
   });
 }
 
-function toCompletionsByDate(data: { completions: DailyCompletionSummary[] }): CompletionsByDate {
+/** 날짜 key로 찾는 완료 기록. 달력 칸이 자기 날짜로 읽는다 */
+export type CompletionsByDate = Record<string, DailyCompletionSummary>;
+
+function selectCompletionsByDate(data: DailyCompletionsResult): CompletionsByDate {
   return keyBy(data.completions, (completion) => completion.date);
 }
 
-/** 달마다 같은 키로 받아 달 안에서 날짜를 옮겨도 다시 묻지 않는다 */
-export function useGetDailyCompletionsQueryOptions({ startDate, endDate }: CalendarDateRange) {
+/** 달 칸들의 결과에서 그 기간의 날만 날짜 순으로 고른다. 한 달이라도 아직 없으면 없음이다 */
+function selectCompletionsInRange(
+  months: readonly { data: DailyCompletionsResult | undefined }[],
+  range: DailyCompletionRange,
+): CompletionsByDate | undefined {
+  const completions: DailyCompletionSummary[] = [];
+  for (const { data } of months) {
+    if (data == null) {
+      return undefined;
+    }
+    completions.push(...data.completions);
+  }
+  // 두 달 칸이 겹치는 날은 같은 서버 값이라 어느 쪽을 남겨도 같다
+  const inRange = completions.filter(
+    ({ date }) => range.startDate <= date && date <= range.endDate,
+  );
+  return keyBy(
+    orderBy(inRange, [(completion) => completion.date], ['asc']),
+    (completion) => completion.date,
+  );
+}
+
+/** 고른 달과 앞뒤 달의 결과를 한 달력으로 합친다. 겹치는 앞뒤 주는 고른 달의 결과로 그린다 */
+export function selectCalendarCompletions({
+  selected,
+  previous,
+  next,
+}: Record<'selected' | 'previous' | 'next', CompletionsByDate | undefined>): CompletionsByDate {
+  return { ...previous, ...next, ...selected };
+}
+
+function dailyCompletionsQueryOptions(todoApi: TodoApi, month: DateKey) {
+  const { startDate, endDate } = getCompletionMonthRange(month);
+  return queryOptions({
+    queryKey: TODO_QUERY_KEYS.completionsByMonth({ month }),
+    queryFn: async ({ signal }) =>
+      unwrap(await todoApi.getDailyCompletions(startDate, endDate, signal)),
+    ...PERSISTED_QUERY_OPTIONS,
+  });
+}
+
+/** 한 달 칸의 완료 기록. 달마다 같은 키로 받아 달 안에서 날짜를 옮겨도 다시 묻지 않는다 */
+export function useGetDailyCompletionsQueryOptions({ month }: { month: DateKey }) {
   const todoApi = useTodoApi();
 
   return queryOptions({
-    queryKey: TODO_QUERY_KEYS.completionsByRange({ startDate, endDate }),
-    queryFn: async ({ signal }) =>
-      unwrap(await todoApi.getDailyCompletions(startDate, endDate, signal)),
-    select: toCompletionsByDate,
-    ...PERSISTED_QUERY_OPTIONS,
+    ...dailyCompletionsQueryOptions(todoApi, month),
+    select: selectCompletionsByDate,
   });
+}
+
+/** 기간을 덮는 달 키를 달력과 함께 쓰고(두 달에 걸치면 두 달) 기간 밖의 날은 `combine`으로 자른다 */
+export function useGetDailyCompletionsInRangeQueriesOptions(range: DailyCompletionRange) {
+  const todoApi = useTodoApi();
+
+  return {
+    queries: getCompletionMonthsCovering(range).map((month) =>
+      dailyCompletionsQueryOptions(todoApi, month),
+    ),
+    combine: (months: readonly { data: DailyCompletionsResult | undefined }[]) =>
+      selectCompletionsInRange(months, range),
+  };
+}
+
+/** 그 기간을 덮는 달 키를 미리 받는다. 덮는 달은 하나나 둘이라 첫 달과 끝 달을 넘기고, 한 달이면 같은 키라 한 번만 받는다 */
+export function usePrefetchDailyCompletionsInRange(range: DailyCompletionRange) {
+  const todoApi = useTodoApi();
+  const [firstMonth, ...restMonths] = getCompletionMonthsCovering(range);
+
+  usePrefetchQuery(dailyCompletionsQueryOptions(todoApi, firstMonth));
+  usePrefetchQuery(dailyCompletionsQueryOptions(todoApi, restMonths.at(-1) ?? firstMonth));
 }
 
 export function useGetFriendDailyCompletionsQueryOptions({
   friendUserId,
   startDate,
   endDate,
-}: CalendarDateRange & { friendUserId: string }) {
+}: DailyCompletionRange & { friendUserId: string }) {
   const todoApi = useTodoApi();
 
   return queryOptions({
@@ -69,8 +144,14 @@ export function useGetFriendDailyCompletionsQueryOptions({
     }),
     queryFn: async ({ signal }) =>
       unwrap(await todoApi.getFriendDailyCompletions(friendUserId, startDate, endDate, signal)),
-    select: toCompletionsByDate,
+    select: selectCompletionsByDate,
   });
+}
+
+export function selectTodoCategoryGroups(
+  list: TodoListResult,
+): TodoCategoryGroup<Todo['category']>[] {
+  return TodoListPolicy.groupByCategory(list);
 }
 
 export function useGetFriendTodosQueryOptions({
@@ -114,6 +195,11 @@ export function useGetTodoDetailsQueryOptionsFactory() {
   return (todoId: number) => todoDetailsQueryOptions(todoApi, todoId);
 }
 
+/** 진행 중인 반복이 있는지만 고른다. 다른 칸이 바뀌어도 반복 안내는 다시 그리지 않는다 */
+export function selectHasActiveRepeat(overview: TodoOverview): boolean {
+  return overview.hasActiveRepeat;
+}
+
 /** 반복 안내·시작 체크리스트가 각자 select로 고른다. 둘 다 화면 한쪽의 보조 정보라 실패해도 경계로 보내지 않고 그 안내만 뺀다 */
 export function useGetTodoOverviewQueryOptions() {
   const todoApi = useTodoApi();
@@ -153,7 +239,7 @@ export function useGetTodoSummaryQueryOptions({ date, userId, limit }: TodoSumma
     userId != null &&
     isTodoSummaryDateRequestable({
       date,
-      todayKey: readDeviceLocalDateState().currentLocalDateKey,
+      todayKey: readLocalDateState().currentLocalDateKey,
     });
 
   return queryOptions({

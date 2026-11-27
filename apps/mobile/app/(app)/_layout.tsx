@@ -4,8 +4,9 @@ import { useRecordTodoCreated } from '@src/features/device/activation/hooks/use-
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useLogoutMutationOptions } from '@src/features/identity/auth/queries/auth.mutations';
 import { useOfferMarketingPushAfterCompletion } from '@src/features/notification/hooks/use-offer-marketing-push-after-completion';
-import { usePushOnboardingGuard } from '@src/features/notification/hooks/use-push-onboarding-guard';
-import { useTodoImportResume } from '@src/features/planning/todo-import/hooks/use-todo-import-resume';
+import { useMarkPushOnboardingGuardRendered } from '@src/features/notification/hooks/use-push-onboarding-guard';
+import { useRefreshWhenTodoImportFinishes } from '@src/features/planning/todo-import/hooks/use-refresh-when-todo-import-finishes';
+import { useResumeTodoImportUpload } from '@src/features/planning/todo-import/hooks/use-resume-todo-import-upload';
 import { classifyError, getErrorReportTags } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -47,12 +48,12 @@ export const unstable_settings = {
   anchor: '(tabs)',
 };
 
-function AppLayout() {
+export default function AppLayout() {
   const { backgroundColor } = useResolveClassNames('bg-white');
   const headerOptions = useStackScreenOptions();
   const { t } = useTranslation(['todo', 'ai']);
   // 알림 안내 화면의 Stack.Protected guard라 내비게이터를 그리는 레이아웃이 판정한다
-  const isPushOnboardingDue = usePushOnboardingGuard();
+  const isPushOnboardingDue = useMarkPushOnboardingGuardRendered();
 
   return (
     <>
@@ -120,7 +121,7 @@ function AppLayout() {
         </Stack.Protected>
       </Stack>
       <TodoEventWatchers />
-      <TodoImportWatcher />
+      <TodoImportWatchers />
     </>
   );
 }
@@ -134,14 +135,13 @@ function TodoEventWatchers() {
   return null;
 }
 
-/** 끊긴 캘린더 업로드를 이어 가는 감시. 레이아웃이 다시 그려지지 않게 null을 그리는 형제에 둔다 */
-function TodoImportWatcher() {
-  useTodoImportResume();
+/** 끊긴 캘린더 업로드를 이어 가고, 떠난 사이 끝난 가져오기의 할 일을 다시 받는 감시. 레이아웃이 다시 그려지지 않게 null을 그리는 형제에 둔다 */
+function TodoImportWatchers() {
+  useResumeTodoImportUpload();
+  useRefreshWhenTodoImportFinishes();
 
   return null;
 }
-
-export default AppLayout;
 
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   const status = useAuthStatus();
@@ -150,8 +150,7 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   const { reset: resetQueryErrors } = useQueryErrorResetBoundary();
   const { t } = useTranslation();
 
-  // 세션이 끝난 뒤 도착한 401만 조용히 로그인으로 넘긴다. 세션이 살아있는데 401이 여기까지
-  // 새어왔다면 컨테인먼트 구멍이므로, null 빈 화면 대신 재시도 UI를 보여주고 리포트한다.
+  // 세션이 끝난 뒤 도착한 401만 조용히 로그인으로 넘기고, 세션이 살아있는데 새어 온 401은 재시도 UI를 보인다
   const isAuthTransition =
     status !== 'authenticated' && classifyError(error).kind === 'auth-expired';
 
@@ -171,7 +170,7 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   }
 
   // 실패한 Suspense 조회는 리셋 없이 다시 마운트하면 재요청 없이 같은 오류를 다시 던진다
-  const handleRetry = () => {
+  const handleRetryPress = () => {
     resetQueryErrors();
     retry();
   };
@@ -183,8 +182,8 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
         description={t('appError.description')}
         button={
           <HStack gap={8}>
-            <Result.Button isDisabled={logout.isPending} onPress={handleRetry}>
-              {t('appError.retry')}
+            <Result.Button isDisabled={logout.isPending} onPress={handleRetryPress}>
+              {t('actions.retry')}
             </Result.Button>
             <Result.Button
               color="primary"

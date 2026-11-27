@@ -127,4 +127,41 @@ describe('stepperReducer', () => {
     // Then
     expect(getCurrentEntry(forward).step).toBe('password');
   });
+
+  it('backTo는 기록에서 지금보다 앞의 그 단계로 돌아가고 앞으로 가는 기록은 남긴다', () => {
+    // Given
+    const state = givenAt(
+      { step: 'email', context: { email: '' } },
+      { step: 'password', context: { email: '', password: '' } },
+      { step: 'done', context: {} },
+    );
+
+    // When
+    const next = stepperReducer(state, { type: 'backTo', step: 'email' });
+
+    // Then
+    expect(next.cursor).toBe(0);
+    expect(next.entries).toBe(state.entries);
+  });
+
+  it.each(['done', 'password'] as const)(
+    'backTo(%s)가 기록에서 지금보다 앞에 없으면 상태가 그대로다',
+    (step) => {
+      // Given
+      const state = stepperReducer(
+        givenAt(
+          { step: 'email', context: { email: '' } },
+          { step: 'password', context: { email: '', password: '' } },
+          { step: 'done', context: {} },
+        ),
+        { type: 'go', delta: -1 },
+      );
+
+      // When
+      const next = stepperReducer(state, { type: 'backTo', step });
+
+      // Then
+      expect(next).toBe(state);
+    },
+  );
 });

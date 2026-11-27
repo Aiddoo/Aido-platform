@@ -8,6 +8,7 @@ import {
   HintPopoverContent,
   HStack,
   InfoIcon,
+  MIN_TOUCH_TARGET_PT,
   Text,
 } from '@src/shared/ui';
 import { Popover, PressableFeedback } from 'heroui-native';
@@ -25,8 +26,16 @@ import {
 const INFO_POPOVER_GAP = 9;
 /** 글자는 시스템 배율을 따르지 않아, 아이콘을 고정해야 라벨 기준선이 옆 칸과 어긋나지 않는다 */
 const INFO_ICON_SIZE = 14;
-/** 라벨(한 줄)만으로는 44pt에 못 미쳐 위아래로 늘린다. 위는 위 버튼과 2pt 겹치지 않게 간격보다 조금 덜 늘린다 */
-const LABEL_HIT_SLOP = { top: RECORD_BUTTON_GAP - 2, bottom: 22, left: 8, right: 8 } as const;
+/** 라벨 한 줄 높이. 가장 작은 글꼴 단계에서 e1이 바뀌는 e2의 줄이다 */
+const LABEL_LINE_HEIGHT = 16;
+/** 라벨(한 줄)만으로는 44pt에 못 미쳐 위아래로 늘린다. 위는 위 버튼과 2pt 겹치지 않게 간격보다 조금 덜 늘리고 모자란 만큼 아래로 채운다 */
+const LABEL_HIT_SLOP_TOP = RECORD_BUTTON_GAP - 2;
+const LABEL_HIT_SLOP = {
+  top: LABEL_HIT_SLOP_TOP,
+  bottom: MIN_TOUCH_TARGET_PT - LABEL_LINE_HEIGHT - LABEL_HIT_SLOP_TOP,
+  left: 8,
+  right: 8,
+} as const;
 
 interface VoiceNoteMarkControlProps {
   markCount: number;

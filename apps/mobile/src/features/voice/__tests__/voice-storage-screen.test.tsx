@@ -1,8 +1,6 @@
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import '@src/shared/i18n/init';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { OverlayProvider } from '@src/shared/ui';
 import {
   createLocalFileSystemFake,
   createTestDi,
@@ -12,7 +10,7 @@ import {
 import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
-import VoiceStorageRoute from '../../../../app/(app)/(tabs)/(me,memos,todos)/settings/voice-storage';
+import VoiceStorageScreen from '../../../../app/(app)/(tabs)/(me,memos,todos)/settings/voice-storage';
 import { createVoiceNoteDigest, createSpokenVoiceNote } from './voice-note.fixtures';
 
 const ACCOUNT_ID = 'user-1';
@@ -44,14 +42,7 @@ async function renderVoiceStorage({
     files.addFile(OWNER_DIRECTORY, 'failed-0.wav', { sizeBytes: 4_096 });
   }
 
-  await renderScreen(
-    <LocalDateProvider>
-      <OverlayProvider>
-        <VoiceStorageRoute />
-      </OverlayProvider>
-    </LocalDateProvider>,
-    { di },
-  );
+  await renderScreen(<VoiceStorageScreen />, { di, withLocalDate: true, withOverlay: true });
 
   return { di, files };
 }

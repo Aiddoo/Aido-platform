@@ -4,14 +4,11 @@ import Delete from '@expo/material-symbols/delete.xml';
 import Keep from '@expo/material-symbols/keep.xml';
 import SmartToy from '@expo/material-symbols/smart_toy.xml';
 
-const IS_IOS = process.env.EXPO_OS === 'ios';
-
-/** 메모 화면 네이티브 헤더 버튼 아이콘. iOS는 SF Symbol, Android는 Material Symbol을 쓴다. */
 export const MEMO_TOOLBAR_ICON = {
-  pin: IS_IOS ? 'pin' : Keep,
-  pinned: IS_IOS ? 'pin.fill' : Keep,
-  save: IS_IOS ? 'checkmark' : Check,
-  ai: IS_IOS ? 'sparkles' : SmartToy,
-  convertToTodo: IS_IOS ? 'checkmark.square' : CheckBox,
-  delete: IS_IOS ? 'trash' : Delete,
+  pin: process.env.EXPO_OS === 'ios' ? 'pin' : Keep,
+  pinned: process.env.EXPO_OS === 'ios' ? 'pin.fill' : Keep,
+  save: process.env.EXPO_OS === 'ios' ? 'checkmark' : Check,
+  ai: process.env.EXPO_OS === 'ios' ? 'sparkles' : SmartToy,
+  convertToTodo: process.env.EXPO_OS === 'ios' ? 'checkmark.square' : CheckBox,
+  delete: process.env.EXPO_OS === 'ios' ? 'trash' : Delete,
 } as const;

@@ -13,8 +13,8 @@ import type {
 import type { AppleSignInResult } from '@src/core/ports/social-auth-gateway';
 import { toInstant, toNullableInstant } from '@src/shared/date/instant';
 
+import type { AuthTokens } from '../domains/auth-tokens.model';
 import {
-  type AuthTokens,
   type ChangePasswordResult,
   type DeleteAccountResult,
   type ForgotPasswordResult,
@@ -22,7 +22,7 @@ import {
   type ResendVerificationResult,
   type ResetPasswordResult,
 } from '../domains/auth.model';
-import { type LinkedAccount, type LinkedAccountsResult } from '../domains/oauth.model';
+import { type LinkedAccount, type LinkedAccountsResult } from '../domains/linked-accounts.model';
 import type { RegisterInput } from '../schemas/auth-request.schema';
 import {
   type AuthTokensEnvelope,
@@ -77,26 +77,18 @@ export function toAuthTokens(dto: AuthTokensEnvelope): AuthTokens {
     userName: dto.name,
     userProfileImage: dto.profileImage,
     accountRestored: dto.accountRestored,
-    isNewUser: dto.isNewUser ?? false,
+    isNewUser: dto.isNewUser ?? null,
   };
 }
 
 export function toRegisterResult(dto: RegisterEnvelope): RegisterResult {
-  return {
-    message: dto.message,
-    email: dto.email,
-    isEmailSent: dto.emailSent,
-  };
+  return { isEmailSent: dto.emailSent };
 }
 
 export function toResendVerificationResult(
   dto: ResendVerificationResponse,
 ): ResendVerificationResult {
-  return {
-    message: dto.message,
-    email: dto.email,
-    retryAfterSeconds: dto.retryAfterSeconds ?? null,
-  };
+  return { retryAfterSeconds: dto.retryAfterSeconds ?? null };
 }
 
 export function toDeleteAccountResult(dto: DeleteAccountResponse): DeleteAccountResult {
@@ -125,7 +117,7 @@ export function toChangePasswordResult(dto: ChangePasswordResponse): ChangePassw
   };
 }
 
-export function toLinkedAccount(dto: LinkedAccountDto): LinkedAccount {
+function toLinkedAccount(dto: LinkedAccountDto): LinkedAccount {
   return {
     provider: dto.provider,
     linked: dto.linked,

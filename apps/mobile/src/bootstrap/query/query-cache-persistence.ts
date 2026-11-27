@@ -1,5 +1,6 @@
 import type { EnumerableSyncStorage } from '@src/core/ports/sync-storage';
 import { QUERY_CACHE_MAX_AGE_MS } from '@src/shared/constants/query-persistence';
+import { SECOND_MS } from '@src/shared/constants/time-units';
 import { logger } from '@src/shared/infra/logger/global-logger';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
 import {
@@ -10,9 +11,10 @@ import {
 } from '@tanstack/react-query';
 import type {
   PersistedClient,
+  Persister,
   PersistQueryClientOptions,
 } from '@tanstack/react-query-persist-client';
-import { noop, uniq } from 'es-toolkit';
+import { noop, throttle, uniq } from 'es-toolkit';
 import type { z } from 'zod';
 
 import { QUERY_CACHE_LOG_EVENT } from './query-cache-log-events';
@@ -22,7 +24,10 @@ export const QUERY_CACHE_STORAGE_KEY = 'aido.query-cache';
 const QUERY_CACHE_OWNER_KEY = 'aido.query-cache.owner';
 
 /** 영속 쿼리의 키나 클라이언트 모델의 모양이 바뀌면 올려 이전 캐시를 버린다 */
-const QUERY_CACHE_SCHEMA_VERSION = 6;
+const QUERY_CACHE_SCHEMA_VERSION = 7;
+
+/** 영속하지 않는 조회의 이벤트(3초 폴링)에도 영속 조회 전체를 다시 쓴다. 기본 1초면 폴링 1분에 40번, 5초면 12번이다 */
+const QUERY_CACHE_PERSIST_THROTTLE_MS = 5 * SECOND_MS;
 
 /** persister가 쓰는 저장소. 캐시는 주인(사용자 id)별 키에 두고, 주인이 없으면 읽지도 쓰지도 않는다 */
 export interface QueryCacheStorage {
@@ -151,6 +156,20 @@ export function createQueryCacheBuster({
   return `${QUERY_CACHE_SCHEMA_VERSION}:${appVersion}:${language}`;
 }
 
+/** 저장을 미루되 앱이 뒤로 갈 때 바로 쓸 수 있게 한다. 라이브러리 throttle에는 미룬 저장을 당겨 쓰는 길이 없다 */
+function throttlePersister(persister: Persister): { persister: Persister; flush: () => void } {
+  const persistClient = throttle((client: PersistedClient) => {
+    // 저장 실패는 캐시를 한 번 못 남길 뿐이고 다음 캐시 이벤트가 다시 쓴다
+    Promise.resolve(persister.persistClient(client)).catch(noop);
+  }, QUERY_CACHE_PERSIST_THROTTLE_MS);
+  return { persister: { ...persister, persistClient }, flush: () => persistClient.flush() };
+}
+
+interface QueryPersistOptions extends Omit<PersistQueryClientOptions, 'queryClient'> {
+  /** 미뤄 둔 저장을 바로 쓴다. 앱이 뒤로 갈 때 부른다 */
+  flush: () => void;
+}
+
 export function createQueryPersistOptions({
   storage,
   buster,
@@ -159,13 +178,19 @@ export function createQueryPersistOptions({
   storage: QueryCacheStorage;
   buster: string;
   schemas: readonly PersistedQuerySchema[];
-}): Omit<PersistQueryClientOptions, 'queryClient'> {
-  return {
-    persister: createAsyncStoragePersister({
+}): QueryPersistOptions {
+  const { persister, flush } = throttlePersister(
+    createAsyncStoragePersister({
       storage,
       key: QUERY_CACHE_STORAGE_KEY,
       deserialize: (text) => keepValidPersistedQueries(JSON.parse(text), schemas),
+      // 미루기는 throttlePersister가 한다
+      throttleTime: 0,
     }),
+  );
+  return {
+    persister,
+    flush,
     maxAge: QUERY_CACHE_MAX_AGE_MS,
     buster,
     dehydrateOptions: {

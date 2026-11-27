@@ -7,17 +7,20 @@ import { z } from 'zod';
 import { getAppScheme } from './app-scheme';
 import { ENV_LOG_EVENT } from './env-log-events';
 
-const appEnvSchema = z.enum(['development', 'preview', 'production']);
-type AppEnv = z.infer<typeof appEnvSchema>;
+// app.config.ts가 빌드 때 APP_ENV를 같은 목록으로 검증해 extra.env로 넘긴다
+const appEnvironmentSchema = z.enum(['development', 'preview', 'production']);
+export type AppEnvironment = z.infer<typeof appEnvironmentSchema>;
 
 const extraSchema = z.object({
-  env: appEnvSchema,
+  env: appEnvironmentSchema,
   apiUrl: z.string(),
   devMachineIp: z.string().optional(),
-  isDevelopment: z.boolean(),
-  isProduction: z.boolean(),
   sentryDsn: z.string().optional(),
   sentryDebug: z.boolean().optional(),
+  // RevenueCat 공개 SDK 키. 테스트 키는 개발 번들에만 들어온다
+  revenueCatAppleApiKey: z.string().optional(),
+  revenueCatGoogleApiKey: z.string().optional(),
+  revenueCatTestApiKey: z.string().optional(),
   // .env의 빈 값(EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY=)은 키가 없는 빌드로 본다
   kakaoNativeAppKey: z
     .string()
@@ -30,11 +33,36 @@ type PlatformType = typeof process.env.EXPO_OS;
 
 type ApiUrlContext = {
   platform: PlatformType;
-  env: AppEnv;
+  env: AppEnvironment;
   apiUrl: string;
   isPhysicalDevice: boolean;
   devMachineIp?: string;
 };
+
+export interface TelemetryGates {
+  /** Firebase Analytics·Sentry 보고기·Sentry 로거를 쓴다. 아니면 console 어댑터이고 네이티브 자동 수집은 내부 트래픽이다 */
+  usesVendorAdapters: boolean;
+  /** console 로거가 남기는 가장 낮은 수준 */
+  consoleMinLevel: 'warn' | 'debug';
+  /** `Sentry.init`의 enabled. JS 어댑터와 달리 운영이 아니어도 `EXPO_PUBLIC_SENTRY_DEBUG=true`면 SDK만 켠다 */
+  isSentrySdkEnabled: boolean;
+}
+
+/** 어느 환경에서 관측 도구를 무엇으로 켜나를 여기서만 정한다 */
+export function resolveTelemetryGates({
+  appEnv,
+  sentryDebug,
+}: {
+  appEnv: AppEnvironment;
+  sentryDebug: boolean;
+}): TelemetryGates {
+  const isProduction = appEnv === 'production';
+  return {
+    usesVendorAdapters: isProduction,
+    consoleMinLevel: isProduction ? 'warn' : 'debug',
+    isSentrySdkEnabled: isProduction || sentryDebug,
+  };
+}
 
 const extra = extraSchema.parse(Constants.expoConfig?.extra);
 
@@ -112,12 +140,9 @@ function resolveApiUrl(): string {
 export const ENV = {
   APP_VERSION: Constants.expoConfig?.version,
   APP_ENV: extra.env,
-  IS_DEV: extra.isDevelopment,
-  IS_PRODUCTION: extra.isProduction,
+  TELEMETRY: resolveTelemetryGates({ appEnv: extra.env, sentryDebug: extra.sentryDebug === true }),
 
   PLATFORM: process.env.EXPO_OS,
-  IS_ANDROID: process.env.EXPO_OS === 'android',
-  IS_IOS: process.env.EXPO_OS === 'ios',
 
   API_URL: resolveApiUrl(),
   SCHEME: getAppScheme(),
@@ -127,6 +152,10 @@ export const ENV = {
   KAKAO_SCHEME: resolveKakaoScheme(extra.kakaoNativeAppKey),
 
   SENTRY_DSN: extra.sentryDsn,
-  // 프로덕션은 항상 활성, 그 외는 EXPO_PUBLIC_SENTRY_DEBUG=true일 때만 활성
-  SENTRY_ENABLED: extra.isProduction || extra.sentryDebug === true,
+
+  REVENUECAT_API_KEYS: {
+    apple: extra.revenueCatAppleApiKey,
+    google: extra.revenueCatGoogleApiKey,
+    test: extra.revenueCatTestApiKey,
+  },
 } as const;

@@ -1,6 +1,5 @@
 import { useApplicationMetadata } from '@src/bootstrap/providers/di-context';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
-import { useMemo } from 'react';
 
 import { WhatsNewPolicy } from '../domains/whats-new.model';
 import { shouldShowCoachmarks } from '../utils/whats-new-coachmarks.view-model';
@@ -16,10 +15,7 @@ export function useWhatsNewAutoOpen({ isOnboardingSettled }: WhatsNewAutoOpenInp
   const isAuthenticated = useAuthStatus() === 'authenticated';
   const { config, isConfigLoading, release, identity, hasSeen } = useWhatsNewCampaign();
   const applicationMetadata = useApplicationMetadata();
-  const appVersion = useMemo(
-    () => applicationMetadata.getInstallation()?.currentVersion ?? null,
-    [applicationMetadata],
-  );
+  const appVersion = applicationMetadata.getInstallation()?.currentVersion ?? null;
   const shouldAutoOpen =
     isAuthenticated &&
     identity != null &&

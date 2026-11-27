@@ -1,7 +1,7 @@
 import { useTranslation } from '@src/shared/i18n';
 import { match } from 'ts-pattern';
 
-import type { PlanValue } from '../utils/plan-benefit.view-model';
+import type { PlanValue } from '../domains/entitlement.model';
 import { useFormatPlanAmount } from './use-format-plan-amount';
 
 /** 비교 칸 값을 글자로 바꾼다. 혜택 장의 한도 띠와 비교표가 같은 말을 쓴다 */

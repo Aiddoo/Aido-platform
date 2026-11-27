@@ -4,7 +4,7 @@ import { themeModeStoredValue } from '@src/shared/preferences/schemas/theme-mode
 import type { ThemeMode } from '@src/shared/preferences/theme-mode.preference';
 import { useStoredValueIn } from '@src/shared/storage/use-stored-value';
 import { DarkTheme, DefaultTheme, ThemeProvider as NavigationThemeProvider } from 'expo-router';
-import { createContext, type PropsWithChildren, use, useEffect, useMemo } from 'react';
+import { createContext, type PropsWithChildren, use, useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 import { match } from 'ts-pattern';
 import { Uniwind, useResolveClassNames } from 'uniwind';
@@ -27,6 +27,8 @@ export function ThemeProvider({ children, syncStorage = deviceSyncStorage }: The
   const systemColorScheme = useColorScheme();
   const [mode, setMode] = useStoredValueIn(syncStorage, themeModeStoredValue);
 
+  // `useUniwind().theme`은 아래 effect의 `setTheme` 뒤에야 바뀌어 모드를 바꾼 렌더·첫 실행 렌더에 앞 값이다.
+  // 내비게이션 테마·상태 바는 저장된 모드에서 같은 렌더에 바로 정한다(design.md 테마 값의 원천)
   const resolvedTheme = match<ThemeMode, ResolvedTheme>(mode)
     .with('system', () => (systemColorScheme === 'dark' ? 'dark' : 'light'))
     .with('light', 'dark', (explicitMode) => explicitMode)
@@ -37,19 +39,17 @@ export function ThemeProvider({ children, syncStorage = deviceSyncStorage }: The
   }, [mode]);
 
   const { backgroundColor } = useResolveClassNames('bg-white');
-  const navigationTheme = useMemo(() => {
-    const baseTheme = resolvedTheme === 'dark' ? DarkTheme : DefaultTheme;
-    return {
-      ...baseTheme,
-      colors: {
-        ...baseTheme.colors,
-        background:
-          typeof backgroundColor === 'string' ? backgroundColor : baseTheme.colors.background,
-      },
-    };
-  }, [resolvedTheme, backgroundColor]);
+  const baseTheme = resolvedTheme === 'dark' ? DarkTheme : DefaultTheme;
+  const navigationTheme = {
+    ...baseTheme,
+    colors: {
+      ...baseTheme.colors,
+      background:
+        typeof backgroundColor === 'string' ? backgroundColor : baseTheme.colors.background,
+    },
+  };
 
-  const value = useMemo(() => ({ mode, resolvedTheme, setMode }), [mode, resolvedTheme, setMode]);
+  const value = { mode, resolvedTheme, setMode };
 
   return (
     <ThemeContext value={value}>

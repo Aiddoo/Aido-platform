@@ -49,10 +49,7 @@ const UNKNOWN_SOURCE: ServerErrorSource = {
 export class ServerError extends InfraError {
   override readonly name = 'ServerError';
   readonly status: number;
-  /**
-   * 5xx 봉투의 코드(SYS_0005 DB 과부하, WEATHER_1901 날씨 업체 장애 등). 본문을 읽지 못했거나 모르는 코드면 null.
-   * `code`로 두지 않는다: `isCodedError`가 참이 되면 예상한 4xx처럼 재시도·보고에서 빠진다
-   */
+  /** 모르는 코드면 null. `code`로 두면 `isCodedError`가 참이 돼 예상한 4xx처럼 재시도·보고에서 빠진다 */
   readonly serverCode: ErrorCodeType | null;
   /** 운영에는 `PUBLIC_ERROR_DETAILS`에 등록한 코드만 실린다(AI 미차감 `charged` 등) */
   readonly details: Record<string, unknown> | null;

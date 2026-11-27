@@ -50,7 +50,7 @@ async function renderSelector(snapshot: EntitlementSnapshot, currentIcon: AppIco
   return { gateway };
 }
 
-describe('앱 아이콘 고르기', () => {
+describe('AppIconSelector', () => {
   it('무료 사용자가 고양이 아이콘을 고르면 프리미엄 안내를 띄우고 아이콘은 그대로 둔다', async () => {
     // Given
     const user = userEvent.setup();

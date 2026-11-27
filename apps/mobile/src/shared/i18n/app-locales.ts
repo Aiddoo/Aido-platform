@@ -30,7 +30,7 @@ const TWENTY_FOUR_HOUR_PICKER_LOCALE = 'en_GB';
 
 export function getTimePickerLocale(
   language: SupportedLocale,
-  timeFormat: (typeof TIME_FORMATS)[number] = 'TWELVE_HOUR',
+  timeFormat: (typeof TIME_FORMATS)[number],
 ): string {
   return timeFormat === 'TWELVE_HOUR'
     ? APP_LOCALES[language].pickerLocale

@@ -9,7 +9,7 @@ import {
   PARTICLE_SEED_STRIDE,
   placeSprite,
   wrap,
-} from '../../utils/weather-scene-particles.view-model';
+} from '../../utils/weather-scene-particles.geometry';
 import type { WeatherSceneSky } from '../../utils/weather-scene.view-model';
 import { FOG_BAND_SPRITE, PARTICLE_SAMPLING, useFogBandTexture } from './weather-scene-textures';
 
@@ -26,12 +26,12 @@ const BAND_ALPHA = [0.35, 0.6] as const;
 const BAND_TRAVEL = { start: -0.9, length: 2 } as const;
 const SPRITE_CENTER = { x: FOG_BAND_SPRITE.width / 2, y: FOG_BAND_SPRITE.height / 2 };
 
-type FogBandLayerProps = {
+interface FogBandLayerProps {
   sky: WeatherSceneSky;
   width: number;
   height: number;
   time: SharedValue<number>;
-};
+}
 
 /** 짙은 안개 띠 여러 겹이 서로 반대 방향으로 천천히 흐른다. */
 export function FogBandLayer({ sky, width, height, time }: FogBandLayerProps) {

@@ -13,6 +13,7 @@ import {
   createMemoryObservableSyncStorage,
   createTestDi,
   respondByPath,
+  getTrackedEvents,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { act, screen } from '@testing-library/react-native';
@@ -71,9 +72,7 @@ async function renderSummary(language: 'ko' | 'en') {
     withLocalDate: true,
   });
   const badgeViews = () =>
-    analytics.trackEvent.mock.calls
-      .filter(([eventName]) => eventName === 'badge_summary_viewed')
-      .map(([, params]) => params?.week_label);
+    getTrackedEvents(analytics, 'badge_summary_viewed').map((params) => params?.week_label);
   return {
     weekly,
     badgeViews,

@@ -18,13 +18,14 @@ import {
   createSpeechRecognizerStub,
   createTestDi,
   createTestQueryClient,
+  deliverQueryNotifications,
   createVoiceNoteStorageFake,
 } from '@src/testing/core';
 import { startDismissingTopSheet } from '@src/testing/mocks/react-native-true-sheet-reanimated';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useIsFocused, useLocalSearchParams } from 'expo-router';
 import { View } from 'react-native';
 
 import { TodoCreateBottomSheet } from './todo-create-bottom-sheet';
@@ -101,7 +102,7 @@ async function renderCreateSheet(
     });
   }
 
-  return { httpClient, speechRecognizer, errorReporter };
+  return { httpClient, speechRecognizer, errorReporter, queryClient };
 }
 
 describe('TodoCreateBottomSheet', () => {
@@ -121,9 +122,9 @@ describe('TodoCreateBottomSheet', () => {
       await fireEvent(screen.getByPlaceholderText(PLACEHOLDER), 'submitEditing');
 
       // Then
-      expect(await screen.findAllByText('할 일을 추가했어요!')).not.toHaveLength(0);
+      expect(await screen.findAllByText('할 일을 추가했어요')).not.toHaveLength(0);
       expect(
-        within(screen.getByTestId('sheet-route')).queryAllByText('할 일을 추가했어요!'),
+        within(screen.getByTestId('sheet-route')).queryAllByText('할 일을 추가했어요'),
       ).toEqual([]);
     });
   });
@@ -264,8 +265,34 @@ describe('TodoCreateBottomSheet', () => {
       await fireEvent.changeText(input, '가'.repeat(250));
 
       // Then
-      expect(await screen.findByText('제목은 200자 이내로 줄여주세요')).toBeTruthy();
+      expect(await screen.findByText('제목은 200자 이내로 입력해주세요')).toBeTruthy();
       expect(screen.getByTestId('todo-add-submit')).toBeDisabled();
+    });
+  });
+
+  describe('다시 그리기', () => {
+    // 시트 맨 위(폼을 가진 컴포넌트)만 화면 떠남을 구독해, 그 호출 수가 맨 위가 그려진 횟수다
+    function countSheetRenders() {
+      return jest.mocked(useIsFocused).mock.calls.length;
+    }
+
+    it('제목을 칠 때 시트 맨 위는 다시 그려지지 않고 제목 칸만 바뀐다', async () => {
+      // Given
+      const { queryClient } = await renderCreateSheet();
+      const input = await screen.findByPlaceholderText(PLACEHOLDER);
+      // 요금제·안내 조회가 끝나 다시 그려지는 것은 글자와 상관없어 끝난 뒤부터 센다
+      await waitFor(() => expect(queryClient.isFetching()).toBe(0));
+      await act(() => deliverQueryNotifications());
+      const renderCountBeforeTyping = countSheetRenders();
+
+      // When
+      await fireEvent.changeText(input, '우');
+      await fireEvent.changeText(input, '우유');
+      await fireEvent.changeText(input, '우유 사기');
+
+      // Then
+      expect(screen.getByPlaceholderText(PLACEHOLDER)).toHaveDisplayValue('우유 사기');
+      expect(countSheetRenders()).toBe(renderCountBeforeTyping);
     });
   });
 

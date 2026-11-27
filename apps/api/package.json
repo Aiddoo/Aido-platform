@@ -38,7 +38,6 @@
     "test:e2e": "vitest run --project e2e",
     "test:integration": "vitest run --project integration",
     "test:performance": "vitest run --project performance",
-    "test:watch": "vitest --project unit",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -83,8 +82,8 @@
     "pg": "catalog:",
     "pg-boss": "catalog:",
     "pino": "catalog:",
-    "react": "catalog:expo58",
-    "react-dom": "catalog:expo58",
+    "react": "catalog:react19",
+    "react-dom": "catalog:react19",
     "react-email": "catalog:",
     "reflect-metadata": "catalog:",
     "rxjs": "catalog:",
@@ -104,7 +103,7 @@
     "@types/ngeohash": "catalog:",
     "@types/node": "catalog:",
     "@types/pg": "catalog:",
-    "@types/react": "catalog:expo58",
+    "@types/react": "catalog:react19",
     "@types/supertest": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "dependency-cruiser": "catalog:",
@@ -115,5 +114,8 @@
     "typescript": "catalog:",
     "unplugin-swc": "catalog:",
     "vitest": "catalog:"
+  },
+  "engines": {
+    "node": ">=26.13.1 <27.0.0"
   }
 }

@@ -1,12 +1,21 @@
 import { useSuggestionApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
+import {
+  type EntitlementSnapshot,
+  EntitlementPolicy,
+} from '@src/features/billing/subscription/domains/entitlement.model';
 import { invalidateEntitlements } from '@src/features/billing/subscription/queries/entitlement-cache';
+import { SECOND_MS } from '@src/shared/constants/time-units';
 import { queryOptions } from '@tanstack/react-query';
+import { take } from 'es-toolkit';
 
-import { SUGGESTION_ANALYSIS_POLL_INTERVAL_MS } from '../constants/suggestion.constants';
+import { PREVIEW_SUGGESTION_COUNT } from '../constants/suggestion.constants';
+import { type AiSuggestionList, AiSuggestionListPolicy } from '../domains/ai-suggestion-list.model';
 import { SuggestionAnalysisPolicy } from '../domains/suggestion-analysis.model';
 import { isSuggestionsPremiumRequiredError } from '../domains/suggestion.error';
 import { SUGGESTION_QUERY_KEYS } from './suggestion-query-keys';
+
+const SUGGESTION_ANALYSIS_POLL_INTERVAL_MS = 3 * SECOND_MS;
 
 export function useGetSuggestionsQueryOptions() {
   const suggestionApi = useSuggestionApi();
@@ -30,4 +39,18 @@ export function useGetSuggestionsQueryOptions() {
     },
     meta: { refreshOnPremiumChange: true, refreshOnAiConsentChange: true },
   });
+}
+
+export const SuggestionListSelect = {
+  /** 피드 입구의 한 줄. 상태와 제안 수만 골라 제안 내용이 바뀌어도 다시 그리지 않는다 */
+  entry: (list: AiSuggestionList) => ({
+    state: AiSuggestionListPolicy.getDisplayState(list),
+    count: list.suggestions.length,
+  }),
+
+  preview: (list: AiSuggestionList) => take(list.suggestions, PREVIEW_SUGGESTION_COUNT),
+};
+
+export function selectCanUseSuggestions(snapshot: EntitlementSnapshot) {
+  return EntitlementPolicy.canUseFeature(snapshot, 'AI_SUGGESTION');
 }

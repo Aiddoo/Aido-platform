@@ -1,7 +1,7 @@
 import { useMemoApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { DEFAULT_PAGE_SIZE } from '@src/shared/constants/page-size';
-import { getNextCursor, selectPageItems } from '@src/shared/domains/cursor-page.model';
+import { getNextCursor, selectPageItems } from '@src/shared/query/cursor-page';
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 
 import { MEMO_QUERY_KEYS } from './memo-query-keys';

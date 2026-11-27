@@ -7,11 +7,11 @@ import {
   FriendIllustration,
   HStack,
   Result,
+  SurfaceCard,
   Text,
   TextButton,
   TextSkeleton,
   useConfirmDialog,
-  VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
@@ -142,12 +142,8 @@ MyInviteCode.Unavailable = function Unavailable() {
   );
 };
 
-function MyInviteCodeSurface({ className, ...props }: ComponentProps<typeof VStack>) {
+function MyInviteCodeSurface({ className, ...props }: ComponentProps<typeof SurfaceCard>) {
   return (
-    <VStack
-      gap={10}
-      className={cn('rounded-[20px] border border-gray-2 bg-gray-1 px-4.5 py-4', className)}
-      {...props}
-    />
+    <SurfaceCard className={cn('gap-2.5 border border-gray-2 px-4.5 py-4', className)} {...props} />
   );
 }

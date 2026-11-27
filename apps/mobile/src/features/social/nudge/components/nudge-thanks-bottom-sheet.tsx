@@ -1,9 +1,11 @@
 import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
 import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
-import { selectPageItems } from '@src/shared/domains/cursor-page.model';
 import { getUserFacingMessage } from '@src/shared/errors';
+import { useAppWindow } from '@src/shared/hooks/use-app-window';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
+import { selectPageItems } from '@src/shared/query/cursor-page';
 import {
   Box,
   Button,
@@ -23,15 +25,15 @@ import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { clamp } from 'es-toolkit';
 import { Skeleton } from 'heroui-native';
 import { Suspense, type ComponentProps } from 'react';
-import { useWindowDimensions } from 'react-native';
 
 import {
   NudgeThanksPreviewPolicy,
   type NudgeThanksRecipient,
-} from '../domains/nudge-interaction.model';
+} from '../domains/nudge-thanks-preview.model';
 import { isNudgeUnavailableError } from '../domains/todo-nudge.error';
 import { useSendNudgeThanksMutationOptions } from '../queries/todo-nudge.mutations';
 import { useGetNudgeThanksPreviewInfiniteQueryOptions } from '../queries/todo-nudge.queries';
+import { formatNudgeUserName } from '../utils/nudge-user-name.view-model';
 
 const RECIPIENT_ROW_HEIGHT = 64;
 const LIST_MIN_HEIGHT = 72;
@@ -86,11 +88,15 @@ NudgeThanksBottomSheet.Recipients = function Recipients({ onClose }: { onClose: 
   const { t } = useTranslation(['todo', 'common']);
   const fontScaledSize = useFontScaledSize();
   const [todoId] = useTodoId();
-  const { height } = useWindowDimensions();
+  const { height } = useAppWindow();
   const thanksPreviewQuery = useSuspenseInfiniteQuery(
     useGetNudgeThanksPreviewInfiniteQueryOptions({ todoId }),
   );
   const sendThanks = useMutation(useSendNudgeThanksMutationOptions());
+  // isPending은 다음 렌더에야 켜져 같은 프레임의 두 번째 탭이 고마움을 한 번 더 보낸다
+  const sendThanksThrough = useSingleTap((throughNudgeId: number) =>
+    sendThanks.mutate({ todoId, input: { throughNudgeId } }),
+  );
   const preview = thanksPreviewQuery.data.pages[0];
   const recipients = selectPageItems(thanksPreviewQuery.data);
 
@@ -152,7 +158,7 @@ NudgeThanksBottomSheet.Recipients = function Recipients({ onClose }: { onClose: 
         isLoading={sendThanks.isPending}
         onPress={() => {
           if (preview.throughNudgeId != null) {
-            sendThanks.mutate({ todoId, input: { throughNudgeId: preview.throughNudgeId } });
+            sendThanksThrough(preview.throughNudgeId);
           }
         }}
       >
@@ -167,11 +173,13 @@ NudgeThanksBottomSheet.Recipient = function Recipient({
 }: {
   recipient: NudgeThanksRecipient;
 }) {
+  const name = formatNudgeUserName(recipient.name, recipient.userTag);
+
   return (
     <HStack align="center" gap={12} py={12}>
-      <UserAvatar alt={recipient.name} className="size-10" profileImage={recipient.profileImage} />
+      <UserAvatar alt={name} className="size-10" profileImage={recipient.profileImage} />
       <Text size="b3" className="shrink" numberOfLines={2}>
-        {recipient.name}
+        {name}
       </Text>
     </HStack>
   );

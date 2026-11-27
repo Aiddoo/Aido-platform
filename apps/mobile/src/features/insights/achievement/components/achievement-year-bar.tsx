@@ -2,7 +2,7 @@ import { getIsoWeekYear } from '@src/shared/date/date-key';
 import { formatYearLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowLeftIcon,
@@ -22,10 +22,7 @@ import { useGetAchievementYearsQueryOptions } from '../queries/achievement.queri
 
 const ARROW_SIZE = 20;
 
-/**
- * 배지·기록이 어느 해의 것인지 보이고 기록 있는 앞뒤 해로 옮긴다. 고를 해가 없고 올해를 보면 숨는다.
- * 해가 바뀐 직후 지난해 53주를 보일 때도 연도가 보여 새해 기록이 아님을 안다
- */
+/** 해가 바뀐 직후 지난해 53주를 보일 때도 연도가 보여 새해 기록이 아님을 안다 */
 export function AchievementYearBar({
   className,
 }: Pick<ComponentProps<typeof HStack>, 'className'>) {
@@ -105,9 +102,4 @@ AchievementYearBar.Step = function Step({
       onPress={handlePress}
     />
   );
-};
-
-/** 연도를 받지 못하면 배지·기록 경계가 다시 시도를 보이므로 막대는 자리를 비운다 */
-AchievementYearBar.Error = function ErrorFallback() {
-  return null;
 };

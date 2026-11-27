@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { datetimeSchema, nullableDatetimeSchema } from "../../../common/datetime.js";
 import { entityIdSchema } from "../../../common/entity-id.js";
+import { CHEER_LIMITS } from "../../../vocabulary/cheer.constants.js";
 import { USER_TAG_LENGTH } from "../../../vocabulary/follow.constants.js";
 
 export const cheerSchema = z
@@ -11,7 +12,7 @@ export const cheerSchema = z
     receiverId: entityIdSchema.meta({ description: "받은 사용자 ID" }),
     message: z
       .string()
-      .max(200)
+      .max(CHEER_LIMITS.MAX_MESSAGE_LENGTH)
       .nullable()
       .meta({ description: "응원 메시지 (최대 200자, 미설정 시 null)" }),
     createdAt: datetimeSchema.meta({

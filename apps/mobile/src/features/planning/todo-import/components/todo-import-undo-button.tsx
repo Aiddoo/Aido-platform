@@ -5,7 +5,7 @@ import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
 
 import { TodoImportPolicy } from '../domains/todo-import.model';
-import { useTodoImportId } from '../hooks/use-todo-import-id';
+import { useTodoImportId } from '../hooks/use-todo-import-params';
 import { useUndoTodoImportMutationOptions } from '../queries/todo-import.mutations';
 import { useGetTodoImportQueryOptions } from '../queries/todo-import.queries';
 
@@ -34,5 +34,12 @@ export function TodoImportUndoButton(props: TodoImportUndoButtonProps) {
       onConfirm: () => undo.mutateAsync(),
     });
 
-  return <Button isLoading={undo.isPending} onPress={handleUndoPress} {...props} />;
+  return (
+    <Button
+      testID="todo-import-undo"
+      isLoading={undo.isPending}
+      onPress={handleUndoPress}
+      {...props}
+    />
+  );
 }

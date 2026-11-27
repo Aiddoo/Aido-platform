@@ -1,4 +1,5 @@
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
+import { ANIMATION } from '@src/shared/constants/animation';
 import {
   formatClockTime,
   formatDateKeyLabel,
@@ -14,7 +15,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, Text, TextSkeleton, VStack } from '@src/shared/ui';
 import { CalendarIcon } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { useQuery, useSuspenseQueries } from '@tanstack/react-query';
+import { useQueries, useSuspenseQueries } from '@tanstack/react-query';
 import { range, round, zip } from 'es-toolkit';
 import { Accordion, PressableFeedback } from 'heroui-native';
 import { memo, type PropsWithChildren, useMemo } from 'react';
@@ -25,14 +26,16 @@ import {
   PRECIPITATION_CHANCE_TEXT_CLASS,
   TODO_DOT_COLOR,
 } from '../constants/weather-colors.constants';
-import { FORECAST_DAYS, VISIBLE_PRECIPITATION_CHANCE } from '../constants/weather.constants';
-import { getTodayKey } from '../domains/weather-report.model';
-import type { DailyForecastEntry } from '../domains/weather-report.model';
+import {
+  FORECAST_DAYS,
+  LABELED_PRECIPITATION_CHANCE_MIN_PERCENT,
+} from '../constants/weather.constants';
+import type { ForecastDay } from '../domains/forecast-day.model';
 import { useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import { useWeatherSurface } from '../hooks/use-weather-surface';
 import {
-  useGetForecastCompletionsQueryOptions,
+  useGetForecastCompletionsQueriesOptions,
   useGetWeatherReportQueryOptions,
   WeatherReportSelect,
 } from '../queries/weather.queries';
@@ -46,18 +49,19 @@ import { getWeatherConditionLabelKey } from '../utils/weather-labels.view-model'
 import {
   formatDegrees,
   formatTemperature,
-  toDisplayTemperature,
+  getDisplayTemperature,
 } from '../utils/weather-temperature.view-model';
 import { WeatherCard } from './weather-card';
 import { WeatherIcon } from './weather-icon';
 
 /** 낮·밤 예보가 나누는 시각(WeatherKit daytimeForecast 07~19시) */
 const DAYTIME_HOURS = { start: 7, end: 19 } as const;
+// 색을 칠한 날씨 상태 그림이라 아이콘 크기 단계를 따르지 않는다(design.md 글꼴 절)
 const ICON_SIZE = 26;
 /** 카드 제목 아이콘(`WeatherIcon.Card`)과 같은 크기 */
 const TITLE_ICON_SIZE = 13;
 const COLUMN_WIDTH = { day: 58, icon: 38, low: 46, high: 40 } as const;
-const EXPAND_ENTERING = FadeInDown.duration(600)
+const EXPAND_ENTERING = FadeInDown.duration(ANIMATION.durationMs.emphasis)
   .easing(Easing.bezier(0.2, 0.8, 0.2, 1))
   .withInitialValues({ opacity: 0, translateY: 10 });
 const ROW_LAYOUT = LinearTransition.duration(250);
@@ -72,19 +76,20 @@ interface RowFormat {
 /** 할 일 조회가 실패해도 예보는 그대로 보이도록 할 일 점은 suspend하지 않고 점만 뺀다 */
 export function DailyForecast() {
   const { t } = useTranslation(['weather', 'common']);
+  // select가 지금 시각으로 예보 위치의 오늘을 고르므로 조회보다 먼저 읽는다
+  const now = useMinuteNow();
   const [{ data: weather }, { data: preference }] = useSuspenseQueries({
     queries: [
-      { ...useGetWeatherReportQueryOptions(), select: WeatherReportSelect.daily },
+      { ...useGetWeatherReportQueryOptions(), select: WeatherReportSelect.daily(now) },
       useGetPreferenceQueryOptions(),
     ],
   });
-  const { data: completions } = useQuery(useGetForecastCompletionsQueryOptions());
+  const completions = useQueries(useGetForecastCompletionsQueriesOptions());
   const fontScaleRatio = useFontScaleRatio();
-  const dateFormat = useLocationDateFormat(weather.location.timezone);
-  const now = useMinuteNow();
-  const forecastTodayKey = getTodayKey(weather, now);
+  const dateFormat = useLocationDateFormat(weather.timezone);
+  const forecastTodayKey = weather.todayKey;
   const bars = toTemperatureBars(weather.daily);
-  const nowPosition = toTemperaturePosition(weather.daily, weather.current.temperature);
+  const nowPosition = toTemperaturePosition(weather.daily, weather.currentTemperature);
   const format = useMemo<RowFormat>(
     () => ({
       dateFormat: { locale: dateFormat.locale, timezone: dateFormat.timezone },
@@ -104,6 +109,8 @@ export function DailyForecast() {
       <Accordion hideSeparator className="mt-2">
         {zip(weather.daily, bars).map(([day, bar]) => {
           const isToday = day.date === forecastTodayKey;
+          // 할 일 점 조회가 아직이거나 실패한 날은 점을 찍지 않는다
+          const todoCount = completions?.[day.date]?.totalTodos;
           return (
             <DailyForecast.Item
               key={day.date}
@@ -115,7 +122,7 @@ export function DailyForecast() {
                   ? t('common:relativeDay.today')
                   : formatDateKeyLabel(day.date, 'weekday', format.dateFormat)
               }
-              hasTodo={(completions?.[day.date]?.totalTodos ?? 0) > 0}
+              hasTodo={todoCount != null && todoCount > 0}
               format={format}
             />
           );
@@ -158,7 +165,7 @@ DailyForecast.Header = function Header({ count }: { count: number }) {
 };
 
 interface DailyForecastItemProps {
-  day: DailyForecastEntry;
+  day: ForecastDay;
   bar: TemperatureBar | undefined;
   label: string;
   /** 오늘 행에만 있는 지금 기온 점의 위치(0~1) */
@@ -177,8 +184,8 @@ DailyForecast.Item = memo(function Item({
 }: DailyForecastItemProps) {
   const { t } = useTranslation('weather');
   const unit = useTemperatureUnit();
-  const high = toDisplayTemperature(day.temperatureMax, unit);
-  const low = toDisplayTemperature(day.temperatureMin, unit);
+  const high = getDisplayTemperature(day.temperatureMax, unit);
+  const low = getDisplayTemperature(day.temperatureMin, unit);
   const width = (column: keyof typeof COLUMN_WIDTH) => COLUMN_WIDTH[column] * format.columnScale;
   const description = t('daily.item', {
     day: label,
@@ -223,7 +230,7 @@ DailyForecast.Item = memo(function Item({
               width={ICON_SIZE}
               height={ICON_SIZE}
             />
-            {day.precipitationChance >= VISIBLE_PRECIPITATION_CHANCE && (
+            {LABELED_PRECIPITATION_CHANCE_MIN_PERCENT <= day.precipitationChance && (
               <Text
                 size="e2"
                 weight="semibold"
@@ -314,7 +321,7 @@ DailyForecast.TemperatureBar = function TemperatureBar({
   bar,
   nowPosition,
 }: {
-  day: DailyForecastEntry;
+  day: ForecastDay;
   bar: TemperatureBar | undefined;
   nowPosition: number | null;
 }) {

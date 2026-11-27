@@ -1,4 +1,4 @@
-appId: com.aido.mobile
+appId: ${MAESTRO_APP_ID}
 name: AI 리포트와 반복 제안
 tags:
   - free

@@ -4,24 +4,24 @@
 
 ## 설계·규칙
 
-| 작업                                          | 문서                                |
-| --------------------------------------------- | ----------------------------------- |
-| 새 기능(slice·UseCase)을 더하는 순서          | [새 기능 추가](new-feature.md)      |
-| Context·slice·레이어 의존·공개 면·포트        | [아키텍처](architecture.md)         |
-| 파일·클래스·메서드·상수 이름, 공유 값 선언    | [이름 사전](conventions.md)         |
-| Entity·VO·팩토리·상태 전이·도메인 서비스·오류 | [도메인 모델](domain-modeling.md)   |
-| Context별 업무 용어·코드 이름·상태 전이 표    | [용어집](glossary.md)               |
-| Drizzle·raw SQL·시간 칼럼·풀·마이그레이션     | [영속성](persistence.md)            |
-| 큐·도메인 이벤트·크론·배포 중 내구성          | [작업과 이벤트](jobs-and-events.md) |
-| Controller·DTO·페이지네이션·Swagger·요청 헤더 | [HTTP 계약](http-contracts.md)      |
-| 무엇을 어느 층에서 테스트하나, 실행·격리      | [테스트](testing.md)                |
-| 로그 키·경보·예외 보고·환경별 전달·지연       | [관측](observability.md)            |
-| 경보 key·조건·첫 대응                         | [경보 카탈로그](alerts.md)          |
-| JWT·서명 키·TLS·웹훅·AI 데이터 처리·보관 기한 | [보안](security.md)                 |
-| 배포 환경·공급자 선택·부팅 검증·운영 env      | [설정](configuration.md)            |
-| 캐시·잠금·메모리 상한·인스턴스·DB 확장        | [확장](scaling.md)                  |
-| 외부 공급자 호출 정책·체크리스트              | [외부 호출](outbound.md)            |
-| 언어 결정·카탈로그·언어 추가                  | [다국어](i18n.md)                   |
+| 작업                                          | 문서                                             |
+| --------------------------------------------- | ------------------------------------------------ |
+| 새 기능(slice·UseCase)을 더하는 순서          | [새 기능 추가](new-feature.md)                   |
+| Context·slice·레이어 의존·공개 면·포트        | [아키텍처](architecture/structure.md)            |
+| 파일·클래스·메서드·상수 이름, 공유 값 선언    | [이름 사전](architecture/conventions.md)         |
+| Entity·VO·팩토리·상태 전이·도메인 서비스·오류 | [도메인 모델](architecture/domain-modeling.md)   |
+| Context별 업무 용어·코드 이름·상태 전이 표    | [용어집](glossary.md)                            |
+| Drizzle·raw SQL·시간 칼럼·풀·마이그레이션     | [영속성](architecture/persistence.md)            |
+| 큐·도메인 이벤트·크론·배포 중 내구성          | [작업과 이벤트](architecture/jobs-and-events.md) |
+| Controller·DTO·페이지네이션·Swagger·요청 헤더 | [HTTP 계약](architecture/http-contracts.md)      |
+| 무엇을 어느 층에서 테스트하나, 실행·격리      | [테스트](testing.md)                             |
+| 로그 키·경보·예외 보고·환경별 전달·지연       | [관측](observability.md)                         |
+| 경보 key·조건·첫 대응                         | [경보 카탈로그](alerts.md)                       |
+| JWT·서명 키·TLS·웹훅·AI 데이터 처리·보관 기한 | [보안](security.md)                              |
+| 배포 환경·공급자 선택·부팅 검증·운영 env      | [설정](configuration.md)                         |
+| 캐시·잠금·메모리 상한·인스턴스·DB 확장        | [확장](scaling.md)                               |
+| 외부 공급자 호출 정책·체크리스트              | [외부 호출](architecture/outbound.md)            |
+| 언어 결정·카탈로그·언어 추가                  | [다국어](i18n.md)                                |
 
 ## 기능
 

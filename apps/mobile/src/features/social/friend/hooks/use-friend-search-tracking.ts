@@ -1,7 +1,7 @@
 import { useTrack } from '@src/shared/analytics';
 import { useEffect, useRef } from 'react';
 
-import { isValidSearchQuery } from '../domains/friend.model';
+import { isValidSearchQuery } from '../schemas/friend-request.schema';
 import { toFriendSearchLengthBucket } from '../utils/friend-analytics';
 
 /** 실제 친구 찾기 화면의 디바운스된 검색만 기록한다. 검색 원문은 메모리에만 머문다. */

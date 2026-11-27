@@ -54,7 +54,7 @@
       "premiumDescription": "We analyze your to-dos and turn them into reports",
       "freeDescription": "Subscribe to Premium to get weekly and monthly AI reports",
       "subscribeCta": "Subscribe to get reports",
-      "arrivalToday": "Your first {{type}} report arrives today!",
+      "arrivalToday": "Your first {{type}} report arrives today",
       "arrivalInDays_one": "Your first {{type}} report arrives in {{count}} day",
       "arrivalInDays_other": "Your first {{type}} report arrives in {{count}} days"
     },
@@ -151,7 +151,7 @@
       "subscribeCta": "Subscribe to get suggestions"
     },
     "toasts": {
-      "premiumOnly": "AI repeat suggestions are for Premium subscribers only",
+      "premiumOnly": "AI suggestions are a Premium feature",
       "retryLater": "Please try again later",
       "accepted": "Set to repeat every {{days}}",
       "rejected": "Suggestion cleared"

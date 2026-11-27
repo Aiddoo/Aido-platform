@@ -1,13 +1,13 @@
-import { DAYS_PER_WEEK, HOURS_PER_DAY } from '@src/shared/constants/time-units';
+import { DAYS_PER_WEEK } from '@src/shared/constants/time-units';
 import { addDaysToDateKey, type DateKey, getIsoWeekYear } from '@src/shared/date/date-key';
 import { type DateFormatContext, formatDateKeyLabel } from '@src/shared/date/format/date-format';
 import { t } from '@src/shared/i18n';
 import { toLanguageOfIntlLocale } from '@src/shared/i18n/app-locales';
-import { keyBy, range, sortBy, takeRight, uniqBy } from 'es-toolkit';
+import { sortBy, takeRight, uniqBy } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
 import { TREND_WEEK_COUNT } from '../constants/report-chart.constants';
-import type { AiReport, DailyCompletion, ReportType } from '../domains/report.model';
+import type { DailyCompletion, ReportType } from '../domains/report.model';
 
 export interface TrendWeek {
   startDate: DateKey;
@@ -60,16 +60,7 @@ export function formatDailyValueLine(day: DailyValue | null, context: DateFormat
   });
 }
 
-// 서버는 끝낸 일이 있는 시각만 보내므로 나머지 시각을 0으로 채워 24칸을 만든다
-export function getHourlyCompletionCounts(report: AiReport): number[] {
-  const patternByHour = keyBy(report.timePatterns, (pattern) => pattern.hour);
-  return range(HOURS_PER_DAY).map((hour) => patternByHour[hour]?.count ?? 0);
-}
-
-/**
- * 최근 추세가 걸치는 ISO 연도. 주간 성취 목록은 해 하나씩만 주어 1월 초에는 추세 첫 주가 속한 지난해도 읽는다.
- * 같은 해면 두 값이 같아 같은 쿼리를 한 번만 받는다
- */
+/** 주간 성취 목록은 해 하나씩만 주어 1월 초에는 추세 첫 주가 속한 지난해도 읽는다 */
 export function getTrendIsoWeekYears(todayKey: DateKey): { startYear: number; endYear: number } {
   return {
     startYear: getIsoWeekYear(addDaysToDateKey(todayKey, -TREND_WEEK_COUNT * DAYS_PER_WEEK)),

@@ -8,12 +8,13 @@ import {
 } from '@aido/api/contracts/memo/v1';
 import { toRepeat } from '@src/features/planning/todo/apis/todo-repeat.mapper';
 import { toCreateTodoRequest } from '@src/features/planning/todo/apis/todo.mapper';
-import type { TodoFormValues } from '@src/features/planning/todo/schemas/todo-form.schema';
 import {
-  type PlannedAction,
-  type VoicePlan,
-  voicePlanSchema,
-} from '@src/features/voice/domains/voice-plan.model';
+  findPeriodEndDate,
+  findScheduledTime,
+} from '@src/features/planning/todo/domains/todo-schedule.model';
+import type { TodoFormValues } from '@src/features/planning/todo/schemas/todo-form.schema';
+import type { PlannedAction } from '@src/features/voice/domains/planned-action.model';
+import { type VoicePlan, voicePlanSchema } from '@src/features/voice/domains/voice-plan.model';
 import { dateKeySchema } from '@src/shared/date/date-key';
 import { toInstant } from '@src/shared/date/instant';
 import { pick } from 'es-toolkit';
@@ -57,8 +58,11 @@ export function toMemoVoicePlan(planId: string, dto: ParseMemoPlanResponse): Voi
     actionId: `memo-todo-${index}`,
     title: todo.title,
     startDate: dateKeySchema.parse(todo.startDate),
-    endDate: todo.repeat != null || todo.endDate == null ? null : dateKeySchema.parse(todo.endDate),
-    scheduledTime: todo.isAllDay ? null : todo.scheduledTime,
+    endDate: findPeriodEndDate(
+      todo.endDate == null ? null : dateKeySchema.parse(todo.endDate),
+      todo.repeat != null,
+    ),
+    scheduledTime: findScheduledTime(todo.isAllDay, todo.scheduledTime),
     repeat: todo.repeat == null ? null : toRepeat(todo.repeat),
     visibility: null,
     items: todo.items,

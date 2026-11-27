@@ -3,19 +3,17 @@ import type {
   WeatherPrecipitationType,
   WeatherRescheduleReason,
 } from '@aido/api/vocabulary';
-import { type Instant, toEpochMs } from '@src/shared/date/instant';
+import { type Instant } from '@src/shared/date/instant';
 import type { ParseKeys } from 'i18next';
 import { match, P } from 'ts-pattern';
 
 import type { BriefingRowTone } from '../constants/weather-colors.constants';
 import {
-  type AffectedTodo,
-  type BriefingResult,
-  type ForecastTodo,
+  type HourWindow,
+  type WeatherBriefing,
   WeatherBriefingPolicy,
+  type WeatherForecastTodo,
 } from '../domains/weather-briefing.model';
-import type { HourlyForecastEntry, HourWindow } from '../domains/weather-report.model';
-import { WeatherReschedulePolicy } from '../domains/weather-reschedule.model';
 import { getWeatherConditionLabelKey } from './weather-labels.view-model';
 
 /** 강수 형태를 아이콘이 그릴 상태로 바꾼다. 얼어 내리면 눈, 그 밖에는 비로 그린다. */
@@ -33,7 +31,7 @@ export interface BriefingCopy {
 }
 
 export interface BriefingRow {
-  todo: ForecastTodo;
+  todo: WeatherForecastTodo;
   advice: BriefingCopy;
   tone: BriefingRowTone;
   chipCondition: WeatherCondition;
@@ -63,7 +61,6 @@ export interface BriefingView {
 
 /** 시각·기온 글자는 화면의 시간 형식·온도 단위를 따르므로 바깥에서 받는다. 예보 시각은 기기 시간대, 할 일 시각은 벽시계 그대로다. */
 export interface BriefingViewPorts {
-  hourly: readonly HourlyForecastEntry[];
   now: Instant;
   formatClock: (date: Instant) => string;
   formatTodoTime: (localTime: string) => string;
@@ -72,24 +69,18 @@ export interface BriefingViewPorts {
   formatChance: (percent: number) => string;
 }
 
-export function toBriefingView(briefing: BriefingResult, deps: BriefingViewPorts): BriefingView {
-  const { hourly, now, formatClock, formatTodoTime, formatHour, formatTemperature, formatChance } =
-    deps;
+export function getBriefingView(briefing: WeatherBriefing, deps: BriefingViewPorts): BriefingView {
+  const { now, formatClock, formatTodoTime, formatHour, formatTemperature, formatChance } = deps;
   const range = (hours: HourWindow): BriefingCopy => ({
     key: 'briefing.range',
     values: { start: formatHour(hours.startsAt), end: formatHour(hours.endsAt) },
   });
-  const chance = (todo: ForecastTodo) => formatChance(todo.hour.precipitationChance);
-  const firstOption = (todo: AffectedTodo) =>
-    WeatherReschedulePolicy.getUpcomingOptions(todo.rescheduleOptions, now)[0]?.startsAt ?? null;
-  /** 완료한 할 일은 옮기지 않는다. 모두 완료했으면 옮길 버튼을 감춘다. */
-  const reschedule = (
-    todos: ForecastTodo[],
-    reason: WeatherRescheduleReason,
-    label: BriefingCopy,
-  ): BriefingAction | null => {
-    const todoIds = WeatherBriefingPolicy.getUncompletedTodoIds(todos);
-    return todoIds.length === 0 ? null : { kind: 'reschedule', reason, label, todoIds };
+  const chance = (todo: WeatherForecastTodo) => formatChance(todo.hour.precipitationChance);
+  const firstOption = (todo: WeatherForecastTodo) =>
+    WeatherBriefingPolicy.findNextOptionStart(briefing, todo.todoId, now);
+  const reschedule = (label: BriefingCopy): BriefingAction | null => {
+    const suggestion = WeatherBriefingPolicy.findRescheduleSuggestion(briefing);
+    return suggestion == null ? null : { kind: 'reschedule', ...suggestion, label };
   };
 
   return match(briefing)
@@ -115,7 +106,7 @@ export function toBriefingView(briefing: BriefingResult, deps: BriefingViewPorts
             chipLabel: chance(todo),
           };
         }),
-        action: reschedule(todos, 'rain', { key: 'briefing.reschedule' }),
+        action: reschedule({ key: 'briefing.reschedule' }),
         mascotCondition: 'RAIN',
       };
     })
@@ -129,7 +120,7 @@ export function toBriefingView(briefing: BriefingResult, deps: BriefingViewPorts
         chipCondition: 'THUNDERSTORMS',
         chipLabel: chance(todo),
       })),
-      action: reschedule(todos, 'rain', { key: 'briefing.stormy.action' }),
+      action: reschedule({ key: 'briefing.stormy.action' }),
       mascotCondition: 'THUNDERSTORMS',
     }))
     .with({ kind: 'snowy' }, ({ todos }): BriefingView => {
@@ -180,7 +171,7 @@ export function toBriefingView(briefing: BriefingResult, deps: BriefingViewPorts
             chipLabel: formatTemperature(todo.hour.apparentTemperature),
           };
         }),
-        action: reschedule(todos, 'heat', { key: 'briefing.hot.action' }),
+        action: reschedule({ key: 'briefing.hot.action' }),
         mascotCondition: 'HOT',
       };
     })
@@ -193,7 +184,7 @@ export function toBriefingView(briefing: BriefingResult, deps: BriefingViewPorts
         body: match(timing)
           .returnType<BriefingCopy>()
           .with({ day: 'today' }, ({ startsAt }) => {
-            if (toEpochMs(startsAt) <= toEpochMs(now)) {
+            if (WeatherBriefingPolicy.hasWetStarted(briefing, now)) {
               return {
                 key: isSnow ? 'briefing.rainLater.nowSnowBody' : 'briefing.rainLater.nowBody',
               };
@@ -238,10 +229,9 @@ export function toBriefingView(briefing: BriefingResult, deps: BriefingViewPorts
         mascotCondition: 'CLOUDY',
       };
     })
-    .with({ kind: 'clear' }, ({ todos, range: hours }): BriefingView => {
-      const suggestedAt = WeatherBriefingPolicy.findSuggestedStartAt(hours, hourly, now);
-      const isInRange = (todo: ForecastTodo) =>
-        WeatherBriefingPolicy.isTodoWithinRange(todo, hours);
+    .with({ kind: 'clear' }, ({ todos, range: hours, suggestedStartAt }): BriefingView => {
+      const isInRange = (todo: WeatherForecastTodo) =>
+        WeatherBriefingPolicy.isTodoInClearWindow(briefing, todo);
       const isEmpty = todos.length === 0;
       return {
         headline: { key: isEmpty ? 'briefing.clear.emptyTitle' : 'briefing.clear.title' },
@@ -257,14 +247,17 @@ export function toBriefingView(briefing: BriefingResult, deps: BriefingViewPorts
           chipLabel: formatTemperature(todo.hour.temperature),
         })),
         action:
-          suggestedAt == null
+          suggestedStartAt == null
             ? null
             : {
                 kind: 'suggestTodo',
                 reason: 'clear',
-                label: { key: 'briefing.clear.action', values: { time: formatHour(suggestedAt) } },
+                label: {
+                  key: 'briefing.clear.action',
+                  values: { time: formatHour(suggestedStartAt) },
+                },
                 title: { key: 'briefing.clear.suggestion' },
-                scheduledAt: suggestedAt,
+                scheduledAt: suggestedStartAt,
               },
         mascotCondition: 'CLEAR',
       };

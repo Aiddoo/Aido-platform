@@ -26,28 +26,8 @@ export function isServerNotificationId(notificationId: number) {
   return notificationId > 0;
 }
 
-/**
- * 읽지 못한 푸시. 칸마다 깨졌을 때와 같은 값이다: 서버 기록이 없고(0) 종류를 모르며 알림함으로 연다.
- * 누른 사람을 아무 데도 데려가지 않는 것보다 알림함이 낫다
- */
-export function createUnreadablePushNotification(): PushNotification {
-  return {
-    notificationId: 0,
-    type: null,
-    target: { kind: 'NOTIFICATIONS' },
-    marketingOptOutToken: null,
-    actionType: NOTIFICATION_ACTION_TYPE.DEEP_LINK,
-    campaignKey: null,
-    variantId: null,
-    purpose: null,
-  };
-}
-
-function hasServerRecord(pushNotification: PushNotification) {
-  return isServerNotificationId(pushNotification.notificationId);
-}
-
-/** 기기가 받은 푸시 */
 export const PushNotificationPolicy = {
-  hasServerRecord,
-} as const;
+  hasServerRecord(pushNotification: PushNotification): boolean {
+    return isServerNotificationId(pushNotification.notificationId);
+  },
+};

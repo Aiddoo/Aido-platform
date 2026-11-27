@@ -15,6 +15,9 @@ const metroUrl = typeof MAESTRO_METRO_URL === 'undefined' ? '' : MAESTRO_METRO_U
 const apiUrl = (typeof MAESTRO_API_URL === 'undefined' ? 'http://localhost:8080' : MAESTRO_API_URL)
   .trim()
   .replace(/\/$/, '');
+// run-e2e.ts가 연 시뮬레이터 푸시 입구. maestro test를 직접 돌리면 비어 push 흐름이 멈춘다
+const simulatorPushUrl =
+  typeof MAESTRO_SIMULATOR_PUSH_URL === 'undefined' ? '' : MAESTRO_SIMULATOR_PUSH_URL;
 
 if (appId === '' || appId === PRODUCTION_APP_ID) {
   throw new Error(
@@ -38,6 +41,7 @@ output.config = {
   appId: appId,
   appScheme: appScheme,
   apiUrl: apiUrl,
+  simulatorPushUrl: simulatorPushUrl,
   // Metro 주소가 없으면(Release 로컬 빌드) 개발 클라이언트 연결을 건너뛴다
   // docs: https://docs.expo.dev/develop/development-builds/development-workflows/
   devClientLink:

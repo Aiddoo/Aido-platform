@@ -1,5 +1,5 @@
-import { toWeatherHref } from '@src/features/weather/utils/weather-link.view-model';
-import { toWeatherRescheduleHref } from '@src/features/weather/utils/weather-reschedule-link.view-model';
+import { toWeatherHref } from '@src/features/weather/schemas/weather-entry-params.schema';
+import { toWeatherRescheduleHref } from '@src/features/weather/schemas/weather-reschedule-params.schema';
 import type { DateKey } from '@src/shared/date/date-key';
 import type { WindowSizeClass } from '@src/shared/ui';
 import type { Href } from 'expo-router';
@@ -66,10 +66,7 @@ export function isViewingNotificationDestination(
   );
 }
 
-/**
- * 탭 위 루트 Stack에 쌓이는 상세 화면의 경로. 탭(`(tabs)`)이나 안쪽 Stack(`weather`)의 화면은
- * 미리보기가 그 navigator에 화면을 미리 넣어 탭에 params가 남을 수 있다. 없으면 null이다
- */
+/** 탭·안쪽 Stack 화면은 미리보기가 그 navigator에 화면을 넣어 탭에 params가 남을 수 있어 루트 Stack 상세만 준다. 없으면 null */
 export function findRootStackDetailHref(destination: NotificationDestination): Href | null {
   if (destination.kind !== 'route') {
     return null;
@@ -90,7 +87,7 @@ interface NotificationDestinationContext {
 }
 
 /** 알림을 누르면 열 화면. 목적지는 서버가 고르고 앱은 화면 크기와 보는 사람에 맞춰 경로만 정한다 */
-export function toNotificationDestination(
+export function getNotificationDestination(
   target: NotificationTarget,
   { windowSizeClass, accountId, openedAt }: NotificationDestinationContext,
 ): NotificationDestination {

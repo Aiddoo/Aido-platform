@@ -1,6 +1,6 @@
 # 응답과 오류
 
-서버·모바일·`@aido/api` 공통 기준이다. 성공은 공유 Zod 계약으로, 실패는 `ErrorCode` 하나로 표현한다. 서버 상세는 [REST 계약](../../apps/api/docs/http-contracts.md), 모바일 상세는 [에러 처리](../../apps/mobile/docs/error-handling.md)에 있다.
+서버·모바일·`@aido/api` 공통 기준이다. 성공은 공유 Zod 계약으로, 실패는 `ErrorCode` 하나로 표현한다. 서버 상세는 [REST 계약](../../apps/api/docs/architecture/http-contracts.md), 모바일 상세는 [에러 처리](../../apps/mobile/docs/error-handling.md)에 있다.
 
 ## 1. 계약
 
@@ -17,7 +17,7 @@
 
 ## 2. 서버
 
-- Domain 불변식 위반은 `DomainException`, Application 거부(권한·없음·한도)는 `ApplicationException`에 `ErrorCode`를 담아 던진다. 업무 오류는 slice `<slice>.errors.ts`의 이름 있는 생성 함수로만 만들고(Oxlint `aido/no-inline-coded-exception`), 예상한 DB 제약 충돌은 저장소가 업무 오류로 번역한다([도메인 모델](../../apps/api/docs/domain-modeling.md#오류와-식별자), [영속성](../../apps/api/docs/persistence.md#db-오류-번역)). HTTP 상태·envelope 변환은 [GlobalExceptionFilter](../../apps/api/src/platform/filters/global-exception.filter.ts)만 한다. Controller에서 `HttpException`을 직접 만들거나 응답을 조립하지 않는다.
+- Domain 불변식 위반은 `DomainException`, Application 거부(권한·없음·한도)는 `ApplicationException`에 `ErrorCode`를 담아 던진다. 업무 오류는 slice `<slice>.errors.ts`의 이름 있는 생성 함수로만 만들고(Oxlint `aido/no-inline-coded-exception`), 예상한 DB 제약 충돌은 저장소가 업무 오류로 번역한다([도메인 모델](../../apps/api/docs/architecture/domain-modeling.md#오류와-식별자), [영속성](../../apps/api/docs/architecture/persistence.md#db-오류-번역)). HTTP 상태·envelope 변환은 [GlobalExceptionFilter](../../apps/api/src/platform/filters/global-exception.filter.ts)만 한다. Controller에서 `HttpException`을 직접 만들거나 응답을 조립하지 않는다.
 - 코드마다 `Errors[code].message`는 Swagger와 서버 기본 문구로 쓰는 **합니다체**다(`서버 내부 오류가 발생했습니다.`). endpoint는 던질 수 있는 코드마다 `@ApiErrorResponse({ errorCode })`를 붙인다.
 - `ErrorCode`가 없는 Nest `HttpException`(검증 파이프·없는 route·405·throttler)은 `GlobalExceptionFilter`가 상태로 정한다: 4xx → `SYS_0002`, 429·5xx → `SYS_0001`. 카탈로그에 상태별 공통 코드가 없고 출시 앱은 모르는 코드를 `SYS_0001`로 바꾸므로 이 경우를 위한 새 코드를 만들지 않는다. 앱은 이 경우 HTTP 상태(404·429)로만 분기한다.
 - DB 연결 끊김·풀 대기 초과·문장/잠금/클라이언트 쿼리 시간 초과는 `GlobalExceptionFilter`가 503 `SYS_0005`(잠시 후 다시 시도)로 보낸다. 앱이 모르는 코드여도 출시 앱은 `SYS_0001`처럼 처리한다.
@@ -29,7 +29,7 @@
 한 패턴만 쓴다. 상세와 예시는 [에러 처리](../../apps/mobile/docs/error-handling.md)에 있다.
 
 - **원본.** 코드·문구·`details` 스키마·`HttpStatus`는 `@aido/api/errors`, 실패 응답 모양은 `@aido/api/common`이다. 앱은 이 값을 다시 적지 않는다.
-- **분류는 `KyHttpClient` 한 곳이다.** 4xx·Policy 실패 → `Result.err(ApiError | BusinessError)`. 5xx·네트워크·타임아웃·파싱 실패 → `throw InfraError`(5xx 봉투의 코드는 `ServerError.serverCode`) → 조회는 `QueryErrorBoundary`가 받는다. 예상한 오류인지는 `classifyError` 하나가 정한다(4xx·`BusinessError`는 예상, 401은 세션 종료, 연결 오류, 나머지는 예상하지 못한 오류).
+- **분류는 `KyHttpClient` 한 곳이다.** 4xx·앱이 판단한 거절 → `fail(ApiError | BusinessError)`. 5xx·네트워크·타임아웃·파싱 실패 → `throw InfraError`(5xx 봉투의 코드는 `ServerError.serverCode`) → 조회는 `QueryErrorBoundary`가 받는다. 예상한 오류인지는 `classifyError` 하나가 정한다(4xx·`BusinessError`는 예상, 401은 세션 종료, 연결 오류, 나머지는 예상하지 못한 오류).
 - **기능 오류는 `domains/{feature}.error.ts` 하나다.** `{FEATURE}_ERROR_CODE` 코드 표, `isXxxError` 판별, `ErrorCode` → 폼 칸 매핑을 둔다. `isApiError`·`hasCode`는 이 파일 안에서만 쓰고, 던지는 쪽은 `new BusinessError(코드)`다.
 - **한 오류는 한 곳에서 보인다.** 조회 오류는 경계 fallback, mutation 오류는 앱 `MutationCache`의 캐시 단계 `onError`가 `meta.errorFeedback`(`{ feature, fallbackKey?, isHandledByFeature?, describe? } | false`, mutation마다 필수)을 읽어 햅틱·토스트를 한 번, 칸 오류는 `form.setError`다. 기능 `onError`는 롤백과 `isHandledByFeature`로 뺀 오류만 다룬다. mutation은 경계로 가지 않고(`throwOnError` 미사용) 경계가 그린 오류에 토스트를 더하지 않는다.
 - **문구.** `errors` 네임스페이스에서 키 = `ErrorCode`, 해요체다. 모르는 코드는 서버 message → `errors:fallback` 순서다([문구](../../apps/mobile/docs/dates-and-i18n.md#오류-메시지)).

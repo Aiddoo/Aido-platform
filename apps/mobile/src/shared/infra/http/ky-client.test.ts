@@ -96,7 +96,7 @@ describe('KyHttpClient', () => {
 
       // When
       const query = observeSettlement(
-        queryClient.fetchQuery({
+        queryClient.query({
           queryKey,
           queryFn: async ({ signal }) =>
             unwrap(await client.get('v1/todos/1758/details', { signal })),

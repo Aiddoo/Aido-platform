@@ -1,21 +1,6 @@
 import { createDateKey } from '@src/testing/date-key';
 
-import { getWeeklyRecordDays, getWeeklyRecordRange } from './weekly-record.view-model';
-
-describe('getWeeklyRecordRange', () => {
-  it.each([
-    { today: '2026-11-16', startDate: '2026-11-16', endDate: '2026-11-22' },
-    { today: '2026-11-22', startDate: '2026-11-16', endDate: '2026-11-22' },
-    { today: '2027-01-01', startDate: '2026-12-28', endDate: '2027-01-03' },
-    { today: '2028-02-29', startDate: '2028-02-28', endDate: '2028-03-05' },
-  ])('$today이 든 주는 $startDate(월)부터 $endDate(일)까지다', ({ today, ...expected }) => {
-    // When
-    const range = getWeeklyRecordRange(createDateKey(today));
-
-    // Then
-    expect(range).toEqual(expected);
-  });
-});
+import { getWeeklyRecordDays } from './weekly-record.view-model';
 
 describe('getWeeklyRecordDays', () => {
   it('일요일이면 그 주 월요일부터 7일이 모두 지난 날이다', () => {

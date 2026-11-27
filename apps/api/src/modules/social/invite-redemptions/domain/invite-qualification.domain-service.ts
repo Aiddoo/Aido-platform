@@ -1,25 +1,17 @@
 import { INVITE_QUALIFICATION } from "@aido/api/vocabulary";
 
-import { Timezone } from "#api/shared/domain/time/timezone.vo";
-import { localDateOf } from "#api/shared/domain/time/zoned-time";
+import { localDateIn } from "#api/shared/domain/time/timezone-name";
+import type { Timezone } from "#api/shared/domain/time/timezone.vo";
 
 const HOURS_PER_DAY = 24;
-
-// 알 수 없는 저장값은 활동일 계산을 멈추지 않고 UTC 날짜로 센다
-function activityTimezoneOf(timezone: Timezone): Timezone {
-  try {
-    return Timezone.create(timezone.value);
-  } catch {
-    return Timezone.UTC;
-  }
-}
 
 /** 할 일을 완료한 순간을 초대받은 사람 시간대의 달력 날짜로 바꾼다. */
 export function localActivityDate(
   occurredAt: Temporal.Instant,
   timezone: Timezone,
 ): Temporal.PlainDate {
-  return localDateOf(occurredAt, activityTimezoneOf(timezone));
+  // 알 수 없는 저장값은 활동일 계산을 멈추지 않고 날짜 경계 규칙(UTC)으로 센다
+  return localDateIn(occurredAt, timezone.value);
 }
 
 /** 서로 다른 날짜 MIN_ACTIVE_DAYS일에 할 일을 마치면 사용 시작이다. */

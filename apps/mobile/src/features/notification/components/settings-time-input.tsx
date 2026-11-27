@@ -18,7 +18,7 @@ import { type ComponentProps, type ReactNode, useState } from 'react';
 
 interface SettingsTimeInputProps extends Omit<
   ComponentProps<typeof SettingsListGroup.Item>,
-  'value' | 'right' | 'onPress'
+  'value' | 'right'
 > {
   value: TimeOfDay;
   onChange: (value: TimeOfDay) => void;
@@ -39,6 +39,7 @@ export function SettingsTimeInput({
   onBeforeOpen,
   timeFormat,
   accessory,
+  onPress,
   ...itemProps
 }: SettingsTimeInputProps) {
   const { t } = useTranslation('notification');
@@ -100,7 +101,11 @@ export function SettingsTimeInput({
           </SettingsListGroup.Value>
         </HStack>
       }
-      onPress={handlePress}
+      onPress={(event) => {
+        handlePress();
+        // asChild 트리거·코치마크가 자식에 넣은 onPress를 이어 불러 그 누름이 사라지지 않게 한다
+        onPress?.(event);
+      }}
     />
   );
 }

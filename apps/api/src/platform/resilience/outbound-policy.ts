@@ -7,6 +7,7 @@ import {
   CircuitState,
   circuitBreaker,
   ConsecutiveBreaker,
+  type FailureReason,
   handleWhen,
   type IPolicy,
   IsolatedCircuitError,
@@ -82,6 +83,16 @@ export function isTransportFailure(error: unknown): boolean {
     error instanceof HttpTimeoutError ||
     error instanceof HttpNetworkError
   );
+}
+
+function failureOf(reason: FailureReason<unknown> | { readonly isolated: true }): unknown {
+  if ("error" in reason) {
+    return reason.error;
+  }
+  if ("value" in reason) {
+    return reason.value;
+  }
+  return null;
 }
 
 export class OutboundPolicy {
@@ -203,7 +214,7 @@ export class OutboundPolicy {
     const breaker: Breaker = { spec, policy, openedAt: null };
     policy.onBreak((reason) => {
       breaker.openedAt = Date.now();
-      const failure = "error" in reason ? reason.error : "value" in reason ? reason.value : null;
+      const failure = failureOf(reason);
       this.#events.onOpened({
         policy: policySpec.name,
         breaker: spec,

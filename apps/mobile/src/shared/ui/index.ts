@@ -2,6 +2,7 @@ export { ActionButton } from './action-button/action-button';
 export { AdaptivePane, useAdaptivePaneLayoutKey } from './adaptive-pane/adaptive-pane';
 export { getPaneEdgeInsets } from './adaptive-pane/get-pane-edge-insets';
 export { PaneArea, usePaneColumns, usePaneSizeClass } from './adaptive-pane/pane-area';
+export { PaneRegionsProvider } from './adaptive-pane/pane-regions-provider';
 export {
   type AppWindow,
   WindowLayoutPolicy,
@@ -206,6 +207,7 @@ export {
   useToastPlacement,
 } from './toast/toast-layer';
 export { useAppToast } from './toast/use-app-toast';
+export { getTouchTargetInset, MIN_TOUCH_TARGET_PT } from './touch-target/touch-target';
 export { VStack } from './v-stack/v-stack';
 export { ViewTabs } from './view-tabs/view-tabs';
 export { splitWords } from './word-wrap-text/split-text-words';

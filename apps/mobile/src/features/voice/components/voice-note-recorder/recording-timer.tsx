@@ -1,10 +1,11 @@
 import { SECOND_MS } from '@src/shared/constants/time-units';
+import { useAppWindow } from '@src/shared/hooks/use-app-window';
 import { useMinimumFontScale } from '@src/shared/hooks/use-minimum-font-scale';
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, Text } from '@src/shared/ui';
 import { clamp } from 'es-toolkit';
-import { StyleSheet, useWindowDimensions } from 'react-native';
+import { StyleSheet } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
 import { formatMediaTime } from '../../utils/media-time.view-model';
@@ -24,7 +25,7 @@ export function RecordingTimer({ elapsedMs, limitMs, label }: RecordingTimerProp
   const { t } = useTranslation('voiceNote');
   const trackColor = useResolvedColor('text-gray-2');
   const progressColor = useResolvedColor('text-main');
-  const { height: windowHeight } = useWindowDimensions();
+  const { height: windowHeight } = useAppWindow();
   const ring = getRecordingRingLayout(windowHeight);
   const center = ring.size / 2;
   const timeMinimumFontScale = useMinimumFontScale('h1');

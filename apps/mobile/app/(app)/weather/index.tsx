@@ -7,27 +7,28 @@ import { WeatherAlerts } from '@src/features/weather/components/weather-alerts';
 import { WeatherAttribution } from '@src/features/weather/components/weather-attribution';
 import { WeatherBackground } from '@src/features/weather/components/weather-background';
 import { WeatherBriefing } from '@src/features/weather/components/weather-briefing';
-import { WeatherDetailGrid } from '@src/features/weather/components/weather-detail-grid/weather-detail-grid';
+import { WeatherDetailGrid } from '@src/features/weather/components/weather-detail-grid';
 import { WeatherHero } from '@src/features/weather/components/weather-hero';
 import { WeatherLocationNotice } from '@src/features/weather/components/weather-location-notice';
 import { WeatherLocationPrompt } from '@src/features/weather/components/weather-location-prompt';
 import { WeatherReportGate } from '@src/features/weather/components/weather-report-gate';
 import { WeatherScrollView } from '@src/features/weather/components/weather-scroll-view';
 import { WeatherSunMoon } from '@src/features/weather/components/weather-sun-moon/weather-sun-moon';
-import type { WeatherLocationStatus } from '@src/features/weather/domains/weather-location.model';
-import { useWeatherLocation } from '@src/features/weather/hooks/use-weather-location';
-import { useWeatherOpenKey } from '@src/features/weather/hooks/use-weather-open-key';
+import type { WeatherLocationStatus } from '@src/features/weather/domains/location-reading.model';
 import {
-  useGetForecastCompletionsQueryOptions,
+  useWeatherEntry,
+  useWeatherOpenKey,
+} from '@src/features/weather/hooks/use-weather-entry-params';
+import { useWeatherLocation } from '@src/features/weather/hooks/use-weather-location';
+import {
+  usePrefetchForecastCompletions,
   useWeatherLocationRevision,
 } from '@src/features/weather/queries/weather.queries';
-import { weatherEntryParamsSchema } from '@src/features/weather/schemas/weather-entry-params.schema';
 import {
   toWeatherLocationRegisteredResult,
   toWeatherOpenedEntry,
 } from '@src/features/weather/utils/weather-analytics';
 import { useTrackView } from '@src/shared/analytics';
-import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import {
   AdaptivePane,
   usePaneSizeClass,
@@ -38,8 +39,8 @@ import {
   Spacing,
   VStack,
 } from '@src/shared/ui';
-import { usePrefetchQuery } from '@tanstack/react-query';
 import { Suspense } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { match } from 'ts-pattern';
 
 const SCREEN_GUTTER = 16;
@@ -47,6 +48,7 @@ const HERO_GUTTER = 24;
 const HERO_TOP = 6;
 const CARDS_TOP = 32;
 const CARD_GAP = 12;
+const DEV_BADGE_BOTTOM = 8;
 /** 넓은 pane에서 카드가 과하게 늘어나지 않게 하는 최대 폭 */
 const COLUMN_STYLE = { maxWidth: 560 };
 
@@ -56,6 +58,7 @@ export default function WeatherScreen() {
   useWeatherScreenTracking(location.status);
   const locationRevision = useWeatherLocationRevision();
   const isCompact = usePaneSizeClass() === 'compact';
+  const insets = useSafeAreaInsets();
 
   return (
     <>
@@ -131,14 +134,17 @@ export default function WeatherScreen() {
           </>
         ))
         .exhaustive()}
-      <DevOverrideBadge />
+      <DevOverrideBadge
+        className="absolute self-center"
+        style={{ bottom: insets.bottom + DEV_BADGE_BOTTOM }}
+      />
     </>
   );
 }
 
 function ForecastCards() {
   // 리포트를 기다리는 블록 안에서 받으면 할 일 점 조회가 리포트 응답 뒤에 나간다
-  usePrefetchQuery(useGetForecastCompletionsQueryOptions());
+  usePrefetchForecastCompletions();
 
   return (
     <VStack gap={CARD_GAP} px={SCREEN_GUTTER}>
@@ -161,22 +167,19 @@ function ForecastCards() {
   );
 }
 
+/** 리포트 실패 안내를 하늘 장면 가운데에 두고, 당겨서 다시 받을 수 있게 스크롤 안에 그린다 */
 WeatherScreen.Error = function ErrorFallback(props: QueryErrorFallbackProps) {
   return (
     <WeatherScrollView.Status>
-      <WeatherHero.Error {...props} />
+      <WeatherReportGate.Error {...props} />
     </WeatherScrollView.Status>
   );
 };
 
-/**
- * 날씨 화면을 열 때마다 진입점을, 그 열기에서 위치 확인이 처음 끝났을 때 결과를 한 번씩 남긴다.
- * 새로고침·포커스 재확인으로 상태가 다시 바뀌어도 같은 열기에서는 더 세지 않는다. `weather_opened`는 KPI·퍼널이
- * 이름을 써서 경로 보기(`screen_view`)와 따로 남기는 예외다(observability.md)
- */
+/** 상태가 다시 바뀌어도 같은 열기에서는 더 세지 않는다. `weather_opened`는 경로 보기(`screen_view`)와 따로 남기는 예외다 */
 function useWeatherScreenTracking(locationStatus: WeatherLocationStatus['status']): void {
-  const [{ entry }] = useRouteParams(weatherEntryParamsSchema);
-  const openKey = useWeatherOpenKey();
+  const [entry] = useWeatherEntry();
+  const [openKey] = useWeatherOpenKey();
   const locationResult = toWeatherLocationRegisteredResult(locationStatus);
 
   useTrackView('weather_opened', {

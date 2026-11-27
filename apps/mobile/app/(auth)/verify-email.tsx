@@ -5,13 +5,18 @@ import { useTranslation } from '@src/shared/i18n';
 import { Box, ReadableContent } from '@src/shared/ui';
 import { Stack } from 'expo-router';
 
-export default function VerifyEmailScreen() {
-  const { t } = useTranslation('auth');
+export default function VerifyEmailRoute() {
   const route = useRouteParamsOrRedirect(verifyEmailParamsSchema, { fallbackHref: '/login' });
 
   if (route.redirect != null) {
     return route.redirect;
   }
+
+  return <VerifyEmailScreen />;
+}
+
+function VerifyEmailScreen() {
+  const { t } = useTranslation('auth');
 
   return (
     <Box className="flex-1 bg-white">

@@ -107,50 +107,46 @@ describe("ChangePassword — 현재 기기를 유지하는 비밀번호 변경",
     expect(fixture.cacheService.sessionIds.size).toBe(0);
   });
 
-  it.each(["존재하지 않는", "탈퇴한", "소셜 전용", "비밀번호가 없는"] as const)(
-    "%s 사용자의 변경은 해싱과 쓰기 이전에 거부한다",
-    async (state) => {
-      // Given
-      const fixture = createAuthCredentialFixture({
-        empty: state === "존재하지 않는",
-        socialOnly: state === "소셜 전용",
-      });
-      if (state === "탈퇴한") {
-        await fixture.userRepository.save(
-          createUserFixture({
-            ...fixture.user,
-            status: "SUSPENDED",
-            deletedAt: AUTH_CREDENTIAL_NOW,
-          }),
-        );
-      }
-      const accountRepository =
-        state === "비밀번호가 없는"
-          ? new InMemoryLinkedAccountsRepository([
-              createLinkedAccountFixture({ userId: fixture.user.id, password: null }),
-            ])
-          : fixture.accountRepository;
-      const useCase = new ChangePasswordUseCase({ ...fixture, accountRepository });
-      const errorCode =
-        state === "존재하지 않는"
-          ? ErrorCode.USER_0601
-          : state === "탈퇴한"
-            ? ErrorCode.USER_0606
-            : ErrorCode.USER_0613;
+  it.each([
+    ["존재하지 않는", ErrorCode.USER_0601],
+    ["탈퇴한", ErrorCode.USER_0606],
+    ["소셜 전용", ErrorCode.USER_0613],
+    ["비밀번호가 없는", ErrorCode.USER_0613],
+  ] as const)("%s 사용자의 변경은 해싱과 쓰기 이전에 거부한다", async (state, errorCode) => {
+    // Given
+    const fixture = createAuthCredentialFixture({
+      empty: state === "존재하지 않는",
+      socialOnly: state === "소셜 전용",
+    });
+    if (state === "탈퇴한") {
+      await fixture.userRepository.save(
+        createUserFixture({
+          ...fixture.user,
+          status: "SUSPENDED",
+          deletedAt: AUTH_CREDENTIAL_NOW,
+        }),
+      );
+    }
+    const accountRepository =
+      state === "비밀번호가 없는"
+        ? new InMemoryLinkedAccountsRepository([
+            createLinkedAccountFixture({ userId: fixture.user.id, password: null }),
+          ])
+        : fixture.accountRepository;
+    const useCase = new ChangePasswordUseCase({ ...fixture, accountRepository });
 
-      // When
-      const pending = useCase.execute({
-        userId: fixture.user.id,
-        currentPassword: AUTH_CREDENTIAL_PASSWORD,
-        newPassword,
-      });
+    // When
+    const pending = useCase.execute({
+      userId: fixture.user.id,
+      currentPassword: AUTH_CREDENTIAL_PASSWORD,
+      newPassword,
+    });
 
-      // Then
-      await expect(pending).rejects.toMatchObject({ errorCode });
-      expect(fixture.passwordService.hashes).toEqual([]);
-      expect(fixture.securityLogRepository.entries).toEqual([]);
-    },
-  );
+    // Then
+    await expect(pending).rejects.toMatchObject({ errorCode });
+    expect(fixture.passwordService.hashes).toEqual([]);
+    expect(fixture.securityLogRepository.entries).toEqual([]);
+  });
 
   it("현재 비밀번호가 틀리면 비밀번호·세션·캐시를 유지한다", async () => {
     // Given

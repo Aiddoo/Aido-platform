@@ -14,6 +14,7 @@ import {
   redeemResponseSchema,
 } from '../schemas/invite-response.schema';
 import {
+  parseInstallReferrerInviteCode,
   toInvite,
   toInvitedFriendsPage,
   toInvitePreview,
@@ -145,4 +146,29 @@ describe('toInvitedFriendsPage', () => {
     expect(invitedFriendSchema.parse(page.items[0])).toEqual(page.items[0]);
     expect(page.items[0]?.qualifiedAt).toBe('2026-11-03T10:30:00.000Z');
   });
+});
+
+describe('parseInstallReferrerInviteCode', () => {
+  it.each([
+    ['inviteCode=K7M2QX&utm_source=aido_landing', 'K7M2QX'],
+    ['utm_source=aido_landing&inviteCode=k7m2qx', 'K7M2QX'],
+    ['inviteCode%3DK7M2QX%26utm_source%3Daido_landing', 'K7M2QX'],
+  ])('referrer %s에서 초대 코드 %s를 반환한다', (referrer, expected) => {
+    // When
+    const result = parseInstallReferrerInviteCode(referrer);
+
+    // Then
+    expect(result).toBe(expected);
+  });
+
+  it.each(['utm_source=google-play&utm_medium=organic', 'inviteCode=K7M2Q0', ''])(
+    '초대 코드가 없거나 형식이 틀린 %p는 null을 반환한다',
+    (referrer) => {
+      // When
+      const result = parseInstallReferrerInviteCode(referrer);
+
+      // Then
+      expect(result).toBeNull();
+    },
+  );
 });

@@ -8,7 +8,8 @@ const FEATURE = `^src/features/(${FEATURE_PATTERN})/`;
 const KNOWN_FEATURE = `^src/features/(?:${Object.keys(FEATURE_LAYERS).join('|')})/`;
 // 다른 층 어디서든 가져와도 되는 것: 타입(규칙에서 type-only로 뺀다), Policy가 있는 모델, 캐시 무효화 함수
 const ANY_LAYER = '/domains/[^/]+\\.model\\.tsx?$|/queries/[^/]+-cache\\.tsx?$';
-const DOMAIN_MODEL = '^src/.*/domains/[^/]+\\.model\\.ts$';
+// 역할 폴더 없는 shared 모듈의 모델(shared/draft/draft.model.ts)도 모델이다
+const DOMAIN_MODEL = '^src/.+\\.model\\.ts$';
 const WIRE_CONTRACT = '^\\.\\./\\.\\./packages/api/(?:dist|src)/contracts/|^@aido/api/contracts/';
 
 function npm(names) {
@@ -59,11 +60,26 @@ const SDK_MODULES = [
 
 // 지금 시각·기기 시간대를 읽는 모듈. 모델과 mapper는 시각을 인자로 받는다
 const CLOCK =
-  '^src/shared/date/clock\\.ts$|^src/shared/hooks/use-(?:now|minute-now|today)\\.ts$|^src/shared/infra/localization/device-timezone\\.ts$';
+  '^src/shared/date/clock\\.ts$|^src/shared/hooks/use-(?:now|minute-now|today-key)\\.ts$|^src/shared/infra/localization/app-timezone\\.ts$';
 
 function featureFolders(folders) {
   return `^src/features/.+/(?:${folders.join('|')})/`;
 }
+
+// 분석 helper(utils/*-analytics.ts)는 mutation 콜백과 다른 feature가 부르는 추적 입구다(docs/observability.md)
+const ANALYTICS_UTILS = '/utils/[^/]+-analytics\\.ts$';
+// 초안 변환(utils/*-draft.ts)은 저장 요청의 재료라 mutation이 쓴다
+const DRAFT_UTILS = '/utils/[^/]+-draft\\.ts$';
+
+// 라이브러리 자체가 훅·컴포넌트라 DI 값으로 바꿀 수 없어 feature·route가 직접 쓰는 shared/infra 경계 파일(docs/architecture/structure.md#di포트수명).
+// 실제로 쓰는 것만 둔다: 녹음 재생(voice), 화면 켜 두기(녹음 route), 시스템 언어 훅(weather), 화면 캡처(achievement)
+const INFRA_BOUNDARY_FILES =
+  '^src/shared/infra/(?:audio/use-audio-part-playlist|keep-awake/use-keep-screen-awake|localization/device-locale|view-capture/capturable-view)\\.tsx?$';
+// 루트 오류 경계는 DI 밖에서 그려져 오류 보고기·로거를 직접 만든다
+const ROOT_LAYOUT = '^app/_layout\\.tsx$';
+// 래칫: 기기 상수(iPad·Mac 판정)를 직접 읽는 route. 포트 값으로 옮기면 지운다
+const PENDING_INFRA_ROUTES =
+  '^app/\\(app\\)/\\(tabs\\)/(?:\\(me\\)/_layout|\\(me,memos,todos\\)/friends/search)\\.tsx$';
 
 const modelAndFolderRules = [
   {
@@ -94,6 +110,53 @@ const modelAndFolderRules = [
         '^src/shared/infra/',
         CLOCK,
       ],
+    },
+  },
+  {
+    name: 'domain-model-ports',
+    comment:
+      '도메인 모델은 core/ports를 import하지 않는다. 포트는 어댑터·서비스가 쓰고, 모델은 포트가 준 값을 인자로 받는다(docs/architecture/model.md).',
+    severity: 'error',
+    from: { path: DOMAIN_MODEL, pathNot: [TEST] },
+    to: { path: '^src/core/ports/' },
+  },
+  {
+    name: 'domain-model-schemas',
+    comment:
+      '도메인 모델은 schemas/를 import하지 않는다. 폼·route·요청 스키마가 모델에서 pick·omit·extend로 유도하고 거꾸로는 가지 않는다.',
+    severity: 'error',
+    from: { path: DOMAIN_MODEL, pathNot: TEST },
+    to: { path: '/schemas/' },
+  },
+  {
+    name: 'constants-to-domains',
+    comment:
+      'constants/는 domains/의 값을 import하지 않는다(타입은 된다). 시간·한도·id·이벤트·로그 키는 모델보다 아래다.',
+    severity: 'error',
+    from: {
+      path: featureFolders(['constants']),
+      pathNot: TEST,
+    },
+    to: { path: '/domains/', dependencyTypesNot: ['type-only'] },
+  },
+  {
+    name: 'mapper-to-view-model',
+    comment:
+      'mapper는 바깥 값과 모델만 바꾼다. 기능 utils/(view-model의 라벨 키·포맷)를 import하지 않는다. 표시는 컴포넌트가 view-model로 한다.',
+    severity: 'error',
+    from: { path: '[^/]+\\.mapper\\.tsx?$', pathNot: TEST },
+    to: { path: featureFolders(['utils']) },
+  },
+  {
+    name: 'queries-to-ui',
+    comment:
+      'queries/(키·옵션·select·cache helper)는 hooks/·utils/·services/를 import하지 않는다(타입은 된다). 서비스는 DI 훅으로 받고, 토스트·이동은 호출부가, 표시 가공은 컴포넌트가 한다. 분석 helper와 초안 변환은 된다.',
+    severity: 'error',
+    from: { path: featureFolders(['queries']), pathNot: TEST },
+    to: {
+      path: featureFolders(['hooks', 'utils', 'services']),
+      pathNot: [ANALYTICS_UTILS, DRAFT_UTILS],
+      dependencyTypesNot: ['type-only'],
     },
   },
   {
@@ -223,6 +286,17 @@ module.exports = {
       },
     },
     {
+      name: 'feature-utils-import',
+      comment:
+        '다른 feature의 utils/(view-model·geometry·초안)를 import하지 않는다. 표시 가공은 그 feature의 컴포넌트가 하고, 함께 쓸 계산은 모델이나 shared로 옮긴다. 분석 helper(*-analytics)는 된다.',
+      severity: 'error',
+      from: {
+        path: FEATURE,
+        pathNot: [TEST],
+      },
+      to: { path: '^src/features/.+/utils/', pathNot: ['^src/features/$1/', ANALYTICS_UTILS] },
+    },
+    {
       name: 'sdk-outside-infra',
       comment:
         'SDK는 shared/infra에서만 import한다. 포트와 어댑터를 거쳐 DI 훅으로 받는다. 라이브러리가 React 훅이면 경계 훅 파일 하나에 둔다(docs/architecture/structure.md#di포트수명).',
@@ -265,6 +339,21 @@ module.exports = {
       severity: 'error',
       from: { path: '^src/features/', pathNot: TEST },
       to: { path: '^src/bootstrap/', pathNot: '^src/bootstrap/providers/di-context\\.tsx?$' },
+    },
+    {
+      name: 'feature-to-infra',
+      comment:
+        'feature와 route는 shared/infra 어댑터를 직접 import하지 않는다. 기기 값·SDK는 core/ports의 포트로 받고 di-context 훅으로 꺼내, 테스트가 stub으로 기기를 고정한다. 라이브러리 자체가 훅·컴포넌트라 DI 값으로 바꿀 수 없는 경계 파일, DI 밖 루트 레이아웃만 된다. 위젯 헤드리스 진입점은 bootstrap이 조립한다(docs/architecture/structure.md#di포트수명).',
+      severity: 'error',
+      from: {
+        path: '^(?:src/features|app)/',
+        pathNot: [TEST, ROOT_LAYOUT, PENDING_INFRA_ROUTES],
+      },
+      to: {
+        path: '^src/shared/infra/',
+        pathNot: INFRA_BOUNDARY_FILES,
+        dependencyTypesNot: ['type-only'],
+      },
     },
     {
       name: 'di-entry',

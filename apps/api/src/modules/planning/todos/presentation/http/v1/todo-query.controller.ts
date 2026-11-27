@@ -19,8 +19,8 @@ import {
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { localDateIn } from "#api/shared/domain/time/timezone-name";
 
-import { localDateAt } from "../../../../shared/domain/todo-calendar.domain-service.js";
 import { GetTodoOverviewUseCase } from "../../../application/use-cases/get-todo-overview.use-case.js";
 import { GetTodoResourceLimitUseCase } from "../../../application/use-cases/get-todo-resource-limit.use-case.js";
 import { GetTodoSummaryUseCase } from "../../../application/use-cases/get-todo-summary.use-case.js";
@@ -129,7 +129,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
   ): Promise<TodoSummaryResponseDto> {
     return this.#getTodoSummaryUseCase.execute({
       userId: user.userId,
-      today: localDateAt(this.#clock.now(), timezone),
+      today: localDateIn(this.#clock.now(), timezone),
       requestedDate: query.date == null ? undefined : Temporal.PlainDate.from(query.date),
     });
   }

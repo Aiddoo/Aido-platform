@@ -2,7 +2,7 @@ import { useAppWindow } from '@src/shared/hooks/use-app-window';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, SheetChipRow } from '@src/shared/ui';
 import { WindowLayoutPolicy } from '@src/shared/ui';
-import { findChipRevealScrollX } from '@src/shared/ui';
+import { findChipRevealScrollX, getTouchTargetInset } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { RadioGroup } from 'heroui-native';
 import { type ComponentProps, type ComponentRef, useRef } from 'react';
@@ -23,8 +23,9 @@ interface CategoryColorInputProps extends Omit<
   onValueChange: (color: string) => void;
 }
 
-/** 32px 색 칸을 터치 기준 44px에 맞춘다 */
-const COLOR_ITEM_HIT_SLOP = 6;
+/** 색 칸(size-8) */
+const COLOR_ITEM_SIZE = 32;
+const COLOR_ITEM_HIT_SLOP = getTouchTargetInset(COLOR_ITEM_SIZE);
 
 export function CategoryColorInput({
   value,

@@ -1,59 +1,58 @@
 import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
-import type { DateKey } from '@src/shared/date/date-key';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import { ActionButton, HStack, LockIcon, VStack } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
+import type { ComponentProps } from 'react';
 
-import { IMPORT_RANGE_PRESETS, type ImportRangePreset } from '../constants/todo-import.constants';
-import { canImportUntil, getRangeEndDate } from '../domains/todo-import.model';
-import { findRangePreset, IMPORT_RANGE_PRESET_LABEL_KEYS } from '../utils/todo-import.view-model';
+import {
+  type TodoImportRange,
+  TodoImportRangePolicy,
+  type TodoImportRangePreset,
+} from '../domains/todo-import-range.model';
+import { getRangePresetLabelKey } from '../utils/todo-import.view-model';
 import { ImportFreePlanNotice } from './import-free-plan-notice';
 
 interface ImportEndDateChipsProps {
-  /** 칩은 이 날부터 센 기간의 마지막 날을 고른다 */
-  startDate: DateKey;
-  value: DateKey;
-  onValueChange: (endDate: DateKey) => void;
-  /** 칩 묶음(라디오 그룹)을 읽는 이름 */
+  // 칩은 첫날부터 센 기간의 끝 날을 고른다
+  value: TodoImportRange;
+  onChange: (range: TodoImportRange) => void;
+  // 칩 묶음(라디오 그룹)을 읽는 이름
   accessibilityLabel?: string;
 }
 
-/** 요금제 기간(서버 `CALENDAR_IMPORT.limit`)을 넘는 칩은 잠그고 누르면 프리미엄 안내를 연다 */
+// 요금제 기간(서버 CALENDAR_IMPORT 한도)을 넘는 칩은 잠그고 누르면 프리미엄 안내를 연다
 export function ImportEndDateChips({
-  startDate,
   value,
-  onValueChange,
+  onChange,
   accessibilityLabel,
 }: ImportEndDateChipsProps) {
   const todayKey = useTodayKey();
   const gate = useEntitlementGate('CALENDAR_IMPORT', { surface: 'todo_import' });
+
   const { data: snapshot } = useSuspenseQuery(useGetEntitlementsQueryOptions());
 
   const horizonDays = EntitlementPolicy.findLimit(snapshot, 'CALENDAR_IMPORT');
-  const selectedPreset = findRangePreset({ startDate, endDate: value });
-  const isLocked = (preset: ImportRangePreset) =>
-    !canImportUntil(
-      getRangeEndDate(startDate, IMPORT_RANGE_PRESETS[preset]),
-      todayKey,
-      horizonDays,
-    );
+  const selectedPreset = TodoImportRangePolicy.findPreset(value);
 
-  const handlePress = (preset: ImportRangePreset) => {
-    if (isLocked(preset)) {
-      gate.promptLimit();
-      return;
-    }
-    onValueChange(getRangeEndDate(startDate, IMPORT_RANGE_PRESETS[preset]));
+  const getChipProps = (preset: TodoImportRangePreset) => {
+    const isLocked = !TodoImportRangePolicy.canUsePreset(value, preset, todayKey, horizonDays);
+
+    return {
+      preset,
+      isSelected: selectedPreset === preset,
+      isLocked,
+      onPress: () => {
+        if (isLocked) {
+          gate.promptLimit();
+          return;
+        }
+        onChange(TodoImportRangePolicy.withPreset(value, preset));
+      },
+    };
   };
-  const toChipProps = (preset: ImportRangePreset) => ({
-    preset,
-    isSelected: selectedPreset === preset,
-    isLocked: isLocked(preset),
-    onPress: () => handlePress(preset),
-  });
 
   return (
     <VStack gap={8}>
@@ -63,35 +62,38 @@ export function ImportEndDateChips({
         accessibilityLabel={accessibilityLabel}
         className="flex-wrap gap-2"
       >
-        <ImportEndDateChips.Chip {...toChipProps('week')} />
-        <ImportEndDateChips.Chip {...toChipProps('month')} />
-        <ImportEndDateChips.Chip {...toChipProps('quarter')} />
-        <ImportEndDateChips.Chip {...toChipProps('half')} />
-        <ImportEndDateChips.Chip {...toChipProps('year')} />
+        <ImportEndDateChips.Chip {...getChipProps('week')} />
+        <ImportEndDateChips.Chip {...getChipProps('month')} />
+        <ImportEndDateChips.Chip {...getChipProps('quarter')} />
+        <ImportEndDateChips.Chip {...getChipProps('half')} />
+        <ImportEndDateChips.Chip {...getChipProps('year')} />
       </HStack>
-      <ImportFreePlanNotice onPremiumPress={() => gate.promptLimit()} />
+      {/* 누르는 영역이 줄 끝까지 늘어나지 않게 글 폭에 맞춘다 */}
+      <ImportFreePlanNotice className="self-start" onPremiumPress={() => gate.promptLimit()} />
     </VStack>
   );
 }
 
-interface ChipProps {
-  preset: ImportRangePreset;
+interface ChipProps extends Omit<
+  ComponentProps<typeof ActionButton>,
+  'icon' | 'label' | 'isActive' | 'accessibilityRole' | 'accessibilityState' | 'accessibilityLabel'
+> {
+  preset: TodoImportRangePreset;
   isSelected: boolean;
   isLocked: boolean;
-  onPress: () => void;
 }
 
-/** 할 일 일정 칩과 같은 ActionButton이다. 고르는 칩이라 라디오로 읽힌다 */
-ImportEndDateChips.Chip = function Chip({ preset, isSelected, isLocked, onPress }: ChipProps) {
+// 할 일 일정 칩과 같은 ActionButton이다. 고르는 칩이라 라디오로 읽힌다
+ImportEndDateChips.Chip = function Chip({ preset, isSelected, isLocked, ...props }: ChipProps) {
   const { t } = useTranslation('todoImport');
-  const label = t(IMPORT_RANGE_PRESET_LABEL_KEYS[preset]);
+  const label = t(getRangePresetLabelKey(preset));
 
   return (
     <ActionButton
+      {...props}
       icon={isLocked && <ActionButton.Icon Icon={LockIcon} colorClassName="text-gray-6" />}
       label={label}
       isActive={isSelected}
-      onPress={onPress}
       accessibilityRole="radio"
       accessibilityState={{ checked: isSelected }}
       accessibilityLabel={isLocked ? t('range.lockedPreset', { label }) : label}
@@ -107,9 +109,4 @@ ImportEndDateChips.Loading = function Loading() {
       <ActionButton.Loading className="w-20" />
     </HStack>
   );
-};
-
-/** 기간 안내를 읽지 못해도 서버가 시작할 때 기간을 다시 확인해 칩만 숨긴다 */
-ImportEndDateChips.Error = function ErrorFallback() {
-  return null;
 };

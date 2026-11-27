@@ -3,6 +3,8 @@ import { useIsAppInBackground } from '@src/shared/hooks/use-is-app-in-background
 import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { useRebuiltPath } from '@src/shared/hooks/use-rebuilt-path';
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
+import { useSkiaDensityScale } from '@src/shared/hooks/use-skia-density-scale';
+import { useToggleableFrameCallback } from '@src/shared/hooks/use-toggleable-frame-callback';
 import { useTranslation } from '@src/shared/i18n';
 import { Box } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
@@ -17,9 +19,7 @@ import {
   withTiming,
 } from 'react-native-reanimated';
 
-import { SPEECH_LEVEL_THRESHOLD, WAVEFORM_BAR } from '../../constants/voice-note.constants';
-import { useSkiaDensityScale } from '../../hooks/use-skia-density-scale';
-import { useToggleableFrameCallback } from '../../hooks/use-toggleable-frame-callback';
+import { WAVEFORM_SPEECH_BAR_LEVEL, WAVEFORM_BAR } from '../../constants/voice-note.constants';
 import {
   appendLevelFrame,
   appendTimelineBar,
@@ -105,7 +105,7 @@ function addLevelBars(
   const sideCount = getSideCount(width);
   for (let slot = 0; slot <= sideCount * 2; slot += 1) {
     const level = findTimelineLevel(levels, slot, sideCount);
-    if (level != null && level >= SPEECH_LEVEL_THRESHOLD === (kind === 'speech')) {
+    if (level != null && level >= WAVEFORM_SPEECH_BAR_LEVEL === (kind === 'speech')) {
       const barHeight = Math.max(
         height * WAVEFORM_BAR.minHeightRatio,
         level * height * WAVEFORM_BAR.verticalShare,

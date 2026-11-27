@@ -1,12 +1,8 @@
 import { type InfiniteData, queryOptions } from '@tanstack/react-query';
 
-import type {
-  NudgeInteraction,
-  NudgeInteractionPage,
-  NudgeThanksCursor,
-  NudgeThanksPreview,
-} from '../domains/nudge-interaction.model';
-import type { NudgeCooldownInfo } from '../domains/todo-nudge.model';
+import type { NudgeCooldown } from '../domains/nudge-cooldown.model';
+import type { NudgeInteraction, NudgeInteractionPage } from '../domains/nudge-interaction.model';
+import type { NudgeThanksCursor, NudgeThanksPreview } from '../domains/nudge-thanks-preview.model';
 import type { NudgeDirection } from '../schemas/nudge-interaction-query-key.schema';
 
 export const TODO_NUDGE_QUERY_KEYS = {
@@ -30,7 +26,7 @@ export const TODO_NUDGE_QUERY_KEYS = {
       queryKey: [...TODO_NUDGE_QUERY_KEYS.interactions(), 'thanks', { todoId }],
     }).queryKey,
   remindCooldown: ({ userId }: { userId: string }) =>
-    queryOptions<NudgeCooldownInfo>({
+    queryOptions<NudgeCooldown>({
       queryKey: [...TODO_NUDGE_QUERY_KEYS.all, 'remind-cooldown', { userId }],
     }).queryKey,
 } as const;

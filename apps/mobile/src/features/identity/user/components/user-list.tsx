@@ -11,17 +11,36 @@ import { Skeleton } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 import { ScrollView, type ScrollViewProps } from 'react-native';
 
+import { formatUserHashtag } from '../utils/user-tag.view-model';
 import { UserAvatar } from './user-avatar';
 
 export const USER_LIST_CONTENT_STYLE = { flexGrow: 1 };
 
+export function UserList({ children, ...props }: ScrollViewProps) {
+  return (
+    <ScrollView className="flex-1" contentContainerStyle={USER_LIST_CONTENT_STYLE} {...props}>
+      {children}
+    </ScrollView>
+  );
+}
+
 interface UserListItemProps extends Omit<ListRowProps, 'left' | 'contents'> {
   displayName: string;
   subtitle?: string;
+  /** 이름 아래 줄을 사용자 태그로 채운다. 해시태그 모양은 이 행이 맞춘다 */
+  userTag?: string;
   profileImage: string | null;
 }
 
-function Item({ displayName, subtitle, profileImage, ...props }: UserListItemProps) {
+UserList.Item = function Item({
+  displayName,
+  subtitle: subtitleText,
+  userTag,
+  profileImage,
+  ...props
+}: UserListItemProps) {
+  const subtitle = userTag == null ? subtitleText : formatUserHashtag(userTag);
+
   return (
     <ListRow
       left={<UserAvatar alt={displayName} className="size-10" profileImage={profileImage} />}
@@ -41,7 +60,7 @@ function Item({ displayName, subtitle, profileImage, ...props }: UserListItemPro
       {...props}
     />
   );
-}
+};
 
 interface UserListLoadingProps {
   rows?: number;
@@ -52,7 +71,7 @@ interface UserListLoadingProps {
   scrollProps?: ScrollViewProps;
 }
 
-function Loading({
+UserList.Loading = function Loading({
   rows = 3,
   hasSubtitle = false,
   right,
@@ -60,7 +79,7 @@ function Loading({
   scrollProps,
 }: UserListLoadingProps) {
   return (
-    <ScrollView className="flex-1" contentContainerStyle={USER_LIST_CONTENT_STYLE} {...scrollProps}>
+    <UserList {...scrollProps}>
       {ListHeaderComponent}
       {range(rows).map((index) => (
         <ListRow
@@ -70,20 +89,18 @@ function Loading({
           right={right}
         />
       ))}
-    </ScrollView>
+    </UserList>
   );
-}
+};
 
-function ErrorFallback({ reset }: QueryErrorFallbackProps) {
+UserList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   return <QueryErrorFallback reset={reset} />;
-}
+};
 
-function Empty(props: ComponentProps<typeof Result>) {
+UserList.Empty = function Empty(props: ComponentProps<typeof Result>) {
   return (
     <HStack flex={1} justify="center" align="center">
       <Result {...props} />
     </HStack>
   );
-}
-
-export const UserList = { Item, Loading, Error: ErrorFallback, Empty };
+};

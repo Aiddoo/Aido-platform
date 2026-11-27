@@ -1,6 +1,5 @@
 import { createSessionEpoch, withSessionEpoch } from '@src/core/session/session-epoch';
 import { createSessionManager } from '@src/core/session/session-manager';
-import { createWidgetBridge } from '@src/features/device/widget/bridge/create-widget-bridge';
 import { createInviteLinkOpenedStore } from '@src/features/social/invite/stores/invite-link-opened.store';
 import { ENV } from '@src/shared/config/env';
 import { i18n } from '@src/shared/i18n';
@@ -15,6 +14,7 @@ import { expoVendorIdGateway } from '@src/shared/infra/application/expo-vendor-i
 import { createExpoCalendarTodoImportSource } from '@src/shared/infra/calendar/expo-calendar-todo-import-source';
 import { expoClipboardGateway } from '@src/shared/infra/clipboard/expo-clipboard-gateway';
 import { DEVICE_MODEL_NAME } from '@src/shared/infra/device/device-info';
+import { expoDeviceTraits } from '@src/shared/infra/device/expo-device-traits';
 import { createEnvironmentErrorReporter } from '@src/shared/infra/error-reporter/create-environment-error-reporter';
 import { expoLocalFileSystem } from '@src/shared/infra/file-system/expo-local-file-system';
 import { expoHapticsGateway } from '@src/shared/infra/haptics/expo-haptics-gateway';
@@ -28,7 +28,7 @@ import { expoIdGenerator } from '@src/shared/infra/id-generator/expo-id-generato
 import { createKakaoSocialShareGateway } from '@src/shared/infra/kakao/kakao-social-share-gateway';
 import { expoExternalLinkGateway } from '@src/shared/infra/linking/expo-external-link-gateway';
 import { expoIncomingLinkGateway } from '@src/shared/infra/linking/expo-incoming-link-gateway';
-import { getDeviceTimezone } from '@src/shared/infra/localization/device-timezone';
+import { getAppTimezone } from '@src/shared/infra/localization/app-timezone';
 import { expoLocationGateway } from '@src/shared/infra/location/expo-location-gateway';
 import {
   createCompositeLogger,
@@ -51,6 +51,7 @@ import { widgetStorage } from '@src/shared/infra/storage/widget-storage';
 import { viewShotViewCaptureGateway } from '@src/shared/infra/view-capture/view-shot-view-capture-gateway';
 
 import type { AppContainerPorts } from './create-app-container';
+import { createWidgetBridge } from './create-widget-bridge';
 
 /** 앱을 연 뒤에 정하는 저장소와 QueryClient를 뺀 기기 포트 */
 export type DevicePorts = Omit<
@@ -65,8 +66,8 @@ export function createDevicePorts(): DevicePorts {
   const tokenStore = withSessionEpoch(createSecureTokenStore(storage), sessionEpoch);
 
   // 크래시·오류·로그는 Sentry, Firebase는 제품 지표만. Sentry init은 앱 루트(initErrorReporting)에서 한 번
-  const consoleLogger = createConsoleLogger({ minLevel: ENV.IS_PRODUCTION ? 'warn' : 'debug' });
-  const logger = ENV.IS_PRODUCTION
+  const consoleLogger = createConsoleLogger({ minLevel: ENV.TELEMETRY.consoleMinLevel });
+  const logger = ENV.TELEMETRY.usesVendorAdapters
     ? createCompositeLogger([consoleLogger, createSentryLogger()])
     : consoleLogger;
   const errorReporter = createEnvironmentErrorReporter();
@@ -122,6 +123,7 @@ export function createDevicePorts(): DevicePorts {
     networkStatus: createExpoNetworkStatusGateway(logger),
     viewCapture: viewShotViewCaptureGateway,
     screenOrientation: expoScreenOrientationGateway,
+    deviceTraits: expoDeviceTraits,
     deviceLocation: expoLocationGateway,
     todoImportSource: createExpoCalendarTodoImportSource(logger),
     applicationMetadata: expoNativeApplicationMetadataGateway,
@@ -138,7 +140,7 @@ export function createDevicePorts(): DevicePorts {
     syncStorage: deviceSyncStorage,
     platform: process.env.EXPO_OS === 'ios' ? 'ios' : 'android',
     deviceModel: DEVICE_MODEL_NAME,
-    getTimezone: getDeviceTimezone,
+    getTimezone: getAppTimezone,
     // 요청 헤더(Accept-Language)와 같은 값이다
     getLanguage: () => i18n.language,
     inviteLinkOpenedStore: createInviteLinkOpenedStore(),

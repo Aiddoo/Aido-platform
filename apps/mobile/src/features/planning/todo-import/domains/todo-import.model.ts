@@ -6,7 +6,7 @@ import {
   TODO_IMPORT_TIME_MODES,
   TODO_VISIBILITIES,
 } from '@aido/api/vocabulary';
-import { addDaysToDateKey, type DateKey, dateKeySchema } from '@src/shared/date/date-key';
+import { dateKeySchema } from '@src/shared/date/date-key';
 import { hasInstantPassed, type Instant, instantSchema } from '@src/shared/date/instant';
 import { clamp, uniq } from 'es-toolkit';
 import { match, P } from 'ts-pattern';
@@ -49,6 +49,12 @@ export const todoImportSchema = z.object({
 });
 export type TodoImport = z.infer<typeof todoImportSchema>;
 
+/** sending: 보내는 중·이어 보낼 상태 있음, paused: 멈춤, failed: 서버가 거절, elsewhere: 다른 기기에서 시작했다 */
+export type TodoImportDeviceUpload = 'sending' | 'paused' | 'failed' | 'elsewhere';
+
+/** finished는 되돌리는 중·뒤를 포함하고, failed·undoFailed는 만들다·되돌리다, stopped는 만들기 전에(취소·방치) 멈췄다 */
+export type TodoImportStage = 'processing' | 'finished' | 'failed' | 'undoFailed' | 'stopped';
+
 /** 다시 가져와도 아무것도 만들지 않은 가져오기가 앞의 되돌릴 수 있는 가져오기를 가리지 않을 만큼 남긴다 */
 const MAX_REMEMBERED_IMPORT_COUNT = 3;
 
@@ -57,69 +63,49 @@ export function rememberTodoImportId(ids: readonly string[], importId: string): 
   return uniq([importId, ...ids]).slice(0, MAX_REMEMBERED_IMPORT_COUNT);
 }
 
-/** 첫날을 포함해 `days`일째 되는 날 */
-export function getRangeEndDate(startDate: DateKey, days: number): DateKey {
-  return addDaysToDateKey(startDate, days - 1);
-}
-
-/** horizonDays는 서버 `CALENDAR_IMPORT.limit`이고 null은 기간 제한이 없다 */
-export function findLastAllowedDate(todayKey: DateKey, horizonDays: number | null): DateKey | null {
-  return horizonDays == null ? null : getRangeEndDate(todayKey, horizonDays);
-}
-
-export function canImportUntil(endDate: DateKey, todayKey: DateKey, horizonDays: number | null) {
-  const lastAllowedDate = findLastAllowedDate(todayKey, horizonDays);
-  return todayKey <= endDate && (lastAllowedDate == null || endDate <= lastAllowedDate);
-}
-
-// 업로드·대기는 서버 잡을 기다리는 동안이라 느리게, 만들기·되돌리기는 막대가 움직이니 빠르게 묻는다
-const POLL_INTERVAL_MS = {
-  UPLOADING: 3000,
-  QUEUED: 3000,
-  RUNNING: 2000,
-  UNDOING: 2000,
-} as const;
-
-function isTerminal(todoImport: TodoImport) {
-  return match(todoImport.status)
-    .with(P.union('COMPLETED', 'FAILED', 'CANCELED', 'ABANDONED', 'UNDONE'), () => true)
-    .with(P.union('UPLOADING', 'QUEUED', 'RUNNING', 'UNDOING'), () => false)
-    .exhaustive();
-}
-
-/**
- * 되돌릴 수 있는지는 서버가 정한다. 완료·실패이고 남은 할 일이 있으며 7일 안일 때만 기한이 온다.
- * 앱은 지금이 그 기한 전인지만 본다
- */
-function canUndo(todoImport: TodoImport, now: Instant) {
-  return todoImport.undoableUntil != null && !hasInstantPassed(todoImport.undoableUntil, now);
-}
-
-/** 확정 뒤에는 서버 잡이 끝까지 만든다 */
-function canCancel(todoImport: TodoImport) {
-  return todoImport.status === 'UPLOADING';
-}
-
-function getPollIntervalMs(todoImport: TodoImport): number | false {
-  return match(todoImport.status)
-    .with(P.union('COMPLETED', 'FAILED', 'CANCELED', 'ABANDONED', 'UNDONE'), () => false as const)
-    .with(
-      P.union('UPLOADING', 'QUEUED', 'RUNNING', 'UNDOING'),
-      (status) => POLL_INTERVAL_MS[status],
-    )
-    .exhaustive();
-}
-
-/** 받은 수가 없으면 0이다 */
-function calculateProcessedRatio(todoImport: TodoImport) {
-  const total = Math.max(todoImport.receivedItemCount, todoImport.expectedItemCount);
-  return total === 0 ? 0 : clamp(todoImport.processedItemCount / total, 0, 1);
-}
-
 export const TodoImportPolicy = {
-  isTerminal,
-  canUndo,
-  canCancel,
-  getPollIntervalMs,
-  calculateProcessedRatio,
-} as const;
+  getStage(todoImport: TodoImport): TodoImportStage {
+    return (
+      match(todoImport)
+        .returnType<TodoImportStage>()
+        .with({ status: P.union('UPLOADING', 'QUEUED', 'RUNNING') }, () => 'processing')
+        .with({ status: P.union('COMPLETED', 'UNDOING', 'UNDONE') }, () => 'finished')
+        .with({ status: 'FAILED', failureReason: 'UNDO_FAILED' }, () => 'undoFailed')
+        // 이유를 모르면(null) 만들다 멈춘 것과 같이 본다
+        .with(
+          { status: 'FAILED', failureReason: P.union('MATERIALIZATION_FAILED', 'STALLED', null) },
+          () => 'failed',
+        )
+        .with({ status: P.union('CANCELED', 'ABANDONED') }, () => 'stopped')
+        .exhaustive()
+    );
+  },
+
+  isTerminal(todoImport: TodoImport): boolean {
+    return match(todoImport.status)
+      .with(P.union('COMPLETED', 'FAILED', 'CANCELED', 'ABANDONED', 'UNDONE'), () => true)
+      .with(P.union('UPLOADING', 'QUEUED', 'RUNNING', 'UNDOING'), () => false)
+      .exhaustive();
+  },
+
+  /** 서버가 완료·실패이고 남은 할 일이 있으며 7일 안일 때만 기한을 줘 앱은 지금이 그 기한 전인지만 본다 */
+  canUndo(todoImport: TodoImport, now: Instant): boolean {
+    return todoImport.undoableUntil != null && !hasInstantPassed(todoImport.undoableUntil, now);
+  },
+
+  /** 확정 뒤에는 서버 잡이 끝까지 만든다 */
+  canCancel(todoImport: TodoImport): boolean {
+    return todoImport.status === 'UPLOADING';
+  },
+
+  /** 업로드 중인데 이 기기가 더 보내지 않으면(멈춤·거절·다른 기기에서 시작) 사용자가 멈출 수 있다 */
+  canStop(todoImport: TodoImport, deviceUpload: TodoImportDeviceUpload): boolean {
+    return this.canCancel(todoImport) && deviceUpload !== 'sending';
+  },
+
+  /** 받은 수가 없으면 0이다 */
+  calculateProcessedRatio(todoImport: TodoImport): number {
+    const total = Math.max(todoImport.receivedItemCount, todoImport.expectedItemCount);
+    return total === 0 ? 0 : clamp(todoImport.processedItemCount / total, 0, 1);
+  },
+};

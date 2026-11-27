@@ -1,4 +1,4 @@
-appId: com.aido.mobile
+appId: ${MAESTRO_APP_ID}
 name: 알림함
 tags:
   - free

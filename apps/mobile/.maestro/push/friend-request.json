@@ -1,0 +1,14 @@
+{
+  "aps": {
+    "alert": { "title": "", "body": "" },
+    "sound": "default"
+  },
+  "body": {
+    "notificationId": 0,
+    "type": "FOLLOW_NEW",
+    "action": { "type": "DEEP_LINK" },
+    "context": { "friendId": "" },
+    "navigation": { "kind": "FRIEND_REQUESTS" },
+    "campaignKey": "follow_request_v2"
+  }
+}

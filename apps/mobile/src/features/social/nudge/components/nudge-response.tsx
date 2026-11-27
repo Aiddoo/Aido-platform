@@ -17,14 +17,14 @@ import {
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import type { ComponentProps } from 'react';
 import { Suspense } from 'react';
 import { match, P } from 'ts-pattern';
 
 import { NUDGE_REPLY_LABEL_KEYS } from '../constants/nudge-interaction-labels';
 import { NudgeInteractionPolicy } from '../domains/nudge-interaction.model';
-import { useNudgeId } from '../hooks/use-nudge-id';
+import { useNudgeId } from '../hooks/use-nudge-params';
 import { useReplyToNudgeMutationOptions } from '../queries/todo-nudge.mutations';
 import { useGetNudgeInteractionQueryOptions } from '../queries/todo-nudge.queries';
 import { ThanksSummaryRow } from './thanks-summary-row';
@@ -35,6 +35,7 @@ export function NudgeResponse() {
   const [{ data: nudge }, { data: me }] = useSuspenseQueries({
     queries: [useGetNudgeInteractionQueryOptions({ nudgeId }), useGetMeQueryOptions()],
   });
+  const router = useRouter();
   const openThanksSheet = useSingleTap(() =>
     router.push({ pathname: '/todo/[todoId]/thanks', params: { todoId: nudge.todoId } }),
   );
@@ -79,7 +80,10 @@ function ReplyActions({ selectedKind }: { selectedKind: NudgeReplyKind | null })
   const { t } = useTranslation('todo');
   const reply = useMutation(useReplyToNudgeMutationOptions());
 
-  const sendReply = (replyKind: NudgeReplyKind) => reply.mutate({ nudgeId, input: { replyKind } });
+  // isPending은 다음 렌더에야 켜져 같은 프레임의 두 번째 탭이 답장을 한 번 더 보낸다
+  const sendReply = useSingleTap((replyKind: NudgeReplyKind) =>
+    reply.mutate({ nudgeId, input: { replyKind } }),
+  );
 
   return (
     <VStack gap={12}>

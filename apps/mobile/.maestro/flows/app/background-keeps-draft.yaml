@@ -1,0 +1,48 @@
+appId: ${MAESTRO_APP_ID}
+name: 저장하지 않은 메모를 쓰다 홈으로 나갔다 돌아오면 보던 화면과 쓴 글이 그대로다
+tags:
+  - regression
+  - app
+onFlowStart:
+  - runFlow: ../../subflows/app/load-helpers.yaml
+  - evalScript: ${output.main = output.api.signIn('main')}
+  - evalScript: ${output.memoText = 'E2E draft ' + output.config.runId}
+  - runFlow: ../../subflows/app/launch-fresh.yaml
+onFlowComplete:
+  - evalScript: ${output.main && output.main.removeMemosContaining(output.memoText)}
+---
+# 지키는 것: 앱이 뒤로 갔다 돌아와도 JS가 다시 시작하지 않고 입력 중인 화면을 지킨다
+
+# Given: 새 메모를 쓰는 중이다(저장 전)
+- runFlow:
+    file: ../../subflows/auth/sign-in.yaml
+    env:
+      EMAIL: ${output.main.email}
+      PASSWORD: ${output.main.password}
+- runFlow:
+    file: ../../subflows/memo/write-new.yaml
+    env:
+      MEMO_TEXT: ${output.memoText}
+
+# When: 홈으로 나갔다가 앱을 끄지 않고 다시 연다
+- pressKey: Home
+- extendedWaitUntil:
+    notVisible:
+      id: ${output.ids.memo.createInput}
+    timeout: 10000
+# 확인 필요: launchApp은 permissions를 주지 않으면 모든 권한을 허용한다. iOS에서 거두는 값(deny)은 앱을 끝내
+# stopApp: false를 무르므로, launch-fresh가 이미 허용한 알림만 다시 적는다
+- launchApp:
+    stopApp: false
+    permissions:
+      notifications: allow
+
+# Then: 같은 작성 화면에 쓴 글이 남아 있고 앱 오류가 없다
+- extendedWaitUntil:
+    visible:
+      id: ${output.ids.memo.createInput}
+    timeout: 10000
+- assertVisible: ${output.containing(output.memoText)}
+- assertNotVisible:
+    id: ${output.ids.app.rootError}
+- assertNotVisible: ${output.labels.system.devErrorOverlay}

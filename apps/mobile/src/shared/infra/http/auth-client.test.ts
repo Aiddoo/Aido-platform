@@ -91,6 +91,13 @@ async function waitForFetchCalls(count: number) {
   await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(count));
 }
 
+// 테스트마다 global.fetch를 가짜로 바꾼다. 같은 worker의 다음 파일에 남지 않게 되돌린다
+const originalFetch = global.fetch;
+
+afterEach(() => {
+  global.fetch = originalFetch;
+});
+
 describe('createAuthClient: 동시 401', () => {
   const ROTATED = JSON.stringify({ data: { accessToken: 'access-2', refreshToken: 'refresh-2' } });
 
@@ -391,7 +398,7 @@ describe('createAuthClient: 만료된 토큰으로 함께 보낸 두 조회', ()
     const todoDetailKey = (path: string) => ['todo-detail', path];
 
     function fetchTodoDetail(queryClient: QueryClient, http: KyHttpClient, path: string) {
-      return queryClient.fetchQuery({
+      return queryClient.query({
         queryKey: todoDetailKey(path),
         queryFn: async ({ signal }) => unwrap(await http.get(path, { signal })),
         retry: shouldRetryQuery,
@@ -800,7 +807,7 @@ describe('createAuthClient: 갱신이 429·503·응답 없음을 거쳐 돌아�
 
     // When
     const detail = observeSettlement(
-      queryClient.fetchQuery({
+      queryClient.query({
         queryKey: ['todo-detail', DETAILS_PATH],
         queryFn: async ({ signal }) => unwrap(await scene.http.get(DETAILS_PATH, { signal })),
         retry: shouldRetryQuery,

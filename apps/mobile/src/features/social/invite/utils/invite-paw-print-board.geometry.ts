@@ -1,9 +1,7 @@
+import { INVITER_REWARD_MILESTONES } from '@aido/api/vocabulary';
 import { chunk, clamp, range } from 'es-toolkit';
 
-import { ONE_TIME_MILESTONE_COUNTS } from '../constants/invite.constants';
-import type { Invite } from '../domains/invite.model';
-
-export type PawPrintState = 'stamped' | 'waiting' | 'empty' | 'milestone';
+import { type Invite, InvitePolicy, type PawPrintState } from '../domains/invite.model';
 
 export interface PawPrintCell {
   /** 첫 판부터 0으로 센 발자국 순서 */
@@ -34,10 +32,7 @@ export interface PawPrintBoard {
   rows: PawPrintRow[];
 }
 
-/**
- * 판 하나의 칸 수. 기기 폭과 상관없이 모두 같아서 같은 사람은 어느 기기에서나 같은 판 번호·축하 시점을 본다.
- * 좁은 창은 4열 × 3줄, 넓은 창은 6열 × 2줄로 놓는다.
- */
+/** 기기 폭과 상관없이 같은 칸 수라 같은 사람은 어느 기기에서나 같은 판 번호·축하 시점을 본다 */
 export const PAW_PRINT_BOARD_SIZE = 12;
 
 const PAW_PRINT_CELL_SIZE = 56;
@@ -59,10 +54,7 @@ interface PawPrintBoardLayoutInput {
   maxContentWidth: number;
 }
 
-/**
- * 발자국 판이 실제로 쓰는 폭. 좌우 safe area(Duo 레일)를 뺀 뒤 ReadableContent 최대 폭으로 자르고
- * 화면·카드 여백을 뺀다. 넓은 창(regular)에서도 ReadableContent 폭을 넘지 않는다.
- */
+/** 좌우 safe area(Duo 레일)를 뺀 뒤 ReadableContent 최대 폭으로 잘라 넓은 창에서도 그 폭을 넘지 않는다 */
 export function calculatePawPrintBoardWidth({
   frameWidth,
   insetLeft,
@@ -92,10 +84,7 @@ export interface PawPrintGrid {
   turnInset: number;
 }
 
-/**
- * 실제로 잰 판 폭에서 모든 줄이 같이 쓰는 열 격자를 만든다.
- * 칸과 생선 뼈 길이를 정수 pt로 정해 모든 줄이 같은 x에 놓이고, 줄 폭이 판 폭을 넘지 않는다.
- */
+/** 칸과 생선 뼈 길이를 정수 pt로 정해 모든 줄이 같은 x에 놓이고, 줄 폭이 판 폭을 넘지 않는다 */
 export function calculatePawPrintGrid(availableWidth: number): PawPrintGrid {
   const width = Math.max(availableWidth, 0);
   const columns = calculatePawPrintColumns(width);
@@ -116,40 +105,14 @@ export function calculatePawPrintGrid(availableWidth: number): PawPrintGrid {
   };
 }
 
-/** 지금 보여 줄 판(0부터). 막 채우고 아직 축하하지 않았으면 그 판을 한 번 더 보여 주고 다음에 새 판으로 넘어간다 */
-function calculateBoardIndex(pawPrintedCount: number, celebratedCount: number) {
-  const isJustFilled =
-    pawPrintedCount > 0 &&
-    pawPrintedCount % PAW_PRINT_BOARD_SIZE === 0 &&
-    celebratedCount < pawPrintedCount;
-  return isJustFilled
-    ? pawPrintedCount / PAW_PRINT_BOARD_SIZE - 1
-    : Math.floor(pawPrintedCount / PAW_PRINT_BOARD_SIZE);
-}
-
 interface PawPrintCountInput {
   pawPrintedCount: number;
   waitingCount: number;
-  milestoneCounts: readonly number[];
-}
-
-export function calculatePawPrintState(
-  index: number,
-  { pawPrintedCount, waitingCount, milestoneCounts }: PawPrintCountInput,
-): PawPrintState {
-  if (index < pawPrintedCount) {
-    return 'stamped';
-  }
-  if (index < pawPrintedCount + waitingCount) {
-    return 'waiting';
-  }
-
-  return milestoneCounts.includes(index + 1) ? 'milestone' : 'empty';
 }
 
 /** 찍힌 발자국 뒤에 이어 그리는 기다리는 칸 중 판 끝(boardEndIndex)을 넘는 수 */
 function calculateWaitingOverflow(
-  { pawPrintedCount, waitingCount }: Pick<PawPrintCountInput, 'pawPrintedCount' | 'waitingCount'>,
+  { pawPrintedCount, waitingCount }: PawPrintCountInput,
   boardEndIndex: number,
 ) {
   const waitingStart = Math.max(pawPrintedCount, boardEndIndex);
@@ -170,10 +133,13 @@ export function createPawPrintBoard(
   const counts: PawPrintCountInput = {
     pawPrintedCount: invite.qualifiedCount,
     waitingCount: invite.waitingCount,
-    milestoneCounts: ONE_TIME_MILESTONE_COUNTS,
   };
   const isPawPrinted = (index: number) => index < counts.pawPrintedCount;
-  const boardIndex = calculateBoardIndex(counts.pawPrintedCount, celebratedCount);
+  const boardIndex = InvitePolicy.getPawPrintBoardIndex(
+    invite,
+    celebratedCount,
+    PAW_PRINT_BOARD_SIZE,
+  );
   const firstIndex = boardIndex * PAW_PRINT_BOARD_SIZE;
   const rowIndexes = chunk(range(firstIndex, firstIndex + PAW_PRINT_BOARD_SIZE), columns);
 
@@ -190,7 +156,7 @@ export function createPawPrintBoard(
       return {
         cells: orderedIndexes.map((index, position) => ({
           index,
-          state: calculatePawPrintState(index, counts),
+          state: InvitePolicy.getPawPrintState(invite, index, INVITER_REWARD_MILESTONES),
           isNew: isPawPrinted(index) && index >= celebratedCount,
           isNext: index === counts.pawPrintedCount + counts.waitingCount,
           connectorBefore:

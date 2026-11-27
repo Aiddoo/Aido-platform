@@ -230,6 +230,19 @@ export function renderNotificationVariant<TFacts extends NotificationCopyFacts>(
   };
 }
 
+function variantNamespaceOf(
+  variantContext: NotificationVariantContext | undefined,
+  templateKey: string | undefined,
+): string | undefined {
+  if (!variantContext) {
+    return undefined;
+  }
+  if (!templateKey) {
+    return variantContext.campaignKey;
+  }
+  return `${variantContext.campaignKey}.${templateKey}`;
+}
+
 interface RenderNotificationTemplateInput<TFacts> {
   readonly facts: TFacts;
   readonly locale: SupportedLocale;
@@ -249,11 +262,7 @@ export function renderNotificationTemplate<TFacts extends NotificationCopyFacts>
     overrides,
   }: RenderNotificationTemplateInput<TFacts>,
 ): NotificationMessage {
-  const variantNamespace = variantContext
-    ? templateKey
-      ? `${variantContext.campaignKey}.${templateKey}`
-      : variantContext.campaignKey
-    : undefined;
+  const variantNamespace = variantNamespaceOf(variantContext, templateKey);
 
   if (template.variantNames[0] === "default") {
     return {

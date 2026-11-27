@@ -17,12 +17,11 @@ export function setInvitePreviewInCache(
 }
 
 /** 링크를 새로 만들면 서버가 돌려준 요약으로 바로 바꾸고(다시 불러올 때 깜빡이지 않게), 이전 코드 미리보기는 버린다 */
-export function replaceMyInvite(queryClient: QueryClient, myInvite: Invite) {
+export function setMyInviteInCache(queryClient: QueryClient, myInvite: Invite) {
   queryClient.setQueryData(INVITE_QUERY_KEYS.me(), myInvite);
   queryClient.removeQueries({ queryKey: INVITE_QUERY_KEYS.previews() });
 }
 
-/** 발자국·친구 상태가 바뀌는 알림을 받았을 때 */
 function invalidateInvite(queryClient: QueryClient) {
   return Promise.all([
     queryClient.invalidateQueries({ queryKey: INVITE_QUERY_KEYS.me() }),
@@ -48,7 +47,7 @@ export function invalidateAfterRedeem(
 }
 
 /** 환영 시트가 서버를 다시 부르지 않고 방금 받은 수락 결과를 읽게 남긴다 */
-export function storeRedemptionResult(queryClient: QueryClient, result: RedemptionResult) {
+export function setRedemptionResultInCache(queryClient: QueryClient, result: RedemptionResult) {
   queryClient.setQueryData(
     INVITE_QUERY_KEYS.redemption({ inviterId: result.inviter.userId }),
     result,
@@ -60,7 +59,6 @@ export function invalidateInviteAvailability(queryClient: QueryClient) {
   return queryClient.invalidateQueries({ queryKey: INVITE_QUERY_KEYS.availability() });
 }
 
-/** 친구가 가입했거나 발자국이 찍혔다는 알림을 받으면 초대 요약·목록, 친구 목록, 프리미엄을 함께 새로 고친다 */
 export async function invalidateOnInviteNotification(queryClient: QueryClient) {
   await Promise.all([
     invalidateInvite(queryClient),

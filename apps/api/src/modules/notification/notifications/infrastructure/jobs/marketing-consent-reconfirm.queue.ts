@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { JOB_SCHEDULE_TIMEZONE } from "#api/shared/application/job-schedule-timezone";
 import {
   defineQueue,
   JOB_POLLING_SECONDS,
@@ -35,7 +36,7 @@ export const MARKETING_CONSENT_RECONFIRM_QUEUE = defineQueue({
     {
       key: "hourly-marketing-consent-reconfirm-scheduler",
       cron: "0 * * * *",
-      timezone: "Asia/Seoul",
+      timezone: JOB_SCHEDULE_TIMEZONE,
       missed: "skip",
       payload: { name: MARKETING_CONSENT_RECONFIRM_JOB_NAME, data: {} },
     },

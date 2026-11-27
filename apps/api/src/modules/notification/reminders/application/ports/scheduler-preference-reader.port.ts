@@ -3,7 +3,7 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { RecipientLocaleOf } from "../../../shared/domain/recipient-locale.domain-service.js";
 
 export abstract class SchedulerPreferenceReaderPort {
-  /** 저장된 시간대 중 런타임이 아는 것만, 캐시를 거쳐 읽는다. */
+  /** 저장된 시간대 값을 한 번씩, 캐시를 거쳐 읽는다. 잘못된 값도 주고 현지 시각은 발송 시간대 규칙(local-clock)이 정한다. */
   abstract listActiveTimezones(): Promise<string[]>;
   /** 사용자별 수신자 언어. 설정이 없는 사용자도 resolveRecipientLocale 규칙(저장값 없으면 ko)으로 정한다. */
   abstract getUserLocales(userIds: readonly UserId[]): Promise<RecipientLocaleOf>;

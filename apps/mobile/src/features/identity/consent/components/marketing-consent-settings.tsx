@@ -23,8 +23,8 @@ export function MarketingConsentSettings({
 }: MarketingConsentSettingsProps) {
   const { t } = useTranslation('notification');
   const { data: consent } = useSuspenseQuery(useGetConsentQueryOptions());
-  const marketingMutation = useMutation(useUpdateMarketingConsentMutationOptions());
-  const marketingPushMutation = useMutation(useUpdateMarketingPushConsentMutationOptions());
+  const updateMarketingConsent = useMutation(useUpdateMarketingConsentMutationOptions());
+  const updateMarketingPushConsent = useMutation(useUpdateMarketingPushConsentMutationOptions());
 
   return (
     <SettingsListGroup {...props}>
@@ -32,8 +32,8 @@ export function MarketingConsentSettings({
         label={t('settings.marketingLabel')}
         description={t('settings.marketingDescription')}
         isSelected={consent.marketingAgreedAt != null}
-        onSelectedChange={(agreed) => marketingMutation.mutate({ agreed })}
-        isDisabled={marketingMutation.isPending}
+        onSelectedChange={(agreed) => updateMarketingConsent.mutate({ agreed })}
+        isDisabled={updateMarketingConsent.isPending}
       />
       <SettingsListGroup.Separator />
       <SettingsListGroup.Toggle
@@ -46,8 +46,10 @@ export function MarketingConsentSettings({
           )
         }
         isSelected={consent.marketingPushAgreedAt != null}
-        onSelectedChange={(agreed) => marketingPushMutation.mutate({ agreed, source: 'settings' })}
-        isDisabled={marketingPushMutation.isPending}
+        onSelectedChange={(agreed) =>
+          updateMarketingPushConsent.mutate({ agreed, source: 'settings' })
+        }
+        isDisabled={updateMarketingPushConsent.isPending}
       />
     </SettingsListGroup>
   );

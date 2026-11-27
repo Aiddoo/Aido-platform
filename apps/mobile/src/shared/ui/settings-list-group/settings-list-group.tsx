@@ -226,6 +226,7 @@ SettingsListGroup.Icon = function Icon({ Icon: Glyph }: { Icon: StyledIcon }) {
     <Box
       accessible={false}
       importantForAccessibility="no"
+      // 칸 크기(ITEM_ICON_TILE_SIZE 30)의 30%라 모서리 단계(8·12)로 옮기지 않는다
       className="items-center justify-center rounded-[9px] bg-main/10"
       style={{ width: tileSize, height: tileSize }}
     >
@@ -359,7 +360,7 @@ SettingsListGroup.Error = function ErrorFallback({ reset }: QueryErrorFallbackPr
 
 SettingsListGroup.Empty = function Empty(props: ComponentProps<typeof Result>) {
   return (
-    <Box className="rounded-[20px] border border-dashed border-gray-3 bg-gray-1 px-5 py-7">
+    <Box className="rounded-2xl border border-dashed border-gray-3 bg-gray-1 px-5 py-7">
       <Result {...props} />
     </Box>
   );

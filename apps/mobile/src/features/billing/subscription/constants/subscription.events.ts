@@ -1,3 +1,4 @@
+import type { AnalyticsSurface } from '@src/shared/analytics/event-vocabulary';
 import type { PlanType } from '@src/shared/domains/plan-type.model';
 
 import type { SubscriptionPlan } from '../domains/subscription.model';
@@ -36,10 +37,7 @@ export type LimitReachedTrigger = 'precheck' | 'server';
 
 declare module '@src/shared/analytics/event-map' {
   interface AppEventMap {
-    /**
-     * 퍼널 단계일 뿐 매출 집계에 쓰지 않는다(원본은 RevenueCat `purchase`). 대시보드 이력 때문에 이름을 유지한다.
-     * 아래 결제 이벤트의 `is_trial`은 스토어가 그 요금제에 무료 체험을 줄 수 있다고 한 것이다(실제 체험 여부는 서버 /me)
-     */
+    /** 매출 집계에 쓰지 않고(원본은 RevenueCat `purchase`) 대시보드 이력 때문에 이름을 유지한다. `is_trial`은 스토어가 체험을 줄 수 있다는 뜻이다 */
     subscription_started: {
       product_id: SubscriptionPlan['identifier'];
       plan_type: PlanType;
@@ -48,24 +46,23 @@ declare module '@src/shared/analytics/event-map' {
     subscription_restored: undefined;
     /** 복원이 문의로 안내할 만한 실패로 끝났다. 복원할 구매가 없는 것은 실패가 아니다 */
     subscription_restore_failed: { reason: PurchaseFailedReason };
-    /** 스토어의 구독 관리 화면을 열었다 */
     subscription_management_opened: { store: 'app_store' | 'play_store' };
     /** 프리미엄 안내를 띄웠다. 같은 기능을 그날 이미 닫았으면 toast, 잠금 카드는 보일 때 inline이다 */
     premium_gate_shown: {
       feature: PremiumGateAnalyticsFeature;
-      surface: EntitlementGateSurface;
+      surface: AnalyticsSurface<EntitlementGateSurface>;
       presentation: PremiumGatePresentation;
     };
     /** 안내 시트·토스트·잠금 카드에서 프리미엄 보기를 눌렀다 */
     premium_gate_cta_tapped: {
       feature: PremiumGateAnalyticsFeature;
-      surface: EntitlementGateSurface;
+      surface: AnalyticsSurface<EntitlementGateSurface>;
       presentation: PremiumGatePresentation;
     };
     /** 시트를 프리미엄 보기·대안 동작 없이 닫았다(나중에·밀어 닫기). 그날 같은 기능은 토스트로 바뀐다 */
     premium_upsell_dismissed: {
       feature: PremiumGateAnalyticsFeature;
-      surface: EntitlementGateSurface;
+      surface: AnalyticsSurface<EntitlementGateSurface>;
     };
     /** 요금제를 받아 페이월을 보여 줬다. `plans`는 보상 기간 영수증에서 요금제로 넘어온 경우, `feature`는 막혀서 들어온 기능이다 */
     paywall_viewed: { view: SubscriptionView; feature?: PremiumGateAnalyticsFeature };
@@ -88,12 +85,12 @@ declare module '@src/shared/analytics/event-map' {
     /** 횟수·개수 한도에 닿아 안내를 띄웠다(premium_gate_shown과 함께 남는다) */
     limit_reached_shown: {
       feature: PremiumGateAnalyticsFeature;
-      surface: EntitlementGateSurface;
+      surface: AnalyticsSurface<EntitlementGateSurface>;
       trigger: LimitReachedTrigger;
     };
     limit_reached_cta_tapped: {
       feature: PremiumGateAnalyticsFeature;
-      surface: EntitlementGateSurface;
+      surface: AnalyticsSurface<EntitlementGateSurface>;
     };
   }
 }

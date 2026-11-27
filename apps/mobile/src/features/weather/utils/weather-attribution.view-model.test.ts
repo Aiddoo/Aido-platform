@@ -1,7 +1,7 @@
 import { createAttributionDto, createWeatherReport } from '../__tests__/weather-report.fixtures';
-import { toAttributionMark } from './weather-attribution.view-model';
+import { getAttributionMark } from './weather-attribution.view-model';
 
-describe('toAttributionMark', () => {
+describe('getAttributionMark', () => {
   it.each([
     ['dark', 1, '_wht_ko_1X_'],
     ['dark', 2, '_wht_ko_2X_'],
@@ -15,7 +15,7 @@ describe('toAttributionMark', () => {
       const { attribution } = createWeatherReport();
 
       // When
-      const mark = toAttributionMark(attribution, background, pixelRatio);
+      const mark = getAttributionMark(attribution, background, pixelRatio);
 
       // Then
       expect(mark.kind === 'logo' && mark.uri.includes(marker)).toBe(true);
@@ -29,7 +29,7 @@ describe('toAttributionMark', () => {
     });
 
     // When
-    const mark = toAttributionMark(attribution, 'dark', 3);
+    const mark = getAttributionMark(attribution, 'dark', 3);
 
     // Then
     expect(mark).toEqual({ kind: 'text', serviceName: 'Apple Weather' });

@@ -18,13 +18,13 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 import { match } from 'ts-pattern';
 
 import type { InviteCode } from '../domains/invite-code.model';
-import { toRedeemFailureReason } from '../domains/invite.error';
+import { getRedeemFailure } from '../domains/invite.error';
 import { useInviteParams } from '../hooks/use-invite-params';
 import { useGetInvitePreviewQueryOptions } from '../queries/invite.queries';
 
@@ -110,6 +110,7 @@ InvitePreview.Empty = function Empty() {
 
 function EnterCodeButton() {
   const { t } = useTranslation('invite');
+  const router = useRouter();
   const replace = useSingleTap(router.replace);
 
   return (
@@ -121,7 +122,7 @@ function EnterCodeButton() {
 
 InvitePreview.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation('invite');
-  return match(toRedeemFailureReason(error))
+  return match(getRedeemFailure(error))
     .with('not_found', () => <InvitePreview.Empty />)
     .with('rotated', () => (
       <InviteResult

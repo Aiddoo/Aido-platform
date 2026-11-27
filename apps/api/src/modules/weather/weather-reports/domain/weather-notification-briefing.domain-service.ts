@@ -7,7 +7,7 @@ import {
 } from "@aido/api/vocabulary";
 import { maxBy } from "es-toolkit";
 
-import { localDateIn, resolveTimezone } from "#api/shared/domain/time/timezone-name";
+import { localDateIn, resolveDateBoundaryTimezone } from "#api/shared/domain/time/timezone-name";
 
 import {
   findContiguousHours,
@@ -22,7 +22,7 @@ import type { WeatherReportDay, WeatherReportHour } from "./weather-report.aggre
 
 /**
  * 아침·저녁 날씨 알림에 담을 내용을 고른다. 할 일과 겹친 날씨는 날씨 화면 브리핑과 같은 planWeatherBriefing이 정한다.
- * 시간별 예보·할 일 시각은 절대 시각이고, 오늘·내일과 시간대 구분은 알림 시간대(기기 시간대)로,
+ * 시간별 예보·할 일 시각은 절대 시각이고, 오늘·내일과 시간대 구분은 시계의 timezone으로,
  * 일별 예보는 위치 시간대의 달력 날짜로 찾는다.
  */
 
@@ -58,7 +58,7 @@ export interface TitledWeatherBriefingTodo extends WeatherBriefingTodo {
 
 export interface WeatherBriefingClock {
   readonly now: Temporal.Instant;
-  /** 알림·할 일 시간대 */
+  /** 오늘·내일과 시간대 구분(새벽·오전·오후·저녁)을 정하는 시간대. 알림은 발송 시간대, 날씨 화면은 요청 시간대다 */
   readonly timezone: string;
   /** 위치(예보) 시간대 */
   readonly locationTimezone: string;
@@ -120,7 +120,7 @@ function isChilly(day: WeatherBriefingDay): boolean {
 }
 
 function toDayPart(instant: Temporal.Instant, timezone: string): WeatherDayPart {
-  const { hour } = instant.toZonedDateTimeISO(resolveTimezone(timezone));
+  const { hour } = instant.toZonedDateTimeISO(resolveDateBoundaryTimezone(timezone));
   if (hour < WEATHER_BRIEFING_RULES.MORNING_START_HOUR) {
     return "dawn";
   }

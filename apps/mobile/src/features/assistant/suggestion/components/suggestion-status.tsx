@@ -4,6 +4,7 @@ import { useAiDataSharingConsentGate } from '@src/features/identity/consent/hook
 import { useGetConsentQueryOptions } from '@src/features/identity/consent/queries/consent.queries';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { useTrack, useTrackView } from '@src/shared/analytics';
+import type { TimeFormat } from '@src/shared/date/format/date-format';
 import { formatDayCountLabel } from '@src/shared/date/format/date-labels';
 import type { Instant } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
@@ -26,14 +27,14 @@ import {
 import { useIsFetching, useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { useIsFocused } from 'expo-router';
 import { Spinner } from 'heroui-native';
-import type { ReactNode } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
 import { match } from 'ts-pattern';
 
+import { AiSuggestionListPolicy } from '../domains/ai-suggestion-list.model';
 import { SUGGESTION_QUERY_KEYS } from '../queries/suggestion-query-keys';
 import { useRequestSuggestionAnalysisMutationOptions } from '../queries/suggestion.mutations';
 import { useGetSuggestionsQueryOptions } from '../queries/suggestion.queries';
 import { getNextAnalysisLabels } from '../utils/suggestion-schedule.view-model';
-import { getSuggestionDisplayState } from '../utils/suggestion-status.view-model';
 
 const SUGGESTION_STATUS_MASCOT_SIZE = 64;
 
@@ -45,7 +46,7 @@ export function SuggestionStatus() {
     subscribed: isFocused,
   });
   const analysis = list.analysis;
-  const displayState = getSuggestionDisplayState(list);
+  const displayState = AiSuggestionListPolicy.getDisplayState(list);
 
   useTrackView(
     'ai_suggestions_viewed',
@@ -205,10 +206,11 @@ SuggestionStatus.WaitingForNextRun = function WaitingForNextRun({
   const { trackEvent } = useTrack();
   const requestAnalysis = useMutation(useRequestSuggestionAnalysisMutationOptions());
 
-  const handleRequestPress = () => {
+  // isPending은 다시 그린 뒤에야 켜져 같은 프레임의 두 번째 누름이 분석을 한 번 더 요청한다
+  const handleRequestPress = useSingleTap(() => {
     trackEvent('ai_suggestion_analysis_requested', { source: 'suggestions_screen' });
     requestAnalysis.mutate();
-  };
+  });
 
   return (
     <NextAnalysisMessage
@@ -260,10 +262,39 @@ SuggestionStatus.Message = function Message({ title, description, children }: Me
   );
 };
 
-/**
- * 버튼·스피너 자리. 대기 → 분석 중 → 결과는 폴링으로 제자리에서 바뀌어 비어 있어도 같은 높이를 잡는다.
- * 제안 줄이 이어지는 상태(HasSuggestions·무료 예시)는 목록이 아래를 채워 두지 않는다
- */
+interface NextAnalysisValueProps extends Omit<
+  ComponentProps<typeof SuggestionStatus.Message>,
+  'description'
+> {
+  nextAnalysisAt?: Instant;
+  timeFormat: TimeFormat;
+}
+
+/** 다음 분석 시각 안내. 받은 표기로 그리고 설정을 조회하지 않는다 */
+SuggestionStatus.NextAnalysis = function NextAnalysis({
+  nextAnalysisAt,
+  timeFormat,
+  children,
+  ...props
+}: NextAnalysisValueProps) {
+  const { t } = useTranslation('ai');
+  const dateFormatContext = useDateFormatContext();
+  const description =
+    nextAnalysisAt == null
+      ? ''
+      : t(
+          'suggestions.status.nextAnalysisAt',
+          getNextAnalysisLabels(nextAnalysisAt, timeFormat, dateFormatContext),
+        );
+
+  return (
+    <SuggestionStatus.Message {...props} description={description}>
+      <SuggestionStatus.ActionRow>{children}</SuggestionStatus.ActionRow>
+    </SuggestionStatus.Message>
+  );
+};
+
+/** 대기 → 분석 중 → 결과는 폴링으로 제자리에서 바뀌어 비어 있어도 같은 높이를 잡는다 */
 SuggestionStatus.ActionRow = function ActionRow({ children }: { children?: ReactNode }) {
   return (
     <>
@@ -340,20 +371,15 @@ interface NextAnalysisMessageProps extends NextAnalysisProps {
 }
 
 function NextAnalysisMessage({ title, nextAnalysisAt, children }: NextAnalysisMessageProps) {
-  const { t } = useTranslation('ai');
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
-  const dateFormatContext = useDateFormatContext();
-  const description =
-    nextAnalysisAt == null
-      ? ''
-      : t(
-          'suggestions.status.nextAnalysisAt',
-          getNextAnalysisLabels(nextAnalysisAt, preference.timeFormat, dateFormatContext),
-        );
 
   return (
-    <SuggestionStatus.Message title={title} description={description}>
-      <SuggestionStatus.ActionRow>{children}</SuggestionStatus.ActionRow>
-    </SuggestionStatus.Message>
+    <SuggestionStatus.NextAnalysis
+      title={title}
+      nextAnalysisAt={nextAnalysisAt}
+      timeFormat={preference.timeFormat}
+    >
+      {children}
+    </SuggestionStatus.NextAnalysis>
   );
 }

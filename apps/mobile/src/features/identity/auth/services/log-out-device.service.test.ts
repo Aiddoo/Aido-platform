@@ -1,16 +1,9 @@
 import { ErrorCode } from '@aido/api/errors';
 import type { RequestConfig } from '@src/core/ports/http-client';
 import { createSessionEpoch } from '@src/core/session/session-epoch';
-import {
-  ApiError,
-  fail,
-  NetworkError,
-  ok,
-  type Result,
-  ServerError,
-  TimeoutError,
-} from '@src/shared/errors';
-import { createAppLoggerStub } from '@src/testing/core';
+import type { ApiError } from '@src/shared/errors';
+import { fail, NetworkError, ok, type Result, ServerError, TimeoutError } from '@src/shared/errors';
+import { createAppLoggerStub, createApiError } from '@src/testing/core';
 
 import { LOGOUT_REQUEST_TIMEOUT_MS, LogOutDeviceService } from './log-out-device.service';
 
@@ -144,7 +137,7 @@ describe('LogOutDeviceService.logOut', () => {
   it('서버가 답한 로그아웃은 기록하지 않는다', async () => {
     // Given
     const stub = createStubServices({
-      logout: async () => fail(new ApiError(ErrorCode.SESSION_0701, '세션 없음', 401)),
+      logout: async () => fail(createApiError(ErrorCode.SESSION_0701, { message: '세션 없음' })),
     });
 
     // When
@@ -320,7 +313,10 @@ describe('LogOutDeviceService.logOut', () => {
   });
 
   it.each([
-    ['서버가 거절', async () => fail(new ApiError(ErrorCode.SESSION_0701, '세션 없음', 401))],
+    [
+      '서버가 거절',
+      async () => fail(createApiError(ErrorCode.SESSION_0701, { message: '세션 없음' })),
+    ],
     [
       '연결 실패',
       async (): Promise<Result<void, ApiError>> => {

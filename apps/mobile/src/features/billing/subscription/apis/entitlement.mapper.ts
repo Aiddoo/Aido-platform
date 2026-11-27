@@ -7,13 +7,9 @@ import { toNullableInstant } from '@src/shared/date/instant';
 import { mapValues, pick } from 'es-toolkit';
 
 import { findLimitedFeatureByErrorCode, findQuotaErrorDetails } from '../domains/entitlement.error';
-import {
-  type EntitlementSnapshot,
-  entitlementSnapshotSchema,
-  type FeatureQuota,
-  featureQuotaSchema,
-  type LimitedFeature,
-} from '../domains/entitlement.model';
+import { type EntitlementSnapshot, entitlementSnapshotSchema } from '../domains/entitlement.model';
+import { type FeatureQuota, featureQuotaSchema } from '../domains/feature-quota.model';
+import { type LimitedFeature } from '../domains/limited-feature.model';
 
 export function toFeatureQuota(dto: FeatureQuotaDto): FeatureQuota {
   return featureQuotaSchema.parse({

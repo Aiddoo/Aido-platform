@@ -4,14 +4,16 @@ import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { Button, HStack, InlineAlert } from '@src/shared/ui';
-import { router } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'expo-router';
 import { type ComponentProps, useSyncExternalStore } from 'react';
 
 import {
   getTodoImportUploadFailure,
   type TodoImportUploadFailure,
 } from '../domains/todo-import.error';
-import { useTodoImportId } from '../hooks/use-todo-import-id';
+import { useTodoImportId } from '../hooks/use-todo-import-params';
+import { invalidateActiveTodoImport } from '../queries/todo-import-cache';
 
 const FAILURE_LABEL_KEYS = {
   TOO_MANY_ITEMS: 'failure.tooManyItems',
@@ -28,16 +30,15 @@ type TodoImportFailureAlertProps = Omit<
   'status' | 'title' | 'description' | 'action'
 >;
 
-/**
- * 서버가 일정을 받지 않아 멈춘 이유와 무엇을 바꿔 다시 설정할지. 확정할 때 바뀐 요금제·카테고리 한도면
- * 한도 안내도 열 수 있다. 이유는 이 기기에서 보낸 가져오기만 알아서 아니면 그리지 않는다
- */
+/** 멈춘 이유는 이 기기에서 보낸 가져오기만 알아서 아니면 그리지 않는다 */
 export function TodoImportFailureAlert(props: TodoImportFailureAlertProps) {
   const { t } = useTranslation('todoImport');
   const [importId] = useTodoImportId();
   const uploadSession = useTodoImportUploadSession();
   const snapshot = useSyncExternalStore(uploadSession.subscribe, uploadSession.getSnapshot);
   const gate = useEntitlementGate('CALENDAR_IMPORT', { surface: 'todo_import' });
+  const queryClient = useQueryClient();
+  const router = useRouter();
   const replace = useSingleTap(router.replace);
 
   if (snapshot.stage !== 'failed' || snapshot.importId !== importId) {
@@ -48,18 +49,19 @@ export function TodoImportFailureAlert(props: TodoImportFailureAlertProps) {
   const failure = getTodoImportUploadFailure(rejection);
   const isLimitFailure = failure === 'PLAN_LIMIT' || failure === 'CATEGORY_LIMIT';
 
+  // 서버에는 아직 업로드 중으로 남아 있을 수 있어 진행 중으로 알던 값을 낡게 해 설정 화면이 되돌려 보내지 않는다
+  const handleSetUpAgainPress = () => {
+    invalidateActiveTodoImport(queryClient);
+    replace('/todo-import');
+  };
+
   return (
     <InlineAlert
       status="danger"
       title={t(FAILURE_LABEL_KEYS[failure], { limit: TODO_IMPORT_LIMITS.MAX_ITEMS_PER_IMPORT })}
       action={
         <HStack gap={8} className="flex-wrap">
-          <Button
-            size="small"
-            variant="weak"
-            display="inline"
-            onPress={() => replace('/todo-import')}
-          >
+          <Button size="small" variant="weak" display="inline" onPress={handleSetUpAgainPress}>
             {t('failure.setUpAgain')}
           </Button>
           {isLimitFailure && (

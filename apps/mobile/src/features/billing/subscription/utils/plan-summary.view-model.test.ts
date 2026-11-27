@@ -2,8 +2,8 @@ import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user
 import { toUser } from '@src/features/identity/user/apis/user.mapper';
 import { toInstant } from '@src/shared/date/instant';
 
-import { toDisplayedUsedCount, toPlanSummary } from './plan-summary.view-model';
-import { toSubscriptionReceiptViewModel } from './subscription-receipt.view-model';
+import { getDisplayedUsedCount, getPlanSummary } from './plan-summary.view-model';
+import { getSubscriptionReceiptViewModel } from './subscription-receipt.view-model';
 
 // 2026년 11월 9일 12:00 KST
 const NOW = toInstant('2026-11-09T03:00:00.000Z');
@@ -25,8 +25,8 @@ function createStoreSummary({
     bankedPremiumDays: 0,
     premiumGrantEndedAt: null,
   });
-  return toPlanSummary(
-    toSubscriptionReceiptViewModel(toUser(me), {
+  return getPlanSummary(
+    getSubscriptionReceiptViewModel(toUser(me), {
       isStoreConfigured: true,
       now: NOW,
       timezone: 'Asia/Seoul',
@@ -34,7 +34,7 @@ function createStoreSummary({
   );
 }
 
-describe('toPlanSummary', () => {
+describe('getPlanSummary', () => {
   it('결제 예정 시각이 지났는데 갱신이 아직 반영되지 않았으면 지난 날짜 대신 갱신 확인 중이다', () => {
     // Given
     const periodEndsAt = '2026-09-30T04:00:00.000Z';
@@ -71,14 +71,14 @@ describe('toPlanSummary', () => {
   });
 });
 
-describe('toDisplayedUsedCount', () => {
+describe('getDisplayedUsedCount', () => {
   it.each([
     { title: '한도 안이면 쓴 횟수 그대로다', used: 3, limit: 10, expected: 3 },
     { title: '한도까지 쓰면 한도다', used: 10, limit: 10, expected: 10 },
     { title: '한도보다 많이 센 기록은 한도로 줄인다', used: 14, limit: 10, expected: 10 },
   ])('$title', ({ used, limit, expected }) => {
     // When
-    const displayed = toDisplayedUsedCount(used, limit);
+    const displayed = getDisplayedUsedCount(used, limit);
 
     // Then
     expect(displayed).toBe(expected);

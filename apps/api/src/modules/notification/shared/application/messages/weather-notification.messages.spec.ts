@@ -3,6 +3,7 @@ import { pushNotificationDataSchema } from "@aido/api/contracts/notification/v1"
 import type { WeatherBriefingDay } from "#api/modules/weather/weather-reports/weather-weather-reports.public";
 
 import { formatWeatherNotificationTime } from "./notification-copy-format.messages.js";
+import { renderNotificationCopy } from "./notification-copy-render.messages.js";
 import {
   createWeatherEveningNotificationMessage,
   createWeatherMorningNotificationMessage,
@@ -12,7 +13,11 @@ import {
 /** 서울 15:00 */
 const AFTERNOON = Temporal.Instant.from("2026-07-16T06:00:00.000Z");
 const seoulTime = (locale: "ko" | "en") => (instant: Date) =>
-  formatWeatherNotificationTime(instant, { locale, timezone: "Asia/Seoul" });
+  formatWeatherNotificationTime(instant, {
+    locale,
+    timezone: "Asia/Seoul",
+    timeFormat: "TWELVE_HOUR",
+  });
 
 const DAY: WeatherBriefingDay = {
   date: Temporal.PlainDate.from("2026-07-16"),
@@ -38,6 +43,7 @@ describe("날씨 알림 문구", () => {
       briefing,
       locale: "ko",
       formatTime: seoulTime("ko"),
+      timeFormat: "TWELVE_HOUR",
     });
     // Then
     expect(message).toMatchObject({
@@ -60,6 +66,7 @@ describe("날씨 알림 문구", () => {
       briefing,
       locale: "en",
       formatTime: seoulTime("en"),
+      timeFormat: "TWELVE_HOUR",
     });
     // Then
     expect(message.title).toBe("Rain likely at 3 PM for “Walk” ☔");
@@ -80,11 +87,80 @@ describe("날씨 알림 문구", () => {
     "%s를 %s·%s로 표시하면 정시와 분 표기가 섞이지 않는다 → %s",
     (instant, timezone, locale, expected) => {
       // When
-      const label = formatWeatherNotificationTime(new Date(instant), { locale, timezone });
+      const label = formatWeatherNotificationTime(new Date(instant), {
+        locale,
+        timezone,
+        timeFormat: "TWELVE_HOUR",
+      });
       // Then
       expect(label).toBe(expected);
     },
   );
+
+  it.each([
+    ["2026-07-16T06:00:00.000Z", "Asia/Seoul", "ko", "15시"],
+    ["2026-07-16T06:30:00.000Z", "Asia/Seoul", "ko", "15시 30분"],
+    ["2026-07-16T00:05:00.000Z", "Asia/Seoul", "ko", "9시 5분"],
+    ["2026-07-16T06:00:00.000Z", "Asia/Seoul", "en", "15:00"],
+    ["2026-07-16T06:30:00.000Z", "Asia/Seoul", "en", "15:30"],
+    ["2026-07-16T07:00:00.000Z", "America/Los_Angeles", "ko", "0시"],
+    ["2026-07-16T07:05:00.000Z", "America/Los_Angeles", "en", "00:05"],
+  ] as const)(
+    "24시간 표기 사용자는 %s를 %s·%s에서 오전·오후 없이 본다 → %s",
+    (instant, timezone, locale, expected) => {
+      // When
+      const label = formatWeatherNotificationTime(new Date(instant), {
+        locale,
+        timezone,
+        timeFormat: "TWENTY_FOUR_HOUR",
+      });
+      // Then
+      expect(label).toBe(expected);
+    },
+  );
+
+  it("24시간 표기 사용자의 영어 비 알림은 15:00으로 적고 알림함 다시 렌더링에도 표기를 남긴다", () => {
+    // Given
+    const briefing = {
+      kind: "todoWet",
+      hazard: "rain",
+      todo: { id: 1, title: "Walk", scheduledAt: AFTERNOON },
+      todoIds: [1],
+      precipitationChance: 70,
+    } as const;
+    // When
+    const message = createWeatherMorningNotificationMessage({
+      briefing,
+      locale: "en",
+      timezone: "Asia/Seoul",
+      timeFormat: "TWENTY_FOUR_HOUR",
+      formatTime: (instant) =>
+        formatWeatherNotificationTime(instant, {
+          locale: "en",
+          timezone: "Asia/Seoul",
+          timeFormat: "TWENTY_FOUR_HOUR",
+        }),
+    });
+    // Then
+    expect(message.title).toBe("Rain likely at 15:00 for “Walk” ☔");
+    expect(renderNotificationCopy(message, "en")?.title).toBe(message.title);
+  });
+
+  it("시각 표기가 없는 옛 사실은 12시간 표기로 다시 렌더링한다", () => {
+    // Given
+    const stored = {
+      copyKey: "weather.MORNING_TODO_STORM.default",
+      copyFacts: {
+        scheduledAt: AFTERNOON.toString({ fractionalSecondDigits: 3 }),
+        timezone: "Asia/Seoul",
+        todoTitle: "Walk",
+      },
+    };
+    // When
+    const copy = renderNotificationCopy(stored, "en");
+    // Then
+    expect(copy?.title).toContain("3 PM");
+  });
 
   it("더위와 겹친 할 일은 반올림한 최고 체감 온도로 알린다", () => {
     // When
@@ -97,6 +173,7 @@ describe("날씨 알림 문구", () => {
       },
       locale: "ko",
       formatTime: seoulTime("ko"),
+      timeFormat: "TWELVE_HOUR",
     });
     // Then
     expect(message.title).toBe("오후 3시 ‘테니스’ 때 체감 35°C예요 ☀️");
@@ -108,6 +185,7 @@ describe("날씨 알림 문구", () => {
       briefing: { kind: "summary", day: DAY },
       locale: "ko",
       formatTime: seoulTime("ko"),
+      timeFormat: "TWELVE_HOUR",
     });
     // Then
     expect(message).toMatchObject({
@@ -163,12 +241,14 @@ describe("날씨 알림 문구", () => {
       locale: "ko",
       variantContext,
       formatTime: seoulTime("ko"),
+      timeFormat: "TWELVE_HOUR",
     });
     const en = createWeatherMorningNotificationMessage({
       briefing,
       locale: "en",
       variantContext,
       formatTime: seoulTime("en"),
+      timeFormat: "TWELVE_HOUR",
     });
     // Then
     expect(ko.variantId).toBe(en.variantId);
@@ -200,6 +280,7 @@ describe("날씨 옮기기 deep link", () => {
     const label = formatWeatherNotificationTime(instant, {
       locale: "ko",
       timezone: "America/New_York",
+      timeFormat: "TWELVE_HOUR",
     });
     // Then
     expect(label).toBe("오전 10시");

@@ -8,9 +8,10 @@ import {
   getParticleCount,
   hashCycle,
   hideSprite,
+  PARTICLE_GROUND_HEIGHT_RATIO,
   PARTICLE_SEED_STRIDE,
   placeSprite,
-} from '../../utils/weather-scene-particles.view-model';
+} from '../../utils/weather-scene-particles.geometry';
 import { PARTICLE_SAMPLING, PARTICLE_SPRITES, useParticleTexture } from './weather-scene-textures';
 
 const PELLET_SEED = 0x5ee7;
@@ -19,7 +20,6 @@ const RADIUS = { base: 1, depth: 1.6 } as const;
 const FALL = { base: 160, depth: 380 } as const;
 const DRIFT_RATIO = 0.06;
 /** 바닥은 화면 높이 97% 지점이고, 먼 알갱이일수록 40pt까지 위에 닿는다. */
-const GROUND = 0.97;
 const FAR_GROUND_LIFT = 40;
 const GRAVITY = 900;
 const BOUNCE_SPEED = [60, 140] as const;
@@ -28,13 +28,13 @@ const SPAWN_ABOVE = 10;
 const EXIT_BELOW = 10;
 const ALPHA = 0.75;
 
-type IcePelletLayerProps = {
+interface IcePelletLayerProps {
   density: number;
   width: number;
   height: number;
   isLowEndDevice: boolean;
   time: SharedValue<number>;
-};
+}
 
 type Pellet = {
   radius: number;
@@ -59,7 +59,7 @@ function createPellets(count: number, height: number): Pellet[] {
     const [minBounce, maxBounce] = BOUNCE_SPEED;
     const depth = minDepth + (seeds[base + 3] ?? 0) * (maxDepth - minDepth);
     const speed = FALL.base + FALL.depth * depth;
-    const floor = height * GROUND - (1 - depth) * FAR_GROUND_LIFT;
+    const floor = height * PARTICLE_GROUND_HEIGHT_RATIO - (1 - depth) * FAR_GROUND_LIFT;
     const fallDuration = (floor + SPAWN_ABOVE) / speed;
     const velocity = (minBounce + (seeds[base + 2] ?? 0) * (maxBounce - minBounce)) * depth;
     const period = fallDuration + getReboundDuration(velocity, height + EXIT_BELOW - floor);

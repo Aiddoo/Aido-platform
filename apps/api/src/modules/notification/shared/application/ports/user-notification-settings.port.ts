@@ -1,4 +1,4 @@
-import type { TIME_FORMATS } from "@aido/api/vocabulary";
+import type { TimeFormat } from "@aido/api/vocabulary";
 
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
@@ -11,7 +11,7 @@ export interface NotificationDeliveryPreference {
   readonly morningReminderMinute: number;
   readonly eveningReminderHour: number;
   readonly eveningReminderMinute: number;
-  readonly timeFormat: (typeof TIME_FORMATS)[number];
+  readonly timeFormat: TimeFormat;
   readonly weatherMorningEnabled: boolean;
   readonly weatherMorningHour: number;
   readonly weatherMorningMinute: number;

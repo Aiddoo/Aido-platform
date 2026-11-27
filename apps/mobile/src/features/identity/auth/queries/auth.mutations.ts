@@ -1,5 +1,6 @@
 import {
   useAuthApi,
+  useAuthSessionStore,
   useHaptics,
   useLogOutDeviceService,
   useSessionCleanupService,
@@ -10,13 +11,16 @@ import { ensureMe, invalidateMe } from '@src/features/identity/user/queries/user
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useTrack } from '@src/shared/analytics';
 import type { AppEventMap } from '@src/shared/analytics/event-map';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui';
 import { mutationOptions, onlineManager, useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'expo-router';
 
-import { toOAuthProvider, toOAuthProviderSlug } from '../apis/oauth.mapper';
+import { toOAuthProviderSlug } from '../apis/oauth.mapper';
+import { AuthTokensPolicy } from '../domains/auth-tokens.model';
 import {
-  findLoginFailureReason,
+  findLoginFailure,
   isAccountDeletionUnanswered,
   isEmailAlreadyRegisteredError,
   isEmailNotVerifiedError,
@@ -24,7 +28,6 @@ import {
   isPasswordMismatchError,
 } from '../domains/auth.error';
 import { type OAuthProvider, type OAuthProviderSlug } from '../domains/oauth.model';
-import { useAuthSession } from '../hooks/use-auth-session';
 import type {
   ChangePasswordInput,
   DeleteAccountInput,
@@ -35,30 +38,61 @@ import type {
   ResetPasswordInput,
   VerifyEmailInput,
 } from '../schemas/auth-request.schema';
-import { getOAuthProviderLabelKey } from '../utils/oauth-provider.view-model';
 import { invalidateLinkedAccounts } from './auth-cache';
+import { AUTH_MUTATION_KEYS } from './auth-mutation-keys';
 
 type EmailVerificationSource = AppEventMap['auth_email_verified']['source'];
 
 type VerifyEmailVariables = VerifyEmailInput & { source: EmailVerificationSource };
 
+/** 공급자 이름은 화면이 view-model 문구로 구해 넘긴다. 성공 토스트가 같은 이름을 쓴다 */
+interface AccountLinkVariables {
+  provider: OAuthProviderSlug;
+  providerName: string;
+}
+
+interface AccountUnlinkVariables {
+  provider: OAuthProvider;
+  providerName: string;
+}
+
 type ResendVerificationVariables = ResendVerificationInput & {
   source: EmailVerificationSource;
 };
+
+interface AuthSessionActions {
+  signIn: () => void;
+  signOut: () => void;
+}
+
+/** 정리는 전환이 커밋된 뒤 부팅 훅이 맡고, `signIn`은 아직 인증 전이면 지난 계정의 조회 캐시를 먼저 비운다. 로그인·로그아웃·탈퇴 mutation이 세션을 바꾸는 입구다 */
+export function useAuthSession(): AuthSessionActions {
+  const store = useAuthSessionStore();
+  const sessionCleanupService = useSessionCleanupService();
+
+  return {
+    signIn: () => {
+      if (store.getSnapshot().status !== 'authenticated') {
+        sessionCleanupService.beforeSignIn();
+      }
+      store.signIn();
+    },
+    signOut: () => store.signOut(),
+  };
+}
 
 /** 서버나 공급자가 끝낸 로그인 실패만 센다. 사용자가 직접 닫은 소셜 창은 세지 않는다 */
 function useTrackLoginFailure() {
   const { trackEvent } = useTrack();
 
   return (method: 'email' | OAuthProviderSlug, error: unknown) => {
-    const reason = findLoginFailureReason(error, method);
+    const reason = findLoginFailure(error, method);
     if (reason != null) {
       trackEvent('auth_login_failed', { method, reason });
     }
   };
 }
 
-// 인증 폼은 오프라인에 스피너로 멈추지 않고 바로 실패해 입력값을 둔 채 안내한다
 export function useEmailLoginMutationOptions() {
   const haptics = useHaptics();
   const signInService = useSignInService();
@@ -68,6 +102,8 @@ export function useEmailLoginMutationOptions() {
   const toast = useAppToast();
 
   return mutationOptions({
+    mutationKey: AUTH_MUTATION_KEYS.emailLogin(),
+    // 인증 폼이 오프라인에 스피너로 멈추지 않고 바로 실패해 입력값을 둔 채 안내한다
     networkMode: 'always',
     mutationFn: async ({ email, password }: { email: string; password: string }) =>
       unwrap(await signInService.emailLogin({ email, password })),
@@ -104,6 +140,8 @@ export function useExchangeCodeMutationOptions() {
   const haptics = useHaptics();
 
   return mutationOptions({
+    mutationKey: AUTH_MUTATION_KEYS.exchangeCode(),
+    // 받은 코드로 바로 로그인해야 해 오프라인에 멈추지 않고 실패해 다시 로그인하게 한다
     networkMode: 'always',
     mutationFn: async ({ code }: ExchangeCodeInput & { provider: OAuthProviderSlug }) =>
       unwrap(await signInService.exchangeCode({ code })),
@@ -113,7 +151,9 @@ export function useExchangeCodeMutationOptions() {
         toast.success(t('auth:toasts.accountRestored'));
       }
 
-      trackEvent(data.isNewUser ? 'auth_signup' : 'auth_login', { method: variables.provider });
+      trackEvent(AuthTokensPolicy.isSignUp(data) ? 'auth_signup' : 'auth_login', {
+        method: variables.provider,
+      });
     },
     onError: (error, variables) => {
       trackLoginFailure(variables.provider, error);
@@ -141,6 +181,8 @@ export function useOpenAppleLoginMutationOptions() {
   const haptics = useHaptics();
 
   return mutationOptions({
+    mutationKey: AUTH_MUTATION_KEYS.openAppleLogin(),
+    // 오프라인에 멈추면 버튼이 돌기만 하다 연결되는 순간 로그인 창이 뜬다. 바로 실패해 안내한다
     networkMode: 'always',
     mutationFn: async () => unwrap(await signInService.openAppleLogin()),
     onSuccess: (data) => {
@@ -149,7 +191,9 @@ export function useOpenAppleLoginMutationOptions() {
         toast.success(t('auth:toasts.accountRestored'));
       }
 
-      trackEvent(data.isNewUser ? 'auth_signup' : 'auth_login', { method: 'apple' });
+      trackEvent(AuthTokensPolicy.isSignUp(data) ? 'auth_signup' : 'auth_login', {
+        method: 'apple',
+      });
     },
     onError: (error) => {
       trackLoginFailure('apple', error);
@@ -174,6 +218,8 @@ export function useOpenGoogleLoginMutationOptions() {
   const trackLoginFailure = useTrackLoginFailure();
 
   return mutationOptions({
+    mutationKey: AUTH_MUTATION_KEYS.openGoogleLogin(),
+    // 오프라인에 멈추면 버튼이 돌기만 하다 연결되는 순간 로그인 창이 뜬다. 바로 실패해 안내한다
     networkMode: 'always',
     mutationFn: async () => unwrap(await signInService.openGoogleLogin()),
     onError: (error) => {
@@ -199,6 +245,8 @@ export function useOpenKakaoLoginMutationOptions() {
   const trackLoginFailure = useTrackLoginFailure();
 
   return mutationOptions({
+    mutationKey: AUTH_MUTATION_KEYS.openKakaoLogin(),
+    // 오프라인에 멈추면 버튼이 돌기만 하다 연결되는 순간 로그인 창이 뜬다. 바로 실패해 안내한다
     networkMode: 'always',
     mutationFn: async () => unwrap(await signInService.openKakaoLogin()),
     onError: (error) => {
@@ -224,6 +272,8 @@ export function useOpenNaverLoginMutationOptions() {
   const trackLoginFailure = useTrackLoginFailure();
 
   return mutationOptions({
+    mutationKey: AUTH_MUTATION_KEYS.openNaverLogin(),
+    // 오프라인에 멈추면 버튼이 돌기만 하다 연결되는 순간 로그인 창이 뜬다. 바로 실패해 안내한다
     networkMode: 'always',
     mutationFn: async () => unwrap(await signInService.openNaverLogin()),
     onError: (error) => {
@@ -249,6 +299,7 @@ export function useLogoutMutationOptions() {
   const { signOut } = useAuthSession();
 
   return mutationOptions({
+    mutationKey: AUTH_MUTATION_KEYS.logout(),
     // 오프라인에서도 멈추지 않고 바로 이 기기의 세션을 끝낸다
     networkMode: 'always',
     // 세션 만료가 먼저 커밋되면 정리가 콜백을 지우므로 나간 것으로 끝나게 콜백에 두지 않는다(캐시는 부팅 훅이 비운다)
@@ -290,6 +341,8 @@ export function useDeleteAccountMutationOptions() {
   };
 
   return mutationOptions({
+    mutationKey: AUTH_MUTATION_KEYS.deleteAccount(),
+    // 탈퇴를 누른 뒤 연결되는 순간 사용자 모르게 탈퇴하지 않게 오프라인이면 바로 실패한다
     networkMode: 'always',
     // 푸시 기기는 서버 탈퇴가 함께 푼다. 먼저 풀면 비밀번호 오류에도 알림이 끊긴다
     // 세션 만료가 먼저 커밋되면 정리가 콜백을 지워 초안·안내 기록이 남으므로 콜백에 두지 않는다
@@ -331,10 +384,15 @@ export function useDeleteAccountMutationOptions() {
 
 export function useRegisterMutationOptions() {
   const authApi = useAuthApi();
+  const haptics = useHaptics();
   const { trackEvent } = useTrack();
   const toast = useAppToast();
+  const router = useRouter();
+  const goToLogin = useSingleTap(() => router.replace('/(auth)/email-login'));
 
   return mutationOptions({
+    mutationKey: AUTH_MUTATION_KEYS.register(),
+    // 인증 폼이 오프라인에 스피너로 멈추지 않고 바로 실패해 입력값을 둔 채 안내한다
     networkMode: 'always',
     mutationFn: async (input: RegisterInput) => unwrap(await authApi.register(input)),
     onSuccess: ({ isEmailSent }) => {
@@ -343,7 +401,15 @@ export function useRegisterMutationOptions() {
         toast.warning(t('auth:toasts.verificationEmailNotSent'));
       }
     },
-    // 이미 가입한 이메일은 로그인하러 가기 동작이 있는 토스트를 폼이 띄운다
+    // 이미 가입한 이메일은 실패 문구 대신 로그인하러 가기 동작이 있는 안내를 띄운다. 입력값과 약관 시트는 화면에 남는다
+    onError: (error) => {
+      if (isEmailAlreadyRegisteredError(error)) {
+        haptics.notify('error');
+        toast.error(t('auth:toasts.alreadyRegistered'), {
+          action: { label: t('auth:toasts.goToLogin'), onPress: goToLogin },
+        });
+      }
+    },
     meta: {
       errorFeedback: {
         feature: 'auth',
@@ -360,6 +426,8 @@ export function useVerifyEmailMutationOptions() {
   const { signIn } = useAuthSession();
 
   return mutationOptions({
+    mutationKey: AUTH_MUTATION_KEYS.verifyEmail(),
+    // 인증 폼이 오프라인에 스피너로 멈추지 않고 바로 실패해 입력값을 둔 채 안내한다
     networkMode: 'always',
     mutationFn: async ({ email, code }: VerifyEmailVariables) =>
       unwrap(await signInService.verifyEmail({ email, code })),
@@ -377,6 +445,8 @@ export function useResendVerificationMutationOptions() {
   const toast = useAppToast();
 
   return mutationOptions({
+    mutationKey: AUTH_MUTATION_KEYS.resendVerification(),
+    // 인증 폼이 오프라인에 스피너로 멈추지 않고 바로 실패해 입력값을 둔 채 안내한다
     networkMode: 'always',
     mutationFn: async ({ email }: ResendVerificationVariables) =>
       unwrap(await authApi.resendVerification({ email })),
@@ -393,6 +463,8 @@ export function useForgotPasswordMutationOptions() {
   const { trackEvent } = useTrack();
 
   return mutationOptions({
+    mutationKey: AUTH_MUTATION_KEYS.forgotPassword(),
+    // 인증 폼이 오프라인에 스피너로 멈추지 않고 바로 실패해 입력값을 둔 채 안내한다
     networkMode: 'always',
     mutationFn: async (input: ForgotPasswordInput) => unwrap(await authApi.forgotPassword(input)),
     onSuccess: () => {
@@ -410,6 +482,8 @@ export function useResetPasswordMutationOptions() {
   const toast = useAppToast();
 
   return mutationOptions({
+    mutationKey: AUTH_MUTATION_KEYS.resetPassword(),
+    // 인증 폼이 오프라인에 스피너로 멈추지 않고 바로 실패해 입력값을 둔 채 안내한다
     networkMode: 'always',
     mutationFn: async (input: ResetPasswordInput) => unwrap(await authApi.resetPassword(input)),
     onSuccess: () => {
@@ -429,6 +503,8 @@ export function useChangePasswordMutationOptions() {
   const toast = useAppToast();
 
   return mutationOptions({
+    mutationKey: AUTH_MUTATION_KEYS.changePassword(),
+    // 인증 폼이 오프라인에 스피너로 멈추지 않고 바로 실패해 입력값을 둔 채 안내한다
     networkMode: 'always',
     mutationFn: async (input: ChangePasswordInput) => unwrap(await authApi.changePassword(input)),
     onSuccess: () => {
@@ -460,15 +536,13 @@ export function useLinkAccountMutationOptions() {
   const haptics = useHaptics();
 
   return mutationOptions({
+    mutationKey: AUTH_MUTATION_KEYS.linkAccount(),
+    // 오프라인에 멈추면 연결 버튼이 돌기만 하다 연결되는 순간 로그인 창이 뜬다. 바로 실패해 안내한다
     networkMode: 'always',
-    mutationFn: async (provider: OAuthProviderSlug) =>
+    mutationFn: async ({ provider }: AccountLinkVariables) =>
       unwrap(await signInService.linkAccount(provider)),
-    onSuccess: async (_data, provider) => {
-      toast.success(
-        t('auth:toasts.accountLinked', {
-          provider: t(getOAuthProviderLabelKey(toOAuthProvider(provider))),
-        }),
-      );
+    onSuccess: async (_data, { provider, providerName }) => {
+      toast.success(t('auth:toasts.accountLinked', { provider: providerName }));
       trackEvent('auth_social_linked', { provider });
       // 화면에 머무는 행이라 새 연결 상태를 받을 때까지 버튼을 꺼 둔다. 옛 버튼을 다시 눌러 요청이 또 가지 않게 한다
       await Promise.all([invalidateLinkedAccounts(queryClient), invalidateMe(queryClient)]);
@@ -496,12 +570,12 @@ export function useUnlinkAccountMutationOptions() {
   const toast = useAppToast();
 
   return mutationOptions({
+    mutationKey: AUTH_MUTATION_KEYS.unlinkAccount(),
     networkMode: 'always',
-    mutationFn: async (provider: OAuthProvider) => unwrap(await authApi.unlinkAccount(provider)),
-    onSuccess: async (_data, provider) => {
-      toast.success(
-        t('auth:toasts.accountUnlinked', { provider: t(getOAuthProviderLabelKey(provider)) }),
-      );
+    mutationFn: async ({ provider }: AccountUnlinkVariables) =>
+      unwrap(await authApi.unlinkAccount(provider)),
+    onSuccess: async (_data, { provider, providerName }) => {
+      toast.success(t('auth:toasts.accountUnlinked', { provider: providerName }));
       trackEvent('auth_social_unlinked', {
         provider: toOAuthProviderSlug(provider),
       });

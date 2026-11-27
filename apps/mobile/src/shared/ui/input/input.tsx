@@ -2,7 +2,6 @@ import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import { cn } from '@src/shared/utils/cn';
 import { useRef, useState } from 'react';
 import { TextInput } from 'react-native';
-import { withUniwind } from 'uniwind';
 
 import { Box } from '../box/box';
 import { Text } from '../text/text';
@@ -14,8 +13,6 @@ import {
   inputLabelVariants,
   inputTextVariants,
 } from './input.variants';
-
-const StyledTextInput = withUniwind(TextInput);
 
 export function Input({
   ref,
@@ -64,7 +61,7 @@ export function Input({
         )}
       >
         {leftContent && <Box className="mr-3">{leftContent}</Box>}
-        <StyledTextInput
+        <TextInput
           ref={ref}
           value={value}
           onChangeText={onChange}

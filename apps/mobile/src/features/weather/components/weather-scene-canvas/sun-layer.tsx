@@ -2,7 +2,7 @@ import { Circle, Group, Image, RadialGradient, vec } from '@shopify/react-native
 import { type SharedValue, useDerivedValue } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
-import { getSceneReferenceWidth } from '../../utils/weather-scene-particles.view-model';
+import { getSceneReferenceWidth } from '../../utils/weather-scene-particles.geometry';
 import type { WeatherSceneSun } from '../../utils/weather-scene.view-model';
 import { type SceneTexture, useSunRaysTexture } from './weather-scene-textures';
 
@@ -67,7 +67,7 @@ function getSunStyle(sun: Exclude<WeatherSceneSun, 'hidden'>): SunStyle {
     .exhaustive();
 }
 
-type SunLayerProps = {
+interface SunLayerProps {
   sun: Exclude<WeatherSceneSun, 'hidden'>;
   center: { x: number; y: number };
   hasLensFlare: boolean;
@@ -78,7 +78,7 @@ type SunLayerProps = {
   width: number;
   height: number;
   time: SharedValue<number>;
-};
+}
 
 /** 원반·코로나·하늘 빛·두 겹 빛살·렌즈 반사를 그리고, 구름양과 해를 지나는 구름만큼 어두워진다 */
 export function SunLayer({
@@ -164,11 +164,11 @@ SunLayer.Glow = function Glow({
   );
 };
 
-type SunRaysProps = {
+interface SunRaysProps {
   center: { x: number; y: number };
   size: number;
   time: SharedValue<number>;
-};
+}
 
 SunLayer.Rays = function Rays({ center, size, time }: SunRaysProps) {
   const texture = useSunRaysTexture();
@@ -224,12 +224,12 @@ SunLayer.RayImage = function RayImage({
   );
 };
 
-type SunFlareProps = {
+interface SunFlareProps {
   center: { x: number; y: number };
   size: number;
   width: number;
   height: number;
-};
+}
 
 SunLayer.Flare = function Flare({ center, size, width, height }: SunFlareProps) {
   const target = { x: width * FLARE_TARGET.x, y: height * FLARE_TARGET.y };

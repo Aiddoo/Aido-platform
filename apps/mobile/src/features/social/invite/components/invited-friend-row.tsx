@@ -1,6 +1,6 @@
 import { INVITE_QUALIFICATION, REDEMPTION_REJECTION_REASON } from '@aido/api/vocabulary';
 import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
-import { formatUserHashtag } from '@src/features/identity/user/utils/user-tag.view-model';
+import { UserHashtag } from '@src/features/identity/user/components/user-hashtag';
 import { useGetFriendInfiniteQueryOptions } from '@src/features/social/friend/queries/friend.queries';
 import { NudgePawButton } from '@src/features/social/nudge/components/nudge-paw-button';
 import { useGetRemindNudgeCooldownQueryOptions } from '@src/features/social/nudge/queries/todo-nudge.queries';
@@ -8,7 +8,7 @@ import { formatYearAwareDateLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -20,20 +20,29 @@ import {
   Text,
   VStack,
 } from '@src/shared/ui';
+import { tv } from '@src/shared/utils/tv';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { match, P } from 'ts-pattern';
 
 import { InvitedFriendPolicy } from '../domains/invited-friend.model';
 import type { InvitedFriend } from '../domains/invited-friend.model';
-import { invitedFriendChipVariants } from './invited-friend-row.variants';
+
+const invitedFriendChipVariants = tv({
+  base: 'min-h-7 flex-row items-center gap-1 rounded-full',
+  variants: {
+    state: {
+      stamped: 'bg-main/10 pr-2.5 pl-1',
+      waiting: 'border-[1.5px] border-dashed border-main px-2',
+    },
+  },
+});
 
 interface InvitedFriendRowProps extends Omit<ListRowProps, 'left' | 'contents' | 'right'> {
   friend: InvitedFriend;
 }
 
-/** 초대한 친구 한 줄. 내 초대 요약과 전체 목록이 같은 행을 쓴다 */
 export function InvitedFriendRow({ friend, ...props }: InvitedFriendRowProps) {
   const { t } = useTranslation('invite');
   const dateFormatContext = useDateFormatContext();
@@ -50,9 +59,12 @@ export function InvitedFriendRow({ friend, ...props }: InvitedFriendRowProps) {
             <Text size="b2" weight="semibold" numberOfLines={1} className="shrink">
               {displayName}
             </Text>
-            <Text size="b4" shade={6} className="tracking-[0.3px] tabular-nums">
-              {formatUserHashtag(friend.userTag)}
-            </Text>
+            <UserHashtag
+              userTag={friend.userTag}
+              size="b4"
+              shade={6}
+              className="tracking-[0.3px] tabular-nums"
+            />
           </HStack>
 
           <Text
@@ -145,8 +157,8 @@ function InvitedFriendPawPrintChip({ friend }: { friend: InvitedFriend }) {
       >
         <Box className="size-5 items-center justify-center rounded-full bg-main">
           <CheckmarkIcon
-            width={fontScaledSize(11)}
-            height={fontScaledSize(11)}
+            width={fontScaledSize(12)}
+            height={fontScaledSize(12)}
             colorClassName="text-white dark:text-gray-9"
           />
         </Box>
@@ -176,10 +188,7 @@ function InvitedFriendPawPrintChip({ friend }: { friend: InvitedFriend }) {
     .exhaustive();
 }
 
-/**
- * 발자국을 기다리는 친구의 끝 칸. 지금 콕 찌를 수 있으면 [콕 찌르기]만, 아니면(친구 목록에 없음·친구 끊김·차단,
- * 독촉 쿨다운, 불러오는 중) 남은 일수 칩을 둔다. 남은 일수는 설명 문구에도 있다
- */
+/** 친구 목록에 없음·친구 끊김·차단, 독촉 쿨다운, 불러오는 중이면 콕 대신 남은 일수 칩을 둔다 */
 function InvitedFriendWaitingAction({ friend }: { friend: InvitedFriend }) {
   const { data: myFriend } = useInfiniteQuery(
     useGetFriendInfiniteQueryOptions({ friendId: friend.userId }),
@@ -196,9 +205,10 @@ function InvitedFriendWaitingAction({ friend }: { friend: InvitedFriend }) {
   );
 }
 
-/** 친구 독촉 콕 시트를 route로 연다. 보내고 나면 기존 콕 캐시가 쿨다운을 다시 읽어 칩으로 바뀐다 */
+/** 보내고 나면 기존 콕 캐시가 쿨다운을 다시 읽어 칩으로 바뀐다 */
 function InvitedFriendNudgeButton({ friend }: { friend: InvitedFriend }) {
   const { t } = useTranslation('invite');
+  const router = useRouter();
   const push = useSingleTap(router.push);
   const displayName = friend.name ?? friend.userTag;
 

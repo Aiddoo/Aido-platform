@@ -18,7 +18,7 @@ import {
   hashCycle,
   PARTICLE_SEED_STRIDE,
   placeSprite,
-} from '../../utils/weather-scene-particles.view-model';
+} from '../../utils/weather-scene-particles.geometry';
 import {
   GLASS_DROP_SPRITE,
   PARTICLE_SAMPLING,
@@ -38,12 +38,12 @@ const DROP_AREA = [0.04, 0.96] as const;
 const TRAIL_WIDTH_RATIO = 0.6;
 const SPRITE_CENTER = { x: GLASS_DROP_SPRITE.width / 2, y: GLASS_DROP_SPRITE.height / 2 };
 
-type GlassDropletLayerProps = {
+interface GlassDropletLayerProps {
   width: number;
   height: number;
   isLowEndDevice: boolean;
   time: SharedValue<number>;
-};
+}
 
 /** 옅은 물안개 위로 화면 유리에 맺힌 물방울이 가끔 주르륵 흘러내린다. */
 export function GlassDropletLayer({ width, height, isLowEndDevice, time }: GlassDropletLayerProps) {

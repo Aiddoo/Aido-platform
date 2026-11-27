@@ -84,28 +84,23 @@ describe("VerifyEmail — 이메일 인증과 첫 세션 발급", () => {
     expect(fixture.retentionEnroller.activatedUserIds).toEqual([]);
   });
 
-  it.each(["missing", "verified", "deleted"] as const)(
-    "%s 계정은 인증 처리 전에 정확한 오류로 거부한다",
-    async (state) => {
-      // Given
-      const fixture = given({ pending: state !== "verified", empty: state === "missing" });
-      if (state === "deleted") {
-        const user = createUserFixture(fixture.user);
-        user.requestDeletion(AUTH_CREDENTIAL_NOW);
-        await fixture.userRepository.save(user);
-      }
-      const expected =
-        state === "missing"
-          ? ErrorCode.EMAIL_0502
-          : state === "verified"
-            ? ErrorCode.USER_0604
-            : ErrorCode.USER_0606;
-      // When
-      const pending = fixture.useCase.execute({ email: fixture.user.email, code: "123456" });
-      // Then
-      await expect(pending).rejects.toMatchObject({ errorCode: expected });
-      expect(fixture.sessionRepository.all).toEqual([]);
-      expect(fixture.securityLogRepository.entries).toEqual([]);
-    },
-  );
+  it.each([
+    ["missing", ErrorCode.EMAIL_0502],
+    ["verified", ErrorCode.USER_0604],
+    ["deleted", ErrorCode.USER_0606],
+  ] as const)("%s 계정은 인증 처리 전에 정확한 오류로 거부한다", async (state, expected) => {
+    // Given
+    const fixture = given({ pending: state !== "verified", empty: state === "missing" });
+    if (state === "deleted") {
+      const user = createUserFixture(fixture.user);
+      user.requestDeletion(AUTH_CREDENTIAL_NOW);
+      await fixture.userRepository.save(user);
+    }
+    // When
+    const pending = fixture.useCase.execute({ email: fixture.user.email, code: "123456" });
+    // Then
+    await expect(pending).rejects.toMatchObject({ errorCode: expected });
+    expect(fixture.sessionRepository.all).toEqual([]);
+    expect(fixture.securityLogRepository.entries).toEqual([]);
+  });
 });

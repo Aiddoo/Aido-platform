@@ -1,7 +1,7 @@
 import type { WeatherCondition } from '@aido/api/vocabulary';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { TodoRow } from '@src/features/planning/todo/components/todo-row';
-import { useToggleTodoMutationOptions } from '@src/features/planning/todo/queries/todo.mutations';
+import { useToggleTodoWithReviewMutationOptions } from '@src/features/planning/todo/hooks/use-toggle-todo-with-review-mutation-options';
 import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTrack, useTrackView } from '@src/shared/analytics';
 import {
@@ -10,14 +10,13 @@ import {
   formatInstantHour,
   type TimeFormat,
 } from '@src/shared/date/format/date-format';
-import { type Instant } from '@src/shared/date/instant';
 import { toHHmm } from '@src/shared/date/zoned';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaleRatio } from '@src/shared/hooks/use-font-scale-ratio';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import {
@@ -36,36 +35,32 @@ import {
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useQuery, useSuspenseQueries } from '@tanstack/react-query';
 import { mapValues } from 'es-toolkit';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Chip, PressableFeedback, Separator } from 'heroui-native';
 import { type ComponentProps, Fragment } from 'react';
 import { match } from 'ts-pattern';
 
+import { toWeatherBriefingTodo } from '../apis/weather-briefing.mapper';
 import { BRIEFING_ROW_TONES, type BriefingRowTone } from '../constants/weather-colors.constants';
-import {
-  type BriefingResult,
-  getBriefingState,
-  findWeatherBriefing,
-  WeatherBriefingPolicy,
-} from '../domains/weather-briefing.model';
-import type { HourlyForecastEntry } from '../domains/weather-report.model';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
-import { useWeatherOpenKey } from '../hooks/use-weather-open-key';
+import { useWeatherOpenKey } from '../hooks/use-weather-entry-params';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
-import { toWeatherBriefingKind } from '../utils/weather-analytics';
+import { toWeatherRescheduleHref } from '../schemas/weather-reschedule-params.schema';
+import { toWeatherBriefingKind, type WeatherBriefingKind } from '../utils/weather-analytics';
 import {
   type BriefingAction,
   type BriefingCopy,
   type BriefingRow,
-  toBriefingView,
+  type BriefingView,
+  getBriefingView,
 } from '../utils/weather-briefing.view-model';
-import { toWeatherRescheduleHref } from '../utils/weather-reschedule-link.view-model';
 import { formatTemperature } from '../utils/weather-temperature.view-model';
 import { WeatherCard } from './weather-card';
 import { WeatherIcon } from './weather-icon';
 import { WeatherMascot } from './weather-mascot';
 
 const MORE_CHEVRON_SIZE = 13;
+// 색을 칠한 날씨 상태 그림이라 아이콘 크기 단계를 따르지 않는다(design.md 글꼴 절)
 const CHIP_ICON_SIZE = 15;
 /** 영향이 큰 할 일만 보인다. 옮기기 시트가 있는 브리핑은 나머지를 시트에서 보고, 없으면 개수만 알린다. */
 const VISIBLE_TODO_LIMIT = 3;
@@ -75,65 +70,34 @@ type SuggestTodoAction = Extract<BriefingAction, { kind: 'suggestTodo' }>;
 
 /** 리포트 실패는 리포트 경계 한 곳에서만 보이도록 던지지 않는 useQuery로 구독하고, 이 경계는 할 일 실패만 맡는다 */
 export function WeatherBriefing() {
+  const { t } = useTranslation('weather');
   const todayKey = useTodayKey();
   const now = useMinuteNow();
-  const { timezone: deviceTimezone } = useDateFormatContext();
-  const { data: report } = useQuery({
-    ...useGetWeatherReportQueryOptions(),
-    select: WeatherReportSelect.briefing,
-  });
+  const dateFormat = useDateFormatContext();
+  const { timezone: deviceTimezone } = dateFormat;
+  const unit = useTemperatureUnit();
   const [{ data: todoList }, { data: preference }] = useSuspenseQueries({
     queries: [useGetTodosByDateQueryOptions({ date: todayKey }), useGetPreferenceQueryOptions()],
   });
+  const todos = todoList.todos.map((todo) =>
+    toWeatherBriefingTodo(todo, { date: todayKey, timezone: deviceTimezone }),
+  );
+  // select가 오늘 할 일과 지금 시각으로 브리핑을 고르므로 할 일 조회 뒤에 구독한다
+  const { data: weather } = useQuery({
+    ...useGetWeatherReportQueryOptions(),
+    select: WeatherReportSelect.briefing({ now, deviceTimezone, todos }),
+  });
 
-  const state = getBriefingState(report, { now, deviceTimezone });
-
-  if (report == null || state === 'loading') {
+  if (weather == null) {
     return <WeatherBriefing.Loading />;
   }
-  if (state === 'hidden') {
-    return <WeatherBriefing.Empty />;
-  }
-
-  const briefing = findWeatherBriefing(
-    report,
-    todoList.todos.map((todo) =>
-      WeatherBriefingPolicy.toBriefingTodo(todo, { date: todayKey, timezone: deviceTimezone }),
-    ),
-    { now },
-  );
+  const { briefing } = weather;
   if (briefing == null) {
     return <WeatherBriefing.Empty />;
   }
 
-  return (
-    <WeatherBriefing.Card
-      briefing={briefing}
-      hourly={report.hourly}
-      now={now}
-      timeFormat={preference.timeFormat}
-    />
-  );
-}
-
-WeatherBriefing.Card = function Card({
-  briefing,
-  hourly,
-  now,
-  timeFormat,
-}: {
-  briefing: BriefingResult;
-  hourly: readonly HourlyForecastEntry[];
-  now: Instant;
-  timeFormat: TimeFormat;
-}) {
-  const { t } = useTranslation('weather');
-  const translate = useTranslateBriefingCopy();
-  const openKey = useWeatherOpenKey();
-  const dateFormat = useDateFormatContext();
-  const unit = useTemperatureUnit();
-  const view = toBriefingView(briefing, {
-    hourly,
+  const { timeFormat } = preference;
+  const view = getBriefingView(briefing, {
     now,
     formatClock: (date) => formatClockTime(date, timeFormat, dateFormat),
     formatTodoTime: (localTime) => formatHHmmTime(localTime, timeFormat, dateFormat),
@@ -141,15 +105,38 @@ WeatherBriefing.Card = function Card({
     formatTemperature: (celsius) => formatTemperature(celsius, unit),
     formatChance: (percent) => t('details.percentValue', { value: percent }),
   });
+
+  return (
+    <WeatherBriefing.Contents
+      view={view}
+      kind={toWeatherBriefingKind(briefing.kind)}
+      timeFormat={timeFormat}
+    />
+  );
+}
+
+interface WeatherBriefingContentsProps {
+  view: BriefingView;
+  /** 이 열기에서 처음 보인 브리핑의 종류(분석 값) */
+  kind: WeatherBriefingKind;
+  timeFormat: TimeFormat;
+}
+
+/** 브리핑이 있을 때만 그린다. 무엇을 알릴지는 서버 머리글과 view-model이 정하고 여기서는 그 문구와 줄을 그린다 */
+WeatherBriefing.Contents = function Contents({
+  view,
+  kind,
+  timeFormat,
+}: WeatherBriefingContentsProps) {
+  const { t } = useTranslation('weather');
+  const translate = useTranslateBriefingCopy();
+  const [openKey] = useWeatherOpenKey();
   const visibleRows = view.rows.slice(0, VISIBLE_TODO_LIMIT);
   const hiddenCount = view.rows.length - visibleRows.length;
   const { action } = view;
 
   // 분 단위 갱신·할 일 변경으로 종류가 바뀌어도 이 열기에서는 처음 보인 브리핑만 센다
-  useTrackView('weather_briefing_shown', {
-    key: openKey,
-    params: { kind: toWeatherBriefingKind(briefing.kind) },
-  });
+  useTrackView('weather_briefing_shown', { key: openKey, params: { kind } });
 
   return (
     <WeatherCard
@@ -226,8 +213,9 @@ WeatherBriefing.Item = function Item({
   const translate = useTranslateBriefingCopy();
   const dateFormat = useDateFormatContext();
   const todayKey = useTodayKey();
+  const router = useRouter();
   const push = useSingleTap(router.push);
-  const toggleTodo = useMutation(useToggleTodoMutationOptions());
+  const toggleTodo = useMutation(useToggleTodoWithReviewMutationOptions());
   const isChipStacked = useFontScale().fontScale === 'xlarge';
   const { todo, tone } = row;
   const time = formatHHmmTime(todo.localTime, timeFormat, dateFormat);
@@ -268,6 +256,7 @@ WeatherBriefing.Item = function Item({
               date: todayKey,
             })
           }
+          // 기본 체크박스(20에 6)와 같은 비율을 22 칸에 맞춘 값이라 모서리 단계로 옮기지 않는다
           className="size-[22px] rounded-[7px] border-[1.5px] border-on-sky/60"
         />
       }
@@ -342,7 +331,6 @@ interface WeatherBriefingChipProps extends Omit<
   tone: BriefingRowTone;
 }
 
-/** 할 일 시각의 날씨를 아이콘과 강수 확률·기온 한 값으로 줄여 보여 준다. */
 WeatherBriefing.Chip = function BriefingChip({
   condition,
   isDaylight,
@@ -435,6 +423,7 @@ WeatherBriefing.SuggestTodoButton = function SuggestTodoButton({
   const translate = useTranslateBriefingCopy();
   const todayKey = useTodayKey();
   const { timezone } = useDateFormatContext();
+  const router = useRouter();
   const push = useSingleTap(router.push);
   const { trackEvent } = useTrack();
 
@@ -500,6 +489,7 @@ WeatherBriefing.Empty = function Empty() {
 
 function useOpenReschedule(action: RescheduleAction) {
   const { trackEvent } = useTrack();
+  const router = useRouter();
   const push = useSingleTap(router.push);
   return () => {
     trackEvent('weather_reschedule_opened', {
@@ -510,7 +500,6 @@ function useOpenReschedule(action: RescheduleAction) {
   };
 }
 
-/** 값 안에 넣은 문구까지 번역해 한 문장으로 만든다. */
 function useTranslateBriefingCopy() {
   const { t } = useTranslation('weather');
   const translate = (copy: BriefingCopy): string => {

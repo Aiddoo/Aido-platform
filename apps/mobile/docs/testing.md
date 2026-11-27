@@ -20,6 +20,8 @@ Jest + `jest-expo`(Expo 권장, Vitest로 바꾸지 않는다), React Native Tes
 - 컴포넌트·hook 회귀가 걱정되면 판단을 순수 함수(model·policy·view-model·resolver)로 빼서 그 함수를 테스트한다.
 - 기존 테스트가 "쓰지 않는다"에 들면 사유를 적어 지워도 된다. 규칙을 지키던 테스트를 형식 때문에 지우지는 않는다.
 - 경계(오늘·자정·DST·언어, route·푸시·위젯 URI 해석, 저장 JSON 버전)는 순수 함수 테스트로 고정한다([날짜 경계](../../../docs/conventions/dates.md#4-테스트할-경계)).
+- 모델 테스트는 원시 인자 순수 함수를 `describe(함수 이름)`, Policy를 `describe('XPolicy')` > `describe(메서드 이름)`으로 묶는다.
+- 화면의 구조(폼 소유, 단계 조립, 컴포넌트 자리)를 옮기는 변경은 먼저 그 화면의 흐름 테스트(`{route}-screen.test.tsx`: 단계 전환, 제출 성공·실패, 두 번 누름, 요청 body)를 붙이고, 옮긴 뒤 테스트를 고치지 않고 통과시킨다.
 
 ## 파일 위치와 이름
 
@@ -87,9 +89,9 @@ Jest + `jest-expo`(Expo 권장, Vitest로 바꾸지 않는다), React Native Tes
 ```bash
 pnpm --filter @aido/mobile test                       # 전체. PR 전에 한 번
 pnpm --filter @aido/mobile test src/features/notes/memo  # 한 기능
-pnpm --filter @aido/mobile test:changed               # 마지막 커밋 이후 바뀐 파일에 닿는 테스트
-pnpm --filter @aido/mobile test:related src/features/notes/memo/domains/memo.model.ts
-pnpm --filter @aido/mobile test:watch
+pnpm --filter @aido/mobile test --onlyChanged         # 마지막 커밋 이후 바뀐 파일에 닿는 테스트
+pnpm --filter @aido/mobile test --findRelatedTests src/features/notes/memo/domains/memo.model.ts
+pnpm --filter @aido/mobile test --watch
 pnpm --filter @aido/mobile test --seed <seed>         # 실패한 순서 재현
 pnpm --filter @aido/mobile test --runInBand --detectOpenHandles
 ```

@@ -5,4 +5,7 @@ export const MEMO_MUTATION_KEYS = {
     [...MEMO_MUTATION_KEYS.all, 'write', { memoId }] as const,
   parse: ({ memoId }: { memoId: number }) =>
     [...MEMO_MUTATION_KEYS.all, 'parse', { memoId }] as const,
+  createMemo: () => [...MEMO_MUTATION_KEYS.all, 'create-memo'] as const,
+  deleteMemo: () => [...MEMO_MUTATION_KEYS.all, 'delete-memo'] as const,
+  convertMemoToTodos: () => [...MEMO_MUTATION_KEYS.all, 'convert-memo-to-todos'] as const,
 } as const;

@@ -1,8 +1,4 @@
 import { AI_SUGGESTION_LIMITS } from '@aido/api/vocabulary';
-import {
-  type EntitlementSnapshot,
-  EntitlementPolicy,
-} from '@src/features/billing/subscription/domains/entitlement.model';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
 import { CoachmarkPopover } from '@src/features/device/coachmark/components/coachmark-popover';
 import { formatDayCountLabel } from '@src/shared/date/format/date-labels';
@@ -18,15 +14,18 @@ import {
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { router, useIsFocused } from 'expo-router';
+import { useRouter, useIsFocused } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import { type ComponentProps, type ComponentRef, type ReactNode, Suspense, useRef } from 'react';
 import type { View } from 'react-native';
 import { match } from 'ts-pattern';
 
 import { isSuggestionsPremiumRequiredError } from '../domains/suggestion.error';
-import { useGetSuggestionsQueryOptions } from '../queries/suggestion.queries';
-import { getSuggestionDisplayState } from '../utils/suggestion-status.view-model';
+import {
+  selectCanUseSuggestions,
+  SuggestionListSelect,
+  useGetSuggestionsQueryOptions,
+} from '../queries/suggestion.queries';
 
 interface SuggestionEntryProps {
   /** 먼저 뜰 자동 화면(알림 화면·새로운 기능)이 남았거나 피드가 움직이는 중이면 false라 AI 개편 안내를 미룬다 */
@@ -35,7 +34,9 @@ interface SuggestionEntryProps {
 
 export function SuggestionEntry({ shouldShowHint = true }: SuggestionEntryProps) {
   const { t } = useTranslation(['todo', 'ai']);
+  const router = useRouter();
   const push = useSingleTap(router.push);
+  const dateFormatContext = useDateFormatContext();
   const { data: canUseSuggestions } = useSuspenseQuery({
     ...useGetEntitlementsQueryOptions(),
     select: selectCanUseSuggestions,
@@ -56,13 +57,61 @@ export function SuggestionEntry({ shouldShowHint = true }: SuggestionEntryProps)
     );
   }
 
-  // 제안만 늦게 오면 "불러오는 중" 대신 제안을 기다린다는 문구를 보인다
+  // 제안만 늦게 오면 "불러오는 중" 대신 제안을 기다린다는 문구를 보인다. 안내는 상태 줄이 그려진 뒤에 연다
   return (
     <Suspense fallback={<InfoCard label={t('todo:feed.suggestionsLoading')} />}>
-      <PremiumSuggestionEntry shouldShowHint={shouldShowHint} />
+      <AiUpdateCoachmark
+        description={t('ai:updateHint.premiumDescription', {
+          period: formatDayCountLabel(AI_SUGGESTION_LIMITS.ANALYSIS_PERIOD_DAYS, dateFormatContext),
+        })}
+        shouldShowHint={shouldShowHint}
+      >
+        <SuggestionEntry.Contents />
+      </AiUpdateCoachmark>
     </Suspense>
   );
 }
+
+type SuggestionEntryContentsProps = Omit<InfoCardProps, 'label' | 'isPremiumOnly'>;
+
+SuggestionEntry.Contents = function Contents({ onPress, ...props }: SuggestionEntryContentsProps) {
+  const { t } = useTranslation(['todo', 'ai']);
+  const router = useRouter();
+  const push = useSingleTap(router.push);
+  // 분석 중 polling이 다른 탭·화면에 가려진 동안 돌지 않게 구독을 끊는다
+  const isFocused = useIsFocused();
+  const { data: entry } = useSuspenseQuery({
+    ...useGetSuggestionsQueryOptions(),
+    select: SuggestionListSelect.entry,
+    subscribed: isFocused,
+  });
+
+  const label = match(entry.state)
+    .with('HAS_SUGGESTIONS', () =>
+      t('ai:suggestions.status.hasSuggestions', { count: entry.count }),
+    )
+    .with('ANALYZING', () => t('ai:suggestions.status.analyzing'))
+    .with('DONE_FOR_TODAY', () => t('ai:suggestions.status.doneForToday'))
+    .with('NO_PATTERN_FOUND', () => t('ai:suggestions.status.noPatternFound'))
+    .with('UNAVAILABLE_TODAY', () => t('ai:suggestions.status.unavailableToday'))
+    .with('NEEDS_MORE_TODOS', () => t('todo:feed.suggestion.needsMoreTodos'))
+    .with('NEEDS_AI_CONSENT', () => t('todo:feed.suggestion.needsAiConsent'))
+    .with('WAITING_FOR_NEXT_RUN', () => t('ai:suggestions.status.waitingForNextRun'))
+    .exhaustive();
+
+  return (
+    <InfoCard
+      {...props}
+      label={label}
+      onPress={(event) => {
+        push('/suggestions');
+        if (typeof onPress === 'function') {
+          onPress(event);
+        }
+      }}
+    />
+  );
+};
 
 SuggestionEntry.Loading = function Loading() {
   const { t } = useTranslation('todo');
@@ -71,6 +120,7 @@ SuggestionEntry.Loading = function Loading() {
 
 SuggestionEntry.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['todo', 'ai']);
+  const router = useRouter();
   const push = useSingleTap(router.push);
 
   // 한도 스냅샷이 늦어 프리미엄으로 보였지만 서버는 거절했다. 다시 시도 대신 결제 화면으로 보낸다
@@ -85,44 +135,6 @@ SuggestionEntry.Error = function ErrorFallback({ error, reset }: QueryErrorFallb
 
   return <InfoCard label={t('todo:feed.suggestionsRetry')} onPress={reset} />;
 };
-
-function PremiumSuggestionEntry({ shouldShowHint }: { shouldShowHint: boolean }) {
-  const { t } = useTranslation(['todo', 'ai']);
-  const push = useSingleTap(router.push);
-  const dateFormatContext = useDateFormatContext();
-  // 분석 중 polling이 다른 탭·화면에 가려진 동안 돌지 않게 구독을 끊는다
-  const isFocused = useIsFocused();
-  const { data: view } = useSuspenseQuery({
-    ...useGetSuggestionsQueryOptions(),
-    select: (list) => ({
-      state: getSuggestionDisplayState(list),
-      count: list.suggestions.length,
-    }),
-    subscribed: isFocused,
-  });
-
-  const label = match(view.state)
-    .with('HAS_SUGGESTIONS', () => t('todo:feed.suggestionsArrived', { count: view.count }))
-    .with('ANALYZING', () => t('todo:feed.suggestion.analyzing'))
-    .with('DONE_FOR_TODAY', () => t('todo:feed.suggestion.doneForToday'))
-    .with('NO_PATTERN_FOUND', () => t('todo:feed.suggestion.noPatternFound'))
-    .with('UNAVAILABLE_TODAY', () => t('todo:feed.suggestion.unavailableToday'))
-    .with('NEEDS_MORE_TODOS', () => t('todo:feed.suggestion.needsMoreTodos'))
-    .with('NEEDS_AI_CONSENT', () => t('todo:feed.suggestion.needsAiConsent'))
-    .with('WAITING_FOR_NEXT_RUN', () => t('todo:feed.suggestion.waitingForNextRun'))
-    .exhaustive();
-
-  return (
-    <AiUpdateCoachmark
-      description={t('ai:updateHint.premiumDescription', {
-        period: formatDayCountLabel(AI_SUGGESTION_LIMITS.ANALYSIS_PERIOD_DAYS, dateFormatContext),
-      })}
-      shouldShowHint={shouldShowHint}
-    >
-      <InfoCard label={label} onPress={() => push('/suggestions')} />
-    </AiUpdateCoachmark>
-  );
-}
 
 interface AiUpdateCoachmarkProps {
   /** 무료와 프리미엄(체험·유예·관리자 포함)은 쓸 수 있는 것이 달라 입구가 고른 문구를 받는다 */
@@ -202,8 +214,4 @@ function InfoCard({ label, isPremiumOnly = false, ...props }: InfoCardProps) {
       />
     </PressableFeedback>
   );
-}
-
-function selectCanUseSuggestions(snapshot: EntitlementSnapshot) {
-  return EntitlementPolicy.canUseFeature(snapshot, 'AI_SUGGESTION');
 }

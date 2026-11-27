@@ -1,3 +1,4 @@
+import { AuthTokensPolicy } from './auth-tokens.model';
 import { isVerificationCode } from './auth.model';
 
 describe('isVerificationCode', () => {
@@ -13,5 +14,32 @@ describe('isVerificationCode', () => {
 
     // Then
     expect(result).toBe(expected);
+  });
+});
+
+describe('AuthTokensPolicy', () => {
+  describe('isSignUp', () => {
+    it.each([
+      [true, true],
+      [false, false],
+      [null, false],
+    ])('서버가 새 계정(%s)이라고 알렸을 때 가입인지 %s다', (isNewUser, expected) => {
+      // Given
+      const tokens = {
+        userId: 'user-1',
+        accessToken: 'access',
+        refreshToken: 'refresh',
+        userName: null,
+        userProfileImage: null,
+        accountRestored: false,
+        isNewUser,
+      };
+
+      // When
+      const result = AuthTokensPolicy.isSignUp(tokens);
+
+      // Then
+      expect(result).toBe(expected);
+    });
   });
 });

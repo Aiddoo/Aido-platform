@@ -40,11 +40,12 @@ import { match } from 'ts-pattern';
 import {
   NudgeThanksPreviewPolicy,
   type NudgeThanksRecipient,
-} from '../domains/nudge-interaction.model';
+} from '../domains/nudge-thanks-preview.model';
 import {
   useGetNudgeInteractionAvailabilityQueryOptions,
   useGetNudgeThanksPreviewInfiniteQueryOptions,
 } from '../queries/todo-nudge.queries';
+import { formatNudgeUserName } from '../utils/nudge-user-name.view-model';
 
 const VISIBLE_AVATAR_COUNT = 2;
 const BUTTON_HIT_SLOP = 4;
@@ -55,10 +56,7 @@ interface ThanksSummaryRowProps {
   onOpenThanks: () => void;
 }
 
-/**
- * 두 번 조회해야 보일지 알아 로딩 자리를 잡지 않는다(잡으면 대상이 없을 때 아래가 두 번 움직인다).
- * 완료 저장 중에는 서버가 아직 완료 전이라 묻지 않고 저장 뒤 할 일 무효화로 받는다
- */
+/** 두 번 조회해야 보일지 알아 로딩 자리를 잡지 않는다. 완료 저장 중에는 서버가 아직 완료 전이라 묻지 않는다 */
 export function ThanksSummaryRow(props: ThanksSummaryRowProps) {
   const availability = useQuery(useGetNudgeInteractionAvailabilityQueryOptions());
   const isCompletionSaving =
@@ -298,7 +296,7 @@ function RecipientAvatars({ recipients }: { recipients: NudgeThanksRecipient[] }
       {recipients.slice(0, VISIBLE_AVATAR_COUNT).map((recipient, index) => (
         <Box key={recipient.id} className={cn(index > 0 && '-ml-2')}>
           <UserAvatar
-            alt={recipient.name}
+            alt={formatNudgeUserName(recipient.name, recipient.userTag)}
             className="size-8 border-2 border-background"
             profileImage={recipient.profileImage}
           />

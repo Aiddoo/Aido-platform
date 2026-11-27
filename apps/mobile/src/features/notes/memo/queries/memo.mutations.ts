@@ -7,19 +7,19 @@ import {
 import { unwrap } from '@src/core/errors/result';
 import { emitTodoCreated } from '@src/core/events/todo-created';
 import { isFreeOfChargeError } from '@src/features/billing/subscription/domains/entitlement.error';
-import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { reflectFeatureQuota } from '@src/features/billing/subscription/queries/entitlement-cache';
 import { isAiDataSharingConsentRequiredError } from '@src/features/identity/consent/domains/consent.error';
 import { markAiDataSharingConsentRequired } from '@src/features/identity/consent/queries/consent-cache';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
-import { invalidateTodos } from '@src/features/planning/todo/queries/todo-cache';
+import { settleTodoBatchWrite } from '@src/features/planning/todo/queries/todo-cache';
 import type { TodoFormValues } from '@src/features/planning/todo/schemas/todo-form.schema';
+import { PlanRequestPolicy } from '@src/features/voice/domains/plan-request.model';
+import { createPlanReviewDraft } from '@src/features/voice/domains/plan-review-draft.model';
 import {
-  getVoicePlanFailureCause,
+  getVoicePlanFailure,
   isPlanKeyConflictError,
 } from '@src/features/voice/domains/voice.error';
 import { planInProgressRetryOptions } from '@src/features/voice/queries/voice.mutations';
-import { createPlanReviewDraft } from '@src/features/voice/utils/plan-review-draft';
 import {
   summarizePlanForAnalytics,
   toAnalyticsSource,
@@ -40,16 +40,8 @@ import {
   isMemoUnavailableError,
 } from '../domains/memo.error';
 import type { MemoFormValues } from '../schemas/memo-form.schema';
-import {
-  createMemoCreateRequestDraftKey,
-  createMemoDraftKey,
-  restoreOrCreateMemoCreateIdempotencyKey,
-} from '../utils/memo-draft';
-import {
-  createMemoPlanDraftKey,
-  createMemoPlanRequestDraftKey,
-  restoreOrCreateMemoPlanIdempotencyKey,
-} from '../utils/memo-plan-draft';
+import { createMemoCreateRequestDraftKey, createMemoDraftKey } from '../utils/memo-draft';
+import { createMemoPlanDraftKey, createMemoPlanRequestDraftKey } from '../utils/memo-plan-draft';
 import {
   getCachedMemo,
   invalidateMemo,
@@ -60,6 +52,54 @@ import {
 } from './memo-cache';
 import { MEMO_MUTATION_KEYS } from './memo-mutation-keys';
 
+/** 바뀐 글에 옛 키를 쓰면 늦게 저장된 첫 메모를 돌려받아 고친 글이 저장되지 않는다 */
+function restoreOrCreateMemoCreateIdempotencyKey(
+  draftService: Pick<DraftService, 'restore' | 'save'>,
+  {
+    userId,
+    content,
+    createIdempotencyKey,
+  }: { userId: string; content: string; createIdempotencyKey: () => string },
+): string {
+  const draftKey = createMemoCreateRequestDraftKey({ userId });
+  const restored = draftService.restore(draftKey);
+  if (restored.status === 'restored' && restored.value.content === content) {
+    return restored.value.idempotencyKey;
+  }
+  const idempotencyKey = createIdempotencyKey();
+  draftService.save(draftKey, { content, idempotencyKey });
+  return idempotencyKey;
+}
+
+export function restoreOrCreateMemoPlanIdempotencyKey(
+  draftService: Pick<DraftService, 'restore' | 'save'>,
+  {
+    userId,
+    memoId,
+    content,
+    categoryId,
+    sourceUpdatedAt,
+    createIdempotencyKey,
+  }: {
+    userId: string;
+    memoId: number;
+    content: string;
+    categoryId: number;
+    sourceUpdatedAt: number;
+    createIdempotencyKey: () => string;
+  },
+): string {
+  const draftKey = createMemoPlanRequestDraftKey({ userId, memoId });
+  const restored = draftService.restore(draftKey, { sourceUpdatedAt });
+  const request = PlanRequestPolicy.preparePlanRequest({
+    previous: restored.status === 'restored' ? restored.value : null,
+    input: { content, categoryId },
+    createIdempotencyKey,
+  });
+  draftService.save(draftKey, request, { sourceUpdatedAt });
+  return request.idempotencyKey;
+}
+
 export function useCreateMemoMutationOptions() {
   const memoApi = useMemoApi();
   const draftService = useDraftService();
@@ -68,6 +108,7 @@ export function useCreateMemoMutationOptions() {
   const queryClient = useQueryClient();
 
   return mutationOptions({
+    mutationKey: MEMO_MUTATION_KEYS.createMemo(),
     // 오프라인에도 멈춰 기다리지 않고 바로 실패해 글자를 남긴 채 안내한다. 글자는 초안에도 있다
     networkMode: 'always',
     // 시간 초과돼도 서버는 늦게 저장할 수 있어 다시 저장할 때 같은 키를 보낸다. 서버는 그 키로 만든 메모를 돌려준다
@@ -198,6 +239,7 @@ export function useDeleteMemoMutationOptions() {
   const toast = useAppToast();
 
   return mutationOptions({
+    mutationKey: MEMO_MUTATION_KEYS.deleteMemo(),
     // 오프라인에 멈춰 두면 진행 중인 다이얼로그를 닫을 수 없다. 바로 실패해 안내한다
     networkMode: 'always',
     mutationFn: async (memoId: number) => unwrap(await memoApi.deleteMemo(memoId)),
@@ -225,6 +267,7 @@ export function useConvertMemoToTodosMutationOptions() {
   const toast = useAppToast();
 
   return mutationOptions({
+    mutationKey: MEMO_MUTATION_KEYS.convertMemoToTodos(),
     // 오프라인에도 멈춰 기다리지 않고 바로 실패해 시트와 입력값을 남긴 채 안내한다
     networkMode: 'always',
     mutationFn: async ({ memoId, values }: { memoId: number; values: TodoFormValues }) =>
@@ -244,7 +287,7 @@ export function useConvertMemoToTodosMutationOptions() {
     onSettled: () => {
       invalidateMemoList(queryClient);
       invalidateMemoResourceLimit(queryClient);
-      invalidateTodos(queryClient);
+      settleTodoBatchWrite(queryClient);
     },
     meta: {
       errorFeedback: {
@@ -264,13 +307,11 @@ interface ParseMemoVariables {
 }
 
 export function useParseMemoMutationOptions({ memoId }: { memoId: number }) {
-  const haptics = useHaptics();
   const memoApi = useMemoApi();
   const draftService = useDraftService();
   const idGenerator = useIdGenerator();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
-  const gate = useEntitlementGate('AI_PARSE', { surface: 'memo_detail' });
   const { timezone } = useDateFormatContext();
 
   const forgetIdempotencyKey = () => {
@@ -341,11 +382,9 @@ export function useParseMemoMutationOptions({ memoId }: { memoId: number }) {
         return;
       }
 
+      // 한도 안내 시트는 정리를 시작한 편집기가 띄운다
       trackEvent('ai_parse_used', { success: false });
-      trackEvent('voice_plan_failed', { source: 'memo', cause: getVoicePlanFailureCause(error) });
-      if (gate.promptIfBlockedError(error)) {
-        haptics.notify('error');
-      }
+      trackEvent('voice_plan_failed', { source: 'memo', cause: getVoicePlanFailure(error) });
     },
     meta: {
       errorFeedback: {

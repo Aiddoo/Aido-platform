@@ -46,7 +46,7 @@ export class VoiceNoteStorageService {
     const sizes = this.#recordings.getFileSizes(accountId);
     const notes = this.#drafts
       .findAll(accountId)
-      .filter(VoiceNotePolicy.canPlayRecording)
+      .filter((note) => VoiceNotePolicy.canPlayRecording(note))
       .map((note) => ({ note, bytes: VoiceNotePolicy.getRecordingSizeBytes(note, sizes) }));
 
     return {

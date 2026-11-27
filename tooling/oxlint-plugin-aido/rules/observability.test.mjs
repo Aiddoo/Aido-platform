@@ -9,6 +9,7 @@ import rules from './observability.mjs';
 const tester = createRuleTester();
 
 const FROZEN = { frozenNames: ['ai_parse_used'] };
+const VOCABULARY = { vocabularyParams: { source: 'AnalyticsSource', surface: 'AnalyticsSurface' } };
 
 tester.run('analytics-event-catalog', rules['analytics-event-catalog'], {
   valid: [
@@ -27,6 +28,14 @@ tester.run('analytics-event-catalog', rules['analytics-event-catalog'], {
     'interface AppEventMap { auth_password_reset_completed: undefined; auth_password_changed: undefined }',
     'interface AppEventMap { subscription_management_opened: undefined; support_inquiry_submitted: undefined }',
     'interface AppEventMap { marketing_push_opted_in: undefined; marketing_push_opted_out: undefined }',
+    "type MemoShareTarget = 'kakao' | 'link';\ninterface AppEventMap { memo_share_tapped: { target: MemoShareTarget } }",
+    "import type { ScreenName } from './screen-name';\ninterface AppEventMap { view_tab_changed: { screen_name: ScreenName } }",
+    "type Step = 'a' | `b_${'x' | 'y'}`;\ninterface AppEventMap { memo_share_tapped: { step: Step } }",
+    'type Loop = Loop;\ninterface AppEventMap { memo_share_tapped: { step: Loop } }',
+    {
+      code: "interface AppEventMap { memo_share_tapped: { source: AnalyticsSource<'toolbar'> }; premium_gate_shown: { surface: AnalyticsSurface<GateSurface> } }",
+      options: [VOCABULARY],
+    },
   ],
   invalid: [
     { code: 'interface AppEventMap { ai_parse_used: undefined }', errors: 1 },
@@ -38,8 +47,30 @@ tester.run('analytics-event-catalog', rules['analytics-event-catalog'], {
     { code: 'interface AppEventMap { memo_share_tapped: { target: string } }', errors: 1 },
     { code: 'interface AppEventMap { memo_share_tapped: { target?: string | null } }', errors: 1 },
     {
+      code: 'type ViewTabValue = string;\ninterface AppEventMap { view_tab_changed: { view: ViewTabValue } }',
+      errors: 1,
+    },
+    {
+      code: "type Field = 'title' | 'memo';\nexport type Fields = Field | `${Field},${string}`;\ninterface AppEventMap { todo_updated: { field?: Fields } }",
+      errors: 1,
+    },
+    {
+      code: 'interface AppEventMap { memo_share_tapped: { path: `/${string}` } }',
+      errors: 1,
+    },
+    {
       code: 'interface AppEventMap { ai_parse_used: { field: string } }',
       options: [FROZEN],
+      errors: 1,
+    },
+    {
+      code: "interface AppEventMap { memo_share_tapped: { source: 'toolbar' } }",
+      options: [VOCABULARY],
+      errors: 1,
+    },
+    {
+      code: 'interface AppEventMap { premium_gate_shown: { surface?: GateSurface } }',
+      options: [VOCABULARY],
       errors: 1,
     },
   ],
@@ -111,8 +142,8 @@ tester.run('logger-event-constant', rules['logger-event-constant'], {
 tester.run('no-tracking-in-effect', rules['no-tracking-in-effect'], {
   valid: [
     "const onPress = () => { trackEvent('memo_share_tapped'); };",
-    "useEffect(() => store.subscribe(() => trackEvent('local_day_changed')), [store]);",
-    "useEffect(() => { load().then(() => analytics.trackEvent('x')); }, []);",
+    "const onChanged = useEffectEvent(() => trackEvent('local_day_changed')); useEffect(() => store.subscribe(onChanged), [store]);",
+    "const onLoaded = useEffectEvent(() => analytics.trackEvent('x')); useEffect(() => { load().then(onLoaded); }, []);",
     "const emit = useEffectEvent(() => trackEvent('x')); useEffect(() => emit(), []);",
     "useMemo(() => trackEvent('x'), []);",
     'useEffect(() => { logger.info(EVENT); }, []);',
@@ -129,6 +160,12 @@ tester.run('no-tracking-in-effect', rules['no-tracking-in-effect'], {
     { code: "useInsertionEffect(() => { track(analytics, 'x'); });", errors: 1 },
     { code: "useFocusEffect(() => { this.analytics.trackEvent('x'); });", errors: 1 },
     { code: "useFocusEffect(useCallback(() => { trackEvent('x'); }, []));", errors: 1 },
+    {
+      code: "useEffect(() => store.subscribe(() => trackEvent('local_day_changed')), [store]);",
+      errors: 1,
+    },
+    { code: "useEffect(() => { load().then(() => analytics.trackEvent('x')); }, []);", errors: 1 },
+    { code: "useEffect(() => () => { trackEvent('x'); }, []);", errors: 1 },
   ],
 });
 

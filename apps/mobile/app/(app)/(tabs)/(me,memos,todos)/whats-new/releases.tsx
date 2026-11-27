@@ -18,7 +18,7 @@ import {
 import { Stack } from 'expo-router';
 import { ScrollView } from 'react-native';
 
-export default function WhatsNewReleasesRoute() {
+export default function WhatsNewReleasesScreen() {
   const { t } = useTranslation('whatsNew');
 
   return (

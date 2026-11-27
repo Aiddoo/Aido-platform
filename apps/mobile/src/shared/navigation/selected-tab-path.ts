@@ -1,9 +1,11 @@
+import { stripQueryAndHash } from '@src/shared/utils/strip-query-and-hash';
 import { useNavigationContainerRef } from 'expo-router';
 import { useEffect } from 'react';
 
+import { isRouteGroupSegment } from './route-group';
+
 /** `app/(app)/(tabs)` 탭 묶음의 route 이름 */
 const TABS_ROUTE_NAME = '(tabs)';
-const GROUP_SEGMENT = /^\(.+\)$/;
 const DYNAMIC_SEGMENT = /^\[[^.[\]]+\]$/;
 
 interface NavigatorState {
@@ -50,14 +52,19 @@ export function toSelectedTabPath(path: string): string {
   if (tab == null) {
     return path;
   }
-  const pathSegments = (path.split(/[?#]/, 1)[0] ?? '').split('/').filter(Boolean);
+  const pathSegments = stripQueryAndHash(path).split('/').filter(Boolean);
   const isTabScreen = tab.routeNames.some((routeName) => matchesRouteName(routeName, pathSegments));
   return isTabScreen ? `${tab.groupPath}${path}` : path;
 }
 
-/** 위에 쌓인 route부터 내려가 탭 묶음을 찾는다. 탭 밖 route가 맨 위여도 그 아래 탭 묶음이 고른 탭이다 */
+/**
+ * focus된 route부터 아래로 내려가 탭 묶음을 찾는다. 탭 밖 route가 맨 위여도 그 아래 탭 묶음이 고른 탭이다.
+ * focus 위에 남은 route(index 밖)는 보이지 않는 화면이라 보지 않는다
+ */
 function findSelectedTab(state: NavigatorState | undefined, groupPath = ''): SelectedTab | null {
-  for (const route of (state?.routes ?? []).toReversed()) {
+  const routes = state?.routes ?? [];
+  const focusedIndex = state?.index ?? routes.length - 1;
+  for (const route of routes.slice(0, focusedIndex + 1).toReversed()) {
     if (route.name === TABS_ROUTE_NAME) {
       const tab = route.state?.routes[route.state.index ?? 0];
       return tab == null
@@ -69,7 +76,7 @@ function findSelectedTab(state: NavigatorState | undefined, groupPath = ''): Sel
     }
     const found = findSelectedTab(
       route.state,
-      GROUP_SEGMENT.test(route.name) ? `${groupPath}/${route.name}` : groupPath,
+      isRouteGroupSegment(route.name) ? `${groupPath}/${route.name}` : groupPath,
     );
     if (found != null) {
       return found;
@@ -80,7 +87,7 @@ function findSelectedTab(state: NavigatorState | undefined, groupPath = ''): Sel
 
 /** route 이름(`friends/invite/index`·`reports/[reportId]`)이 이 경로 조각의 화면인지 */
 function matchesRouteName(routeName: string, pathSegments: readonly string[]): boolean {
-  const segments = routeName.split('/').filter((segment) => !GROUP_SEGMENT.test(segment));
+  const segments = routeName.split('/').filter((segment) => !isRouteGroupSegment(segment));
   const routeSegments = segments.at(-1) === 'index' ? segments.slice(0, -1) : segments;
   return (
     routeSegments.length === pathSegments.length &&

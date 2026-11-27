@@ -14,12 +14,12 @@ const MASCOTS = {
   weatherSuggestion: { source: weatherSuggestionImage, centerOffsetRatio: 0 },
 } as const;
 
-type MascotProps = Omit<ComponentProps<typeof Image>, 'source'> & {
+interface MascotProps extends Omit<ComponentProps<typeof Image>, 'source'> {
   name: keyof typeof MASCOTS;
   /** 없으면 크기를 호출부 style·className이 정한다(`isCentered`는 `size`가 있어야 한다) */
   size?: number;
   isCentered?: boolean;
-};
+}
 
 export function Mascot({ name, size, isCentered = false, style, ...props }: MascotProps) {
   const { source, centerOffsetRatio } = MASCOTS[name];

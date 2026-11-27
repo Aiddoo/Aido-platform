@@ -1,10 +1,10 @@
 import {
   formatDegrees,
-  toDisplayTemperature,
-  toTemperatureReading,
+  getDisplayTemperature,
+  getTemperatureReading,
 } from './weather-temperature.view-model';
 
-describe('toDisplayTemperature', () => {
+describe('getDisplayTemperature', () => {
   it.each([
     [12.4, 'celsius', 12],
     [12.5, 'celsius', 13],
@@ -14,7 +14,7 @@ describe('toDisplayTemperature', () => {
     [-17.9, 'fahrenheit', 0],
   ] as const)('섭씨 %s도를 %s 단위로 반올림해 %s로 보여 준다', (celsius, unit, expected) => {
     // When
-    const value = toDisplayTemperature(celsius, unit);
+    const value = getDisplayTemperature(celsius, unit);
 
     // Then
     expect(Object.is(value, expected)).toBe(true);
@@ -35,14 +35,14 @@ describe('formatDegrees', () => {
   });
 });
 
-describe('toTemperatureReading', () => {
+describe('getTemperatureReading', () => {
   it.each([
     [-4, { isBelowZero: true, magnitude: 4 }],
     [0, { isBelowZero: false, magnitude: 0 }],
     [23, { isBelowZero: false, magnitude: 23 }],
   ])('큰 기온 %s도는 영하 기호와 숫자를 나눠 %o로 읽는다', (value, expected) => {
     // When
-    const reading = toTemperatureReading(value);
+    const reading = getTemperatureReading(value);
 
     // Then
     expect(reading).toEqual(expected);

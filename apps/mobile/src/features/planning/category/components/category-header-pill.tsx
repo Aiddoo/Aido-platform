@@ -24,7 +24,7 @@ export function CategoryHeaderPill({
     <Chip
       size="md"
       variant="secondary"
-      className={cn(CATEGORY_HEADER_PILL_CLASS_NAME, className ?? 'self-start')}
+      className={cn(CATEGORY_HEADER_PILL_CLASS_NAME, className)}
       {...props}
     >
       <Text size="b4" weight="semibold" style={{ color }}>
@@ -35,13 +35,15 @@ export function CategoryHeaderPill({
   );
 }
 
-CategoryHeaderPill.Loading = function Loading() {
+CategoryHeaderPill.Loading = function Loading({
+  className,
+}: Pick<CategoryHeaderPillProps, 'className'>) {
   return (
     <Chip
       size="md"
       variant="secondary"
       pointerEvents="none"
-      className={cn(CATEGORY_HEADER_PILL_CLASS_NAME, 'self-start')}
+      className={cn(CATEGORY_HEADER_PILL_CLASS_NAME, className)}
     >
       <TextSkeleton size="b4" className="w-12" />
     </Chip>

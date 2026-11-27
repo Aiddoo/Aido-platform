@@ -7,12 +7,14 @@ import type {
   PushPermissionResponse,
   ReceivedPushNotification,
 } from '@src/core/ports/push-notification-gateway';
+import { SECOND_MS } from '@src/shared/constants/time-units';
 import { getErrorMessage } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
 import { Mutex, withTimeout } from 'es-toolkit';
 import Constants from 'expo-constants';
 import * as Notifications from 'expo-notifications';
 
+import { toOsPermission } from '../permission/to-os-permission';
 import { PUSH_NOTIFICATION_LOG_EVENT } from './push-notification-log-events';
 
 /** 서버가 보내는 푸시의 채널 id와 같다. 바꾸면 기존 설치의 채널과 어긋난다 */
@@ -22,7 +24,7 @@ const CHANNEL_VIBRATION_PATTERN = [0, 250, 250, 250];
 const CHANNEL_LIGHT_COLOR = '#FF231F7C';
 
 /** APNs·FCM 등록이 끝나지 않으면 발급이 멈춘다. 다음 보고와 로그아웃이 기다리지 않게 끊는다 */
-export const PUSH_TOKEN_ISSUE_TIMEOUT_MS = 15_000;
+export const PUSH_TOKEN_ISSUE_TIMEOUT_MS = 15 * SECOND_MS;
 
 const IOS_AUTHORIZATION_STATUS = {
   [Notifications.IosAuthorizationStatus.NOT_DETERMINED]: 'NOT_DETERMINED',
@@ -36,8 +38,7 @@ function toPushPermissionResponse(
   response: Notifications.NotificationPermissionsStatus,
 ): PushPermissionResponse {
   return {
-    status: response.status,
-    canAskAgain: response.canAskAgain,
+    ...toOsPermission(response),
     iosStatus: response.ios ? IOS_AUTHORIZATION_STATUS[response.ios.status] : null,
   };
 }
@@ -88,10 +89,7 @@ async function ensureChannel(logger: AppLogger): Promise<void> {
   }
 }
 
-/**
- * 프로세스에 한 번 만든다. 첫 알림을 놓치지 않게 앱이 그려지기 전인 여기서 표시 판단을 SDK에 건다.
- * 화면이 정하기 전과 판단이 실패하면 배너로 보인다
- */
+/** 첫 알림을 놓치지 않게 앱이 그려지기 전인 여기서 표시 판단을 SDK에 건다. 정하기 전과 판단이 실패하면 배너다 */
 export function createExpoPushNotificationGateway(logger: AppLogger): PushNotificationGateway {
   // expo-notifications 58 iOS CategoryManager(actor)는 첫 등록이 기존 목록을 기다리는 사이 다음 등록을 받아(재진입) 둘 다 같은 목록에 자기 것만 더해 쓴다. 겹치면 나중 것만 남는다
   const categoryLock = new Mutex();
@@ -119,6 +117,7 @@ export function createExpoPushNotificationGateway(logger: AppLogger): PushNotifi
     },
     getToken: async () => {
       await ensureChannel(logger);
+      // 인자 없는 SDK는 OTA 매니페스트의 easConfig를 먼저 본다. 앱 설정의 EAS 프로젝트를 먼저 쓰려고 직접 찾는다
       const projectId =
         Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
       const token = await withTimeout(

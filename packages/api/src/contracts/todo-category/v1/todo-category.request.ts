@@ -1,6 +1,10 @@
 import { z } from "zod";
 
-import { CATEGORY_TODO_HANDLINGS, hexColorRegex } from "../../../vocabulary/todo-category.types.js";
+import {
+  CATEGORY_TODO_HANDLINGS,
+  hexColorRegex,
+  TODO_CATEGORY_LIMITS,
+} from "../../../vocabulary/todo-category.types.js";
 import { reorderPositionSchema } from "./todo-category.common.js";
 
 export const createTodoCategorySchema = z.object({
@@ -8,8 +12,13 @@ export const createTodoCategorySchema = z.object({
     .string()
     .trim()
     .min(1, "카테고리명을 입력해주세요")
-    .max(50, "카테고리명은 50자 이하로 입력해주세요")
-    .meta({ description: "카테고리 이름 (1-50자, 예: 중요한 일)" }),
+    .max(
+      TODO_CATEGORY_LIMITS.NAME_MAX_LENGTH,
+      `카테고리명은 ${TODO_CATEGORY_LIMITS.NAME_MAX_LENGTH}자 이하로 입력해주세요`,
+    )
+    .meta({
+      description: `카테고리 이름 (1-${TODO_CATEGORY_LIMITS.NAME_MAX_LENGTH}자, 예: 중요한 일)`,
+    }),
   color: z
     .string()
     .regex(hexColorRegex, "HEX 색상 코드 형식이 아닙니다 (예: #FF5733)")
@@ -22,9 +31,14 @@ export const updateTodoCategorySchema = z
       .string()
       .trim()
       .min(1, "카테고리명을 입력해주세요")
-      .max(50, "카테고리명은 50자 이하로 입력해주세요")
+      .max(
+        TODO_CATEGORY_LIMITS.NAME_MAX_LENGTH,
+        `카테고리명은 ${TODO_CATEGORY_LIMITS.NAME_MAX_LENGTH}자 이하로 입력해주세요`,
+      )
       .optional()
-      .meta({ description: "카테고리 이름 (선택, 1-50자, 예: 중요한 일)" }),
+      .meta({
+        description: `카테고리 이름 (선택, 1-${TODO_CATEGORY_LIMITS.NAME_MAX_LENGTH}자, 예: 중요한 일)`,
+      }),
     color: z
       .string()
       .regex(hexColorRegex, "HEX 색상 코드 형식이 아닙니다 (예: #FF5733)")

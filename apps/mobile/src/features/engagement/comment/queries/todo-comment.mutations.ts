@@ -2,10 +2,12 @@ import { TODO_COMMENT_SORT, type TodoCommentSort } from '@aido/api/vocabulary';
 import { useTodoCommentApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { useTrack } from '@src/shared/analytics';
+import { SECOND_MS } from '@src/shared/constants/time-units';
 import { isTransientError } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
 import { isLastMutation } from '@src/shared/query/is-last-mutation';
 import { useAppToast } from '@src/shared/ui';
+import { getExponentialBackoffMs } from '@src/shared/utils/get-exponential-backoff-ms';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import { pick } from 'es-toolkit';
 import { match, P } from 'ts-pattern';
@@ -32,13 +34,14 @@ import {
   patchTodoCommentCaches,
   removeTodoCommentFromCaches,
   restoreTodoCommentToCaches,
+  settleTodoCommentEdit,
 } from './todo-comment-cache';
 import { TODO_COMMENT_MUTATION_KEYS } from './todo-comment-mutation-keys';
 import { useGetTodoCommentThreadsInfiniteQueryOptions } from './todo-comment.queries';
 
 const MAX_RETRY_COUNT = 2;
 const RETRY_BASE_DELAY_MS = 500;
-const RETRY_MAX_DELAY_MS = 1_000;
+const RETRY_MAX_DELAY_MS = SECOND_MS;
 /** 글 고치기가 바꾸는 칸. 실패하면 이 칸만 되돌리고 성공하면 이 칸만 응답으로 쓴다 */
 const EDITED_FIELDS = ['content', 'isEdited', 'editedAt'] as const;
 
@@ -64,10 +67,7 @@ interface SetTodoCommentLikeVariables {
   via: TodoCommentLikeVia;
 }
 
-/**
- * 서버가 id와 순서를 정하므로 낙관적 행은 넣지 않는다.
- * 답글은 그 묶음 끝에 붙이고, 새 댓글은 정렬 자리를 몰라 묶음 목록만 다시 받는다.
- */
+/** 서버가 id와 순서를 정하므로 낙관적 행은 넣지 않고, 새 댓글은 정렬 자리를 몰라 묶음 목록만 다시 받는다 */
 export function useCreateTodoCommentChainMutationOptions({ todoId }: { todoId: number }) {
   const todoCommentApi = useTodoCommentApi();
   const queryClient = useQueryClient();
@@ -79,7 +79,8 @@ export function useCreateTodoCommentChainMutationOptions({ todoId }: { todoId: n
     networkMode: 'always',
     mutationKey: TODO_COMMENT_MUTATION_KEYS.createCommentChain({ todoId }),
     retry: (failureCount, error) => failureCount < MAX_RETRY_COUNT && isTransientError(error),
-    retryDelay: (attempt) => Math.min(RETRY_BASE_DELAY_MS * 2 ** attempt, RETRY_MAX_DELAY_MS),
+    retryDelay: (attempt) =>
+      getExponentialBackoffMs(attempt, { baseMs: RETRY_BASE_DELAY_MS, maxMs: RETRY_MAX_DELAY_MS }),
     mutationFn: async ({ input }: CreateTodoCommentChainVariables) =>
       unwrap(await todoCommentApi.createCommentChain(todoId, input)),
     onSuccess: async ({ comments }, { input }) => {
@@ -142,6 +143,7 @@ export function useUpdateTodoCommentMutationOptions({ todoId }: { todoId: number
     mutationFn: async ({ target, input }: UpdateTodoCommentVariables) =>
       unwrap(await todoCommentApi.updateComment(todoId, target.id, input)),
     onMutate: async ({ target, input }) => {
+      const startedWithOthers = !isLastMutation(queryClient, mutationKey);
       await cancelTodoCommentQueries(queryClient, { todoId });
       const previous = findCachedTodoComment(queryClient, { todoId, commentId: target.id });
       patchTodoCommentCaches(queryClient, {
@@ -149,7 +151,7 @@ export function useUpdateTodoCommentMutationOptions({ todoId }: { todoId: number
         commentId: target.id,
         transform: (comment) => TodoCommentPolicy.withContentEdited(comment, input.content),
       });
-      return { previous };
+      return { previous, startedWithOthers };
     },
     onError: (error, { target }, context) => {
       if (isTodoCommentUnavailableError(error)) {
@@ -170,19 +172,23 @@ export function useUpdateTodoCommentMutationOptions({ todoId }: { todoId: number
         toast.warning(t('todoComment:toasts.throttled'));
       }
     },
-    // 하트 수처럼 함께 바뀌는 값은 그 뮤테이션이 맞추므로 글 칸만 응답으로 쓴다
-    onSuccess: (updated, { target }) => {
+    onSuccess: (updated, { target }, { startedWithOthers }) => {
       trackEvent('todo_comment_updated', {
         todo_id: todoId,
         is_reply: TodoCommentPolicy.isReply(target),
       });
-      if (isLastMutation(queryClient, mutationKey)) {
-        patchTodoCommentCaches(queryClient, {
-          todoId,
-          commentId: updated.id,
-          transform: (comment) => ({ ...comment, ...pick(updated, EDITED_FIELDS) }),
-        });
-      }
+      // 혼자 끝난 고치기는 응답을 바로 쓰고, 겹쳤으면 응답이 서버 처리 순서와 달라 다시 받는다
+      settleTodoCommentEdit(queryClient, {
+        todoId,
+        startedWithOthers,
+        // 하트 수처럼 함께 바뀌는 값은 그 뮤테이션이 맞추므로 글 칸만 응답으로 쓴다
+        writeResponse: () =>
+          patchTodoCommentCaches(queryClient, {
+            todoId,
+            commentId: updated.id,
+            transform: (comment) => ({ ...comment, ...pick(updated, EDITED_FIELDS) }),
+          }),
+      });
     },
     meta: {
       errorFeedback: {
@@ -340,6 +346,7 @@ export function usePrefetchTodoCommentThreadsMutationOptions({ todoId }: { todoI
   });
 
   return mutationOptions({
+    mutationKey: TODO_COMMENT_MUTATION_KEYS.prefetchThreads({ todoId }),
     mutationFn: (sort: TodoCommentSort) =>
       fetchTodoCommentThreads(
         queryClient,

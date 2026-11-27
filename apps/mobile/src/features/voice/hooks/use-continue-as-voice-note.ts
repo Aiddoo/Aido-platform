@@ -3,9 +3,9 @@ import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
 import { useMyAccountId } from '@src/features/identity/user/hooks/use-my-account-id';
 import { getNowInstant } from '@src/shared/date/clock';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 
-import { createTranscribedVoiceNote } from '../domains/voice-note-caption.model';
+import { createTranscribedVoiceNote } from '../domains/voice-note-captions.model';
 import type { VoiceTranscript } from '../domains/voice-transcript.model';
 import { useStartVoiceNote } from './use-start-voice-note';
 
@@ -24,6 +24,7 @@ export function useContinueAsVoiceNote() {
   const idGenerator = useIdGenerator();
   const voiceNoteDraftRepository = useVoiceNoteDraftRepository();
   const startVoiceNote = useStartVoiceNote();
+  const router = useRouter();
   const pushRecordScreen = useSingleTap(router.push);
   const accountId = useMyAccountId();
 

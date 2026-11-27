@@ -1,7 +1,7 @@
 import type { ImportEventRecord } from '@src/core/ports/todo-import-source';
 
 import { PERSONAL_COLLECTION_KEY } from '../__tests__/todo-import.fixtures';
-import { toImportItem } from './todo-import-item.mapper';
+import { toTodoImportItem } from './todo-import-item.mapper';
 
 const CONTEXT = {
   timezone: 'Asia/Seoul',
@@ -24,10 +24,10 @@ function createRecord(overrides: Partial<ImportEventRecord> = {}): ImportEventRe
   };
 }
 
-describe('toImportItem', () => {
+describe('toTodoImportItem', () => {
   it('시각 일정은 가져오기 시간대의 시작 날짜·시각이고 끝 날짜가 없다', () => {
     // When
-    const item = toImportItem(createRecord(), CONTEXT);
+    const item = toTodoImportItem(createRecord(), CONTEXT);
 
     // Then
     expect(item).toEqual({
@@ -51,7 +51,7 @@ describe('toImportItem', () => {
     });
 
     // When
-    const item = toImportItem(record, { ...CONTEXT, timezone: 'America/Los_Angeles' });
+    const item = toTodoImportItem(record, { ...CONTEXT, timezone: 'America/Los_Angeles' });
 
     // Then
     expect(item).toMatchObject({ startDate: '2026-11-24', localTime: '17:00' });
@@ -65,7 +65,7 @@ describe('toImportItem', () => {
     });
 
     // When
-    const item = toImportItem(record, CONTEXT);
+    const item = toTodoImportItem(record, CONTEXT);
 
     // Then
     expect(item).toMatchObject({
@@ -86,7 +86,7 @@ describe('toImportItem', () => {
     ],
   ])('%s는 가져오지 않는다', (_case, record) => {
     // When
-    const item = toImportItem(record, CONTEXT);
+    const item = toTodoImportItem(record, CONTEXT);
 
     // Then
     expect(item).toBeNull();

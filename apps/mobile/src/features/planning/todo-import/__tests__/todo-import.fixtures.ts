@@ -1,12 +1,12 @@
 import { todoImportSchema as todoImportDtoSchema } from '@aido/api/contracts/todo-import/v1';
-import { type ErrorCodeType, Errors } from '@aido/api/errors';
-import { ApiError } from '@src/core/errors/api-error';
+import type { ErrorCodeType } from '@aido/api/errors';
+import { createApiError } from '@src/testing/api-error';
 import { defineFixture } from '@src/testing/fixture';
 import type { z } from 'zod';
 
-import { importCollectionSchema } from '../domains/todo-import-collection.model';
-import { importItemSchema } from '../domains/todo-import-item.model';
-import { todoImportSelectionSchema } from '../domains/todo-import-session.model';
+import { todoImportCollectionSchema } from '../domains/todo-import-collection.model';
+import { todoImportItemSchema } from '../domains/todo-import-item.model';
+import { todoImportSelectionSchema } from '../domains/todo-import-selection.model';
 import { todoImportSchema } from '../domains/todo-import.model';
 
 export const IMPORT_ID = 'clz7x5p8k0010qz0z8z8z8z8z';
@@ -45,7 +45,7 @@ export const createTodoImportDto = defineFixture(todoImportDtoSchema, TODO_IMPOR
 
 export const createTodoImport = defineFixture(todoImportSchema, TODO_IMPORT);
 
-export const createImportCollection = defineFixture(importCollectionSchema, {
+export const createTodoImportCollection = defineFixture(todoImportCollectionSchema, {
   collectionKey: PERSONAL_COLLECTION_KEY,
   title: '개인',
   color: '#FF6B43',
@@ -55,7 +55,7 @@ export const createImportCollection = defineFixture(importCollectionSchema, {
   itemCount: 2,
 });
 
-export const createImportItem = defineFixture(importItemSchema, {
+export const createTodoImportItem = defineFixture(todoImportItemSchema, {
   sourceKey: '1'.repeat(64),
   collectionKey: PERSONAL_COLLECTION_KEY,
   title: '팀 회의',
@@ -75,17 +75,14 @@ export const createTodoImportSelection = defineFixture(todoImportSelectionSchema
   ],
 });
 
-/** 상태를 주지 않으면 서버 카탈로그가 그 코드에 붙이는 상태다 */
 export function createTodoImportApiError({
   code,
-  details = null,
-  status = Errors[code].httpStatus,
-  retryAfterMs = null,
+  ...overrides
 }: {
   code: ErrorCodeType;
   details?: Record<string, unknown> | null;
   status?: number;
   retryAfterMs?: number | null;
 }) {
-  return new ApiError(code, Errors[code].message, status, details, { retryAfterMs });
+  return createApiError(code, overrides);
 }

@@ -1,21 +1,27 @@
 import { AI_REPORT_PAGE_SIZE } from '@aido/api/vocabulary';
 import { getPremiumGateAnalyticsFeature } from '@src/features/billing/subscription/utils/subscription-analytics';
 import { useGetWeeklyAchievementsInfiniteQueryOptions } from '@src/features/insights/achievement/queries/achievement.queries';
+import { useGetDailyCompletionsInRangeQueriesOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTrack, useTrackView } from '@src/shared/analytics';
+import { getIsoWeekDateRange } from '@src/shared/date/date-key';
 import { formatDateKeyRange, formatIsoWeekLabel } from '@src/shared/date/format/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useLocaleContext } from '@src/shared/hooks/use-locale-context';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
+import { useOnScreenBlur } from '@src/shared/hooks/use-on-screen-blur';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
   Button,
   DashedDivider,
+  HintPopoverContent,
   HStack,
+  IconButton,
+  InfoIcon,
   LabelChip,
-  QueryErrorBoundary,
   QueryErrorFallback,
   type QueryErrorFallbackProps,
   Text,
@@ -30,18 +36,19 @@ import {
   usePrefetchQuery,
   useQuery,
   useSuspenseInfiniteQuery,
+  useSuspenseQueries,
   useSuspenseQuery,
 } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
-import { type Href, Link, router } from 'expo-router';
-import { PressableFeedback, Skeleton } from 'heroui-native';
-import { type ReactNode, Suspense, useState } from 'react';
+import { type Href, Link, useRouter } from 'expo-router';
+import { Popover, PressableFeedback, Skeleton } from 'heroui-native';
+import { type ReactNode, useState } from 'react';
 import { match } from 'ts-pattern';
 
 import { SAMPLE_REPORT_COUNT } from '../constants/sample-report.constants';
 import { ReportStatusPolicy } from '../domains/report-status.model';
 import type { AiReport } from '../domains/report.model';
-import { useReportType } from '../hooks/use-report-type';
+import { useReportType } from '../hooks/use-report-params';
 import {
   useGetReportsQueryOptions,
   useGetReportStatusQueryOptions,
@@ -56,15 +63,23 @@ import { formatReportPeriodLabel } from '../utils/report-period.view-model';
 import { createSampleReport, getSampleTrendWeeks } from '../utils/sample-report.view-model';
 import { CompletionRateHeadline } from './completion-rate-headline';
 import { CompletionTrendLine } from './completion-trend-line';
+import { DailyCompletionChart } from './daily-completion-chart';
 import { ReportTypeChip } from './report-type-chip';
-import { ThisWeekRecord } from './this-week-record';
+import { ThisWeekRecordChart } from './this-week-record-chart';
 
 const LOADING_CARD_COUNT = 3;
 const LOADING_STAT_COUNT = 3;
 /** 예시 목록 맨 위 최근 리포트 카드는 지난주·지난달이다 */
 const LATEST_SAMPLE_PERIODS_AGO = 1;
 
-export function ReportList() {
+interface ReportListProps {
+  /** 최근 리포트 카드의 추세 칸(`RecentCompletionTrend`). 조회 경계는 화면이 감싸 넘긴다 */
+  trend: ReactNode;
+  /** 리포트가 아직 없을 때 보이는 이번 주 기록 칸(`ThisWeekRecord`). 조회 경계는 화면이 감싸 넘긴다 */
+  thisWeekRecord: ReactNode;
+}
+
+export function ReportList({ trend, thisWeekRecord }: ReportListProps) {
   const { t } = useTranslation('ai');
 
   const [reportType] = useReportType();
@@ -86,7 +101,7 @@ export function ReportList() {
   const [latestReport, ...pastReports] = reports;
 
   if (latestReport == null) {
-    return <ReportList.Empty />;
+    return <ReportList.Empty thisWeekRecord={thisWeekRecord} />;
   }
 
   return (
@@ -94,13 +109,7 @@ export function ReportList() {
       <ReportList.Latest
         report={latestReport}
         href={{ pathname: '/reports/[reportId]', params: { reportId: String(latestReport.id) } }}
-        trend={
-          <QueryErrorBoundary fallback={RecentCompletionTrend.Error}>
-            <Suspense fallback={<RecentCompletionTrend.Loading />}>
-              <RecentCompletionTrend />
-            </Suspense>
-          </QueryErrorBoundary>
-        }
+        trend={trend}
       />
 
       {pastReports.length > 0 && (
@@ -132,6 +141,7 @@ interface ReportListLatestProps {
 
 ReportList.Latest = function Latest({ report, href, trend, testID }: ReportListLatestProps) {
   const { t } = useTranslation('ai');
+  const router = useRouter();
   // Item과 같은 이유로 Link와 같은 navigate를 쓴다
   const navigate = useSingleTap(router.navigate);
   const dateFormatContext = useDateFormatContext();
@@ -191,6 +201,7 @@ interface ReportListItemProps {
 
 ReportList.Item = function Item({ report, href, isLast = false }: ReportListItemProps) {
   const { t } = useTranslation('ai');
+  const router = useRouter();
   // Link가 navigate로 열어 같은 상세는 한 번만 쌓인다. 안쪽 버튼·메뉴도 같은 동사여야 겹쳐 쌓이지 않는다
   const navigate = useSingleTap(router.navigate);
   const dateFormatContext = useDateFormatContext();
@@ -271,11 +282,10 @@ ReportList.Item = function Item({ report, href, isLast = false }: ReportListItem
   );
 };
 
-/** 무료는 실제 이번 주 기록 아래에 프리미엄 목록과 같은 모양의 예시 리포트를 보인다 */
-ReportList.Free = function Free() {
+ReportList.Free = function Free({ thisWeekRecord }: { thisWeekRecord: ReactNode }) {
   const { t } = useTranslation('ai');
   const { trackEvent } = useTrack();
-  const push = useSingleTap(router.push);
+  const router = useRouter();
   const { language } = useLocaleContext();
   const [reportType] = useReportType();
   const todayKey = useTodayKey();
@@ -287,18 +297,15 @@ ReportList.Free = function Free() {
 
   useTrackView('premium_gate_shown', { key: gateParams.feature, params: gateParams });
 
-  const handleSubscribePress = () => {
+  // 결제 화면을 한 번 여는 누름은 지표도 한 번만 남긴다
+  const handleSubscribePress = useSingleTap(() => {
     trackEvent('premium_gate_cta_tapped', gateParams);
-    push({ pathname: '/paywall', params: { feature: 'AI_REPORT' } });
-  };
+    router.push({ pathname: '/paywall', params: { feature: 'AI_REPORT' } });
+  });
 
   return (
     <VStack gap={20}>
-      <QueryErrorBoundary fallback={ThisWeekRecord.Error}>
-        <Suspense fallback={<ThisWeekRecord.Loading />}>
-          <ThisWeekRecord access="free" />
-        </Suspense>
-      </QueryErrorBoundary>
+      {thisWeekRecord}
 
       <DashedDivider />
 
@@ -371,8 +378,8 @@ ReportList.Loading = function Loading() {
 
       <VStack className="gap-1">
         <TextSkeleton size="b3" className="w-24" />
-        {range(LOADING_CARD_COUNT).map((i) => (
-          <Box key={i}>
+        {range(LOADING_CARD_COUNT).map((cardIndex) => (
+          <Box key={cardIndex}>
             <Box className="py-3">
               <VStack gap={10}>
                 <HStack justify="between" align="center">
@@ -396,7 +403,7 @@ ReportList.Loading = function Loading() {
               </VStack>
             </Box>
 
-            {i < LOADING_CARD_COUNT - 1 && <DashedDivider />}
+            {cardIndex < LOADING_CARD_COUNT - 1 && <DashedDivider />}
           </Box>
         ))}
       </VStack>
@@ -408,7 +415,7 @@ ReportList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   return <QueryErrorFallback reset={reset} />;
 };
 
-ReportList.Empty = function Empty() {
+ReportList.Empty = function Empty({ thisWeekRecord }: { thisWeekRecord: ReactNode }) {
   const { t } = useTranslation('ai');
   const [reportType] = useReportType();
   const { timezone } = useDateFormatContext();
@@ -419,11 +426,7 @@ ReportList.Empty = function Empty() {
 
   return (
     <VStack gap={16}>
-      <QueryErrorBoundary fallback={ThisWeekRecord.Error}>
-        <Suspense fallback={<ThisWeekRecord.Loading />}>
-          <ThisWeekRecord access="premium" />
-        </Suspense>
-      </QueryErrorBoundary>
+      {thisWeekRecord}
 
       {status == null ? (
         <TextSkeleton size="b3" className="mx-auto w-48" />
@@ -438,7 +441,7 @@ ReportList.Empty = function Empty() {
   );
 };
 
-function RecentCompletionTrend() {
+export function RecentCompletionTrend() {
   const { trackEvent } = useTrack();
   const todayKey = useTodayKey();
   const { startYear, endYear } = getTrendIsoWeekYears(todayKey);
@@ -534,6 +537,94 @@ function CompletionTrend({ weeks, onFirstTap }: CompletionTrendProps) {
     </VStack>
   );
 }
+
+interface ThisWeekRecordProps {
+  /** 무료는 AI 분석을 프리미엄에서, 첫 리포트 전 프리미엄은 리포트가 오면 받는다고 안내한다 */
+  access: 'free' | 'premium';
+}
+
+export function ThisWeekRecord({ access }: ThisWeekRecordProps) {
+  const { t } = useTranslation('ai');
+  const { trackEvent } = useTrack();
+  const todayKey = useTodayKey();
+
+  // Suspense라 덮는 달을 모두 받은 뒤에 그린다
+  const completionsByDate = useSuspenseQueries(
+    useGetDailyCompletionsInRangeQueriesOptions(getIsoWeekDateRange(todayKey)),
+  );
+
+  return (
+    <VStack gap={16} testID="report-this-week-record">
+      <HStack align="center" gap={4}>
+        <Text size="b3" weight="semibold" shade={9}>
+          {t('report.thisWeek.title')}
+        </Text>
+        <ThisWeekRecord.GuideTooltip
+          description={match(access)
+            .with('free', () => t('report.thisWeek.info.free'))
+            .with('premium', () => t('report.thisWeek.info.premium'))
+            .exhaustive()}
+        />
+      </HStack>
+      <ThisWeekRecordChart
+        completionsByDate={completionsByDate ?? {}}
+        todayKey={todayKey}
+        accessibilityLabel={t('report.thisWeek.title')}
+        // 리포트 없이 할 일 기록만 그린 차트라 리포트 차트와 다른 값으로 세고 AI 리포트 사용으로 치지 않는다
+        onFirstTap={() => trackEvent('ai_report_chart_tapped', { chart: 'this_week_record' })}
+      />
+    </VStack>
+  );
+}
+
+ThisWeekRecord.GuideTooltip = function GuideTooltip({ description }: { description: string }) {
+  const { t } = useTranslation('ai');
+  const fontScaledSize = useFontScaledSize();
+  const [isOpen, setIsOpen] = useState(false);
+
+  // 말풍선은 앱 루트에 그려져 알림·링크로 화면을 떠나도 남으므로 떠날 때 닫는다
+  useOnScreenBlur(() => setIsOpen(false));
+
+  return (
+    <Popover isOpen={isOpen} onOpenChange={setIsOpen}>
+      <Popover.Trigger asChild>
+        <IconButton
+          accessibilityLabel={t('report.thisWeek.info.label')}
+          icon={
+            <InfoIcon
+              width={fontScaledSize(16)}
+              height={fontScaledSize(16)}
+              colorClassName="text-gray-5"
+            />
+          }
+          className="size-4 min-h-0 min-w-0"
+          hitSlop={14}
+          onPress={() => setIsOpen(true)}
+          testID="report-this-week-record-info"
+        />
+      </Popover.Trigger>
+      <HintPopoverContent placement="bottom" align="start" description={description} />
+    </Popover>
+  );
+};
+
+ThisWeekRecord.Loading = function Loading() {
+  return (
+    <VStack gap={16}>
+      <TextSkeleton size="b3" className="w-32" />
+      <VStack gap={8}>
+        <DailyCompletionChart.Loading />
+        <TextSkeleton size="b4" className="w-48" />
+      </VStack>
+    </VStack>
+  );
+};
+
+ThisWeekRecord.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
+  const { t } = useTranslation('common');
+
+  return <QueryErrorFallback.Inline message={t('errorBoundary.title')} reset={reset} />;
+};
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (

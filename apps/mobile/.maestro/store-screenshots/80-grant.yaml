@@ -1,4 +1,4 @@
-appId: com.aido.mobile
+appId: ${MAESTRO_APP_ID}
 name: 초대 보상으로 프리미엄 쓰는 계정(D-1)
 tags:
   - premium

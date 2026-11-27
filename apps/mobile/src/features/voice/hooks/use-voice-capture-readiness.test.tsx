@@ -4,8 +4,7 @@ import { createConsent } from '@src/features/identity/consent/__tests__/consent.
 import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/queries/consent-query-keys';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { Button, OverlayProvider } from '@src/shared/ui';
+import { Button } from '@src/shared/ui';
 import {
   createHttpClientStub,
   createSpeechRecognizerStub,
@@ -68,14 +67,11 @@ async function renderReadiness() {
   );
   const onResult = jest.fn<void, [VoiceCaptureReadiness]>();
 
-  await renderScreen(
-    <LocalDateProvider>
-      <OverlayProvider>
-        <ReadinessHarness onResult={onResult} />
-      </OverlayProvider>
-    </LocalDateProvider>,
-    { di: createTestDi({ ports: { httpClient, syncStorage, speechRecognizer, queryClient } }) },
-  );
+  await renderScreen(<ReadinessHarness onResult={onResult} />, {
+    di: createTestDi({ ports: { httpClient, syncStorage, speechRecognizer, queryClient } }),
+    withLocalDate: true,
+    withOverlay: true,
+  });
 
   return { speechRecognizer, onResult };
 }

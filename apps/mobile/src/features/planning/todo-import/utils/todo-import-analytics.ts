@@ -2,8 +2,29 @@ import { diffDateKeysInDays } from '@src/shared/date/date-key';
 import { sumBy } from 'es-toolkit';
 import { match, P } from 'ts-pattern';
 
-import type { TodoImportCountBucket } from '../constants/todo-import.events';
-import type { TodoImportSelection } from '../domains/todo-import-session.model';
+import type {
+  TodoImportCountBucket,
+  TodoImportFailureReason,
+} from '../constants/todo-import.events';
+import type { TodoImportSelection } from '../domains/todo-import-selection.model';
+import type { TodoImport } from '../domains/todo-import.model';
+
+/** 끝난 가져오기를 분석에 남길 결과. 아직 끝나지 않았거나 세지 않는 끝남이면 null이다 */
+export function toTodoImportOutcome(
+  todoImport: TodoImport,
+): 'completed' | TodoImportFailureReason | null {
+  return (
+    match(todoImport.status)
+      .returnType<'completed' | TodoImportFailureReason | null>()
+      .with('COMPLETED', () => 'completed')
+      // 되돌리기 실패는 가져오기 실패가 아니라 세지 않는다
+      .with('FAILED', () => (todoImport.failureReason === 'UNDO_FAILED' ? null : 'server_failed'))
+      .with('CANCELED', () => 'canceled')
+      .with('ABANDONED', () => 'abandoned')
+      .with(P.union('UPLOADING', 'QUEUED', 'RUNNING', 'UNDOING', 'UNDONE'), () => null)
+      .exhaustive()
+  );
+}
 
 export function toTodoImportCountBucket(count: number): TodoImportCountBucket {
   return match(count)

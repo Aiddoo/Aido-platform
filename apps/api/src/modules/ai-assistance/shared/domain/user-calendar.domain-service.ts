@@ -1,24 +1,20 @@
 import { DAYS_OF_WEEK, type DayOfWeek } from "@aido/api/vocabulary";
 
 import { instantFromDate } from "#api/shared/domain/time/instant";
-import { localDateIn, resolveTimezone } from "#api/shared/domain/time/timezone-name";
+import { resolveDateBoundaryTimezone } from "#api/shared/domain/time/timezone-name";
 
-// 알 수 없는 저장 시간대는 AI 작업을 멈추지 않고 UTC로 계산한다(resolveTimezone)
+// 알 수 없는 저장 시간대는 AI 작업을 멈추지 않고 날짜 경계 규칙(UTC)으로 계산한다
 export function localDateTimeAt(
   at: Date | Temporal.Instant,
   timezone: string,
 ): Temporal.ZonedDateTime {
   const instant = at instanceof Date ? instantFromDate(at) : at;
-  return instant.toZonedDateTimeISO(resolveTimezone(timezone));
-}
-
-export function localDateAt(at: Date | Temporal.Instant, timezone: string): Temporal.PlainDate {
-  return localDateIn(at instanceof Date ? instantFromDate(at) : at, timezone);
+  return instant.toZonedDateTimeISO(resolveDateBoundaryTimezone(timezone));
 }
 
 /** 서머타임으로 자정이 없는 날은 그날 첫 순간이다 */
 export function startOfLocalDate(date: Temporal.PlainDate, timezone: string): Date {
-  return new Date(date.toZonedDateTime(resolveTimezone(timezone)).epochMilliseconds);
+  return new Date(date.toZonedDateTime(resolveDateBoundaryTimezone(timezone)).epochMilliseconds);
 }
 
 /** 일요일부터 적은 요일 이름 표의 칸(일요일 0 ~ 토요일 6). Temporal 요일은 월요일 1 ~ 일요일 7이다 */

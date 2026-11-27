@@ -1,19 +1,19 @@
-import { useHaptics, useSuggestionApi } from '@src/bootstrap/providers/di-context';
+import { useSuggestionApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { emitTodoCreated } from '@src/core/events/todo-created';
 import { isLimitedFeatureError } from '@src/features/billing/subscription/domains/entitlement.error';
-import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
-import { invalidateTodos } from '@src/features/planning/todo/queries/todo-cache';
+import { settleTodoBatchWrite } from '@src/features/planning/todo/queries/todo-cache';
 import { useTrack } from '@src/shared/analytics';
+import { formatDaysOfWeek } from '@src/shared/date/format/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { t } from '@src/shared/i18n';
+import { toLanguageOfIntlLocale } from '@src/shared/i18n/app-locales';
 import { useAppToast } from '@src/shared/ui';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import type { SuggestionActionSource } from '../constants/suggestion.events';
 import type { AiSuggestionActionInput } from '../schemas/suggestion-action-request.schema';
-import { formatRepeatDays } from '../utils/suggestion-schedule.view-model';
 import {
   cancelAiSuggestionList,
   invalidateAiSuggestions,
@@ -27,16 +27,16 @@ interface ActOnSuggestionVariables {
   source: SuggestionActionSource;
 }
 
+/** 한도·요금제 거절의 결제 안내는 부르는 곳이 `usePromptSuggestionLimit`으로 띄운다 */
 export function useActOnSuggestionMutationOptions() {
-  const haptics = useHaptics();
   const suggestionApi = useSuggestionApi();
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
   const dateFormatContext = useDateFormatContext();
-  const gate = useEntitlementGate('AI_SUGGESTION', { surface: 'suggestions' });
 
   return mutationOptions({
+    mutationKey: SUGGESTION_MUTATION_KEYS.actOnSuggestion(),
     // 수락 시트와 거절 버튼이 응답까지 돈다. 오프라인에 멈춰 두면 연결되는 순간 몰래 보내므로 바로 실패해 안내한다
     networkMode: 'always',
     mutationFn: async ({ suggestionId, input }: ActOnSuggestionVariables) =>
@@ -46,7 +46,10 @@ export function useActOnSuggestionMutationOptions() {
       toast.success(
         input.action === 'accept'
           ? t('ai:suggestions.toasts.accepted', {
-              days: formatRepeatDays(suggestion.daysOfWeek, dateFormatContext),
+              days: formatDaysOfWeek(
+                suggestion.daysOfWeek,
+                toLanguageOfIntlLocale(dateFormatContext.locale),
+              ),
             })
           : t('ai:suggestions.toasts.rejected'),
       );
@@ -58,14 +61,9 @@ export function useActOnSuggestionMutationOptions() {
         }
       }
     },
-    onError: (error) => {
-      if (gate.promptIfBlockedError(error)) {
-        haptics.notify('error');
-      }
-    },
     onSettled: async (_result, error, { input }) => {
       if (input.action === 'accept' && error == null) {
-        invalidateTodos(queryClient);
+        settleTodoBatchWrite(queryClient);
       }
       // 수락은 시트를 닫고 피드로 떠나고, 실패는 오프라인이면 다시 받기가 연결될 때까지 멈춰 기다리지 않는다
       if (input.action === 'accept' || error != null) {

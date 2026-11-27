@@ -1,5 +1,4 @@
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
-import { useCallback } from 'react';
 
 import {
   voiceNoteParamsSchema,
@@ -16,10 +15,7 @@ export function useVoiceNoteDraftId() {
 /** 다른 화면이 메모 탭에 남긴 말로 메모하기 시작 요청. 받은 쪽이 한 번 시작하고 지운다 */
 export function useStartVoiceNoteRequest() {
   const [{ startVoiceNote }, setParams] = useRouteParams(voiceNoteStartParamsSchema);
-  const clearStartVoiceNote = useCallback(
-    () => setParams({ startVoiceNote: undefined }),
-    [setParams],
-  );
+  const clearStartVoiceNote = () => setParams({ startVoiceNote: undefined });
 
   return [startVoiceNote != null, clearStartVoiceNote] as const;
 }

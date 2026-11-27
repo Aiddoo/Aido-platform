@@ -8,7 +8,7 @@ import {
   PARTICLE_SEED_STRIDE,
   placeSprite,
   wrap,
-} from '../../utils/weather-scene-particles.view-model';
+} from '../../utils/weather-scene-particles.geometry';
 import { PARTICLE_SAMPLING, PARTICLE_SPRITES, useParticleTexture } from './weather-scene-textures';
 
 const SNOW_SEED = 0x5a0f;
@@ -32,7 +32,7 @@ const CRYSTAL_SIZE_RATIO = 3.2;
 const CRYSTAL_ALPHA = 0.4;
 const CRYSTAL_SPIN = 0.6;
 
-type SnowLayerProps = {
+interface SnowLayerProps {
   density: number;
   speed: number;
   angle: number;
@@ -42,7 +42,7 @@ type SnowLayerProps = {
   height: number;
   isLowEndDevice: boolean;
   time: SharedValue<number>;
-};
+}
 
 type Flake = {
   x: number;

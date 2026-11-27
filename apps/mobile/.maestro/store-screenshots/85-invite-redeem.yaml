@@ -1,4 +1,4 @@
-appId: com.aido.mobile
+appId: ${MAESTRO_APP_ID}
 name: 새 계정이 초대 링크로 친구가 되고 보상을 받는다
 tags:
   - premium

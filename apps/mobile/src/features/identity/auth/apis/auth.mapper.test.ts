@@ -2,7 +2,7 @@ import { createAuthTokensDto } from '../__tests__/auth.fixtures';
 import { toAuthTokens, toRegisterRequest } from './auth.mapper';
 
 describe('toAuthTokens', () => {
-  it('isNewUser가 없는 이메일 로그인 응답은 기존 로그인으로 본다', () => {
+  it('isNewUser가 없는 이메일 로그인 응답은 새 계정인지 모르는 값(null)으로 읽는다', () => {
     // Given
     const dto = createAuthTokensDto();
 
@@ -10,7 +10,7 @@ describe('toAuthTokens', () => {
     const result = toAuthTokens(dto);
 
     // Then
-    expect(result.isNewUser).toBe(false);
+    expect(result.isNewUser).toBeNull();
   });
 });
 

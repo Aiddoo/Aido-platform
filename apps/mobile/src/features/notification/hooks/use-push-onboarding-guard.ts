@@ -12,8 +12,8 @@ import { useGetPushPermissionQueryOptions } from '../queries/push-permission.que
 import { pushPermissionDeferredAtStoredValue } from '../schemas/push-permission-deferred-at-storage.schema';
 import type { PushOnboardingGuardState } from '../stores/push-onboarding-guard.store';
 
-/** 앱 화면 묶음의 `Stack.Protected` guard. 판정은 여기 한 곳에서 하고, 그려진 뒤에야 피드가 화면을 열 수 있게 알린다 */
-export function usePushOnboardingGuard(): boolean {
+/** 판정은 여기 한 곳에서 하고, 그려진 뒤에야 피드가 화면을 열 수 있게 알린다 */
+export function useMarkPushOnboardingGuardRendered(): boolean {
   const guardStore = usePushOnboardingGuardStore();
   const state = usePushOnboardingDueState();
 
@@ -25,20 +25,14 @@ export function usePushOnboardingGuard(): boolean {
   return state === 'open';
 }
 
-/**
- * 앱 화면 묶음이 그린 guard 값. 알림 화면은 `open`일 때 열어야 열자마자 guard에 막혀 되돌아가지 않고,
- * 다른 자동 화면은 `closed`일 때 열어야 알림 화면과 겹치거나 앞서지 않는다
- */
+/** 알림 화면은 `open`일 때 열어야 guard에 막혀 되돌아가지 않고, 다른 자동 화면은 `closed`일 때 열어야 겹치지 않는다 */
 export function usePushOnboardingGuardState(): PushOnboardingGuardState {
   const guardStore = usePushOnboardingGuardStore();
 
   return useSyncExternalStore(guardStore.subscribe, guardStore.getSnapshot);
 }
 
-/**
- * 알면 화면을 열고, 답하면 닫는다. 내 정보나 OS 권한을 아직 모르면 `pending`이라 띄우지 않고 다른 자동 화면도 기다린다.
- * 권한을 읽지 못하면 알림 화면도 띄울 수 없으므로 닫는다
- */
+/** 내 정보나 OS 권한을 모르면 `pending`이라 띄우지 않고, 권한을 읽지 못하면 알림 화면도 띄울 수 없어 닫는다 */
 function usePushOnboardingDueState(): PushOnboardingGuardState {
   const isAuthenticated = useAuthStatus() === 'authenticated';
   const { data: me } = useQuery({ ...useGetMeQueryOptions(), enabled: isAuthenticated });

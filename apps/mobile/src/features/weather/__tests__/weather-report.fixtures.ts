@@ -7,19 +7,17 @@ import {
   weatherReportSchema as weatherReportDtoSchema,
   weatherRescheduleOptionSchema,
 } from '@aido/api/contracts/weather/v2';
+import type { WeatherRescheduleReason } from '@aido/api/vocabulary';
+import { HOUR_MS } from '@src/shared/constants/time-units';
 import { fromEpochMs, toInstant } from '@src/shared/date/instant';
 import { defineFixture } from '@src/testing/fixture';
 
 import { toWeatherReport } from '../apis/weather.mapper';
-import type { BriefingTodo, ForecastTodo } from '../domains/weather-briefing.model';
-import {
-  airQualitySchema,
-  type CurrentWeather,
-  type DailyForecastEntry,
-  type WeatherReport,
-} from '../domains/weather-report.model';
-
-const HOUR_MS = 60 * 60_000;
+import { airQualitySchema } from '../domains/air-quality.model';
+import type { CurrentWeather } from '../domains/current-weather.model';
+import type { ForecastDay } from '../domains/forecast-day.model';
+import type { WeatherBriefingTodo, WeatherForecastTodo } from '../domains/weather-briefing.model';
+import type { WeatherReport } from '../domains/weather-report.model';
 
 export const createHourlyForecastDto = defineFixture(weatherHourlyForecastSchema, {
   startsAt: '2026-11-02T06:00:00.000Z',
@@ -88,6 +86,19 @@ export function createRescheduleOptionDto(
   overrides: Parameters<typeof rescheduleOption>[0] = {},
 ) {
   return rescheduleOption({ startsAt, ...overrides });
+}
+
+/** 서버가 그 할 일들이 날씨와 겹친다고 판단한 브리핑. 할 일마다 같은 옮길 시각 후보를 준다 */
+export function createAffectedBriefingDto(
+  todos: readonly { id: number }[],
+  reason: WeatherRescheduleReason,
+  options: ReturnType<typeof createRescheduleOptionDto>[],
+) {
+  return createBriefingDto({
+    reason,
+    affectedTodoIds: todos.map((todo) => todo.id),
+    rescheduleOptions: todos.map((todo) => ({ todoId: todo.id, options })),
+  });
 }
 
 export const createWeatherReportDto = defineFixture(weatherReportDtoSchema, {
@@ -224,9 +235,7 @@ export function createCurrentWeather(overrides: Partial<CurrentWeather> = {}): C
   return { ...createWeatherReport().current, ...overrides };
 }
 
-export function createDailyForecast(
-  overrides: Partial<DailyForecastEntry> = {},
-): DailyForecastEntry {
+export function createForecastDay(overrides: Partial<ForecastDay> = {}): ForecastDay {
   const [today] = createWeatherReport().daily;
   if (today == null) {
     throw new Error('기본 예보에 일별 예보가 없습니다');
@@ -240,7 +249,9 @@ export const createAirQuality = defineFixture(airQualitySchema, {
   source: 'AIRKOREA',
 });
 
-export function createForecastTodo(overrides: Partial<ForecastTodo> = {}): ForecastTodo {
+export function createForecastTodo(
+  overrides: Partial<WeatherForecastTodo> = {},
+): WeatherForecastTodo {
   const [hour] = createWeatherReport().hourly;
   if (hour == null) {
     throw new Error('기본 예보에 시간별 예보가 없습니다');
@@ -258,7 +269,9 @@ export function createForecastTodo(overrides: Partial<ForecastTodo> = {}): Forec
   };
 }
 
-export function createBriefingTodo(overrides: Partial<BriefingTodo> = {}): BriefingTodo {
+export function createBriefingTodo(
+  overrides: Partial<WeatherBriefingTodo> = {},
+): WeatherBriefingTodo {
   return {
     id: 1,
     title: '산책',

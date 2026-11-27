@@ -6,8 +6,7 @@ import { formatHourLabel, type TimeFormat } from '@src/shared/date/format/date-f
 import { formatDateKeyRange } from '@src/shared/date/format/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
-import { useRouteParams } from '@src/shared/hooks/use-route-params';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import {
   AiFilledIcon,
@@ -26,21 +25,22 @@ import {
 import { formatPercent } from '@src/shared/utils/number-format';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { useState } from 'react';
 import { match, P } from 'ts-pattern';
 
 import type { ReportChart } from '../constants/report.events';
 import { isReportUnavailableError } from '../domains/report.error';
-import { type AiReport, type DailyCompletion, type ReportType } from '../domains/report.model';
-import { useGetReportDetailQueryOptions } from '../queries/report.queries';
-import { reportParamsSchema } from '../schemas/report-params.schema';
 import {
-  formatDailyValueLine,
-  getDailyCompletionLabels,
-  getHourlyCompletionCounts,
-} from '../utils/report-chart.view-model';
+  type AiReport,
+  type DailyCompletion,
+  ReportPolicy,
+  type ReportType,
+} from '../domains/report.model';
+import { useReportId } from '../hooks/use-report-params';
+import { useGetReportDetailQueryOptions } from '../queries/report.queries';
+import { formatDailyValueLine, getDailyCompletionLabels } from '../utils/report-chart.view-model';
 import { formatReportPeriodLabel } from '../utils/report-period.view-model';
 import { CompletionHourChart } from './completion-hour-chart';
 import { CompletionRateHeadline } from './completion-rate-headline';
@@ -51,7 +51,7 @@ const LOADING_STAT_COUNT = 3;
 
 export function ActivityReport() {
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
-  const [{ reportId }] = useRouteParams(reportParamsSchema);
+  const [reportId] = useReportId();
 
   // 시간대 차트 라벨이 시간 표기 설정을 읽으므로 리포트와 함께 받는다
   const [{ data: report }, { data: preference }] = useSuspenseQueries({
@@ -87,7 +87,6 @@ interface ActivityReportReceiptProps {
   onFirstChartTap?: (chart: ReportChart) => void;
 }
 
-/** 실제 리포트와 무료 예시가 함께 쓰는 리포트 영수증 */
 ActivityReport.Receipt = function Receipt({
   report,
   timeFormat,
@@ -237,7 +236,7 @@ ActivityReport.CompletionHours = function CompletionHours({
 
   const [selectedHour, setSelectedHour] = useState<number | null>(null);
 
-  const hourlyCounts = getHourlyCompletionCounts(report);
+  const hourlyCounts = ReportPolicy.getHourlyCompletionCounts(report);
   const hourLabels = range(HOURS_PER_DAY).map((hour) =>
     formatHourLabel(hour, timeFormat, dateFormatContext),
   );
@@ -376,6 +375,7 @@ ActivityReport.Loading = function Loading() {
 
 /** 지워졌거나 볼 수 없는 리포트는 목록으로 보내고, 그 밖의 실패는 다시 시도를 준다. 예전 알림·딥링크가 지운 리포트를 열 때 보인다 */
 ActivityReport.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
+  const router = useRouter();
   const { t } = useTranslation('ai');
 
   if (!isReportUnavailableError(error)) {

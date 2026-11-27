@@ -4,11 +4,11 @@ import { useTrack, useTrackView } from '@src/shared/analytics';
 import { useLocaleContext } from '@src/shared/hooks/use-locale-context';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import { Button, QueryErrorFallback, type QueryErrorFallbackProps } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 
 import { sampleReportParamsSchema } from '../schemas/report-params.schema';
 import { createSampleReport } from '../utils/sample-report.view-model';
@@ -30,11 +30,10 @@ export function SampleActivityReport() {
   );
 }
 
-/** 예시 아래의 결제 버튼. 보이면 premium_gate_shown, 누르면 premium_gate_cta_tapped를 남기고 페이월을 연다 */
 SampleActivityReport.SubscribeButton = function SubscribeButton() {
   const { t } = useTranslation('ai');
   const { trackEvent } = useTrack();
-  const push = useSingleTap(router.push);
+  const router = useRouter();
   const gateParams = {
     feature: getPremiumGateAnalyticsFeature('AI_REPORT'),
     surface: 'report_sample',
@@ -43,10 +42,11 @@ SampleActivityReport.SubscribeButton = function SubscribeButton() {
 
   useTrackView('premium_gate_shown', { key: gateParams.feature, params: gateParams });
 
-  const handlePress = () => {
+  // 결제 화면을 한 번 여는 누름은 지표도 한 번만 남긴다
+  const handlePress = useSingleTap(() => {
     trackEvent('premium_gate_cta_tapped', gateParams);
-    push({ pathname: '/paywall', params: { feature: 'AI_REPORT' } });
-  };
+    router.push({ pathname: '/paywall', params: { feature: 'AI_REPORT' } });
+  });
 
   return (
     <Button size="medium" testID="report-sample-subscribe" onPress={handlePress}>

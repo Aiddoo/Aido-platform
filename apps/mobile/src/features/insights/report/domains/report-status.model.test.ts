@@ -9,34 +9,36 @@ const STATUS: ReportStatus = {
 };
 const SEOUL = 'Asia/Seoul';
 
-describe('getDaysUntilReport', () => {
-  it.each([
-    { now: '2026-11-21T14:59:00.000Z', expected: 2, label: '토 23:59' },
-    { now: '2026-11-21T15:00:00.000Z', expected: 1, label: '일 00:00' },
-    { now: '2026-11-22T15:00:00.000Z', expected: 0, label: '월 00:00' },
-  ])('서울 $label에 주간 리포트는 D-$expected다', ({ now, expected }) => {
-    // When
-    const daysLeft = ReportStatusPolicy.getDaysUntilReport(STATUS, 'WEEKLY', {
-      now: toInstant(now),
-      timezone: SEOUL,
+describe('ReportStatusPolicy', () => {
+  describe('getDaysUntilReport', () => {
+    it.each([
+      { now: '2026-11-21T14:59:00.000Z', expected: 2, label: '토 23:59' },
+      { now: '2026-11-21T15:00:00.000Z', expected: 1, label: '일 00:00' },
+      { now: '2026-11-22T15:00:00.000Z', expected: 0, label: '월 00:00' },
+    ])('서울 $label에 주간 리포트는 D-$expected다', ({ now, expected }) => {
+      // When
+      const daysLeft = ReportStatusPolicy.getDaysUntilReport(STATUS, 'WEEKLY', {
+        now: toInstant(now),
+        timezone: SEOUL,
+      });
+
+      // Then
+      expect(daysLeft).toBe(expected);
     });
 
-    // Then
-    expect(daysLeft).toBe(expected);
-  });
+    it('같은 응답을 들고 화면을 켜 둔 채 자정을 넘기면 남은 날이 하루 줄어든다', () => {
+      // When
+      const beforeMidnight = ReportStatusPolicy.getDaysUntilReport(STATUS, 'MONTHLY', {
+        now: toInstant('2026-11-25T14:59:00.000Z'),
+        timezone: SEOUL,
+      });
+      const afterMidnight = ReportStatusPolicy.getDaysUntilReport(STATUS, 'MONTHLY', {
+        now: toInstant('2026-11-25T15:00:00.000Z'),
+        timezone: SEOUL,
+      });
 
-  it('같은 응답을 들고 화면을 켜 둔 채 자정을 넘기면 남은 날이 하루 줄어든다', () => {
-    // When
-    const beforeMidnight = ReportStatusPolicy.getDaysUntilReport(STATUS, 'MONTHLY', {
-      now: toInstant('2026-11-25T14:59:00.000Z'),
-      timezone: SEOUL,
+      // Then
+      expect([beforeMidnight, afterMidnight]).toEqual([6, 5]);
     });
-    const afterMidnight = ReportStatusPolicy.getDaysUntilReport(STATUS, 'MONTHLY', {
-      now: toInstant('2026-11-25T15:00:00.000Z'),
-      timezone: SEOUL,
-    });
-
-    // Then
-    expect([beforeMidnight, afterMidnight]).toEqual([6, 5]);
   });
 });

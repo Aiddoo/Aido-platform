@@ -19,7 +19,7 @@ import {
   PARTICLE_SEED_STRIDE,
   placeSprite,
   wrap,
-} from '../../utils/weather-scene-particles.view-model';
+} from '../../utils/weather-scene-particles.geometry';
 import {
   HEAT_WAVE_SPRITE,
   PARTICLE_SAMPLING,
@@ -65,12 +65,12 @@ const EMBER_GLINT = { base: 0.5, swing: 0.5, frequency: 2 } as const;
 const EMBER_SIZE_RATIO = 4;
 const EMBER_ALPHA = 0.6;
 
-type HeatLayerProps = {
+interface HeatLayerProps {
   width: number;
   height: number;
   isLowEndDevice: boolean;
   time: SharedValue<number>;
-};
+}
 
 /** 무더위: 아래쪽 공기가 일렁이고, 열기 물결이 올라가며, 바닥에서 주황빛 열기와 불씨가 피어오른다. */
 export function HeatLayer({ width, height, isLowEndDevice, time }: HeatLayerProps) {
@@ -92,7 +92,11 @@ export function HeatLayer({ width, height, isLowEndDevice, time }: HeatLayerProp
   );
 }
 
-type HeatAreaProps = { width: number; height: number; time: SharedValue<number> };
+interface HeatAreaProps {
+  width: number;
+  height: number;
+  time: SharedValue<number>;
+}
 
 /** 먼저 그린 열기 물결·불씨를 셰이더로 좌우로 흔들어 아지랑이를 만든다. */
 HeatLayer.Shimmer = function Shimmer({ width, height, time }: HeatAreaProps) {

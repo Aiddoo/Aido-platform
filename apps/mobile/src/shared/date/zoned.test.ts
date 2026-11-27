@@ -1,7 +1,8 @@
+import { DAY_MS, MINUTE_MS } from '@src/shared/constants/time-units';
 import { createDateKey } from '@src/testing/date-key';
 import { temporalOracle } from '@src/testing/temporal-oracle';
 
-import { toInstant } from './instant';
+import { fromEpochMs, toInstant } from './instant';
 import {
   calculateCalendarDaysLeft,
   getZonedHour,
@@ -385,5 +386,98 @@ describe('calculateCalendarDaysLeft', () => {
 
     // Then
     expect(result).toBe(expected);
+  });
+});
+
+// 비정수 오프셋(+5:30·+5:45), 가장 앞선 오프셋(+14), 날짜선을 건너 하루가 없는 날과 서머타임
+const BOUNDARY_ZONE_DAYS = [
+  { timezone: 'Asia/Kolkata', dates: ['2026-11-25', '2028-02-29'] },
+  { timezone: 'Asia/Kathmandu', dates: ['1985-12-31', '1986-01-01', '2026-11-25'] },
+  { timezone: 'Pacific/Kiritimati', dates: ['1994-12-30', '1994-12-31', '2026-11-25'] },
+  {
+    timezone: 'Pacific/Apia',
+    dates: ['2011-12-29', '2011-12-30', '2011-12-31', '2020-09-27', '2021-04-04', '2026-11-25'],
+  },
+] as const;
+const QUARTER_HOUR_MS = 15 * MINUTE_MS;
+const QUARTER_HOURS_PER_TWO_DAYS = (2 * DAY_MS) / QUARTER_HOUR_MS;
+
+describe('경계 시간대', () => {
+  it('순간마다 날짜 key와 벽시계가 서버 규칙(Temporal)과 같다', () => {
+    // Given
+    const cases = BOUNDARY_ZONE_DAYS.flatMap(({ timezone, dates }) =>
+      dates.flatMap((date) => {
+        const startMs = Date.parse(`${date}T00:00:00.000Z`) - DAY_MS;
+        return Array.from({ length: QUARTER_HOURS_PER_TWO_DAYS }, (_, index) => ({
+          timezone,
+          instant: fromEpochMs(startMs + index * QUARTER_HOUR_MS),
+        }));
+      }),
+    );
+
+    // When
+    const mismatches = cases.filter(
+      ({ timezone, instant }) =>
+        toDateKey(instant, timezone) !== temporalOracle.toDateKey(instant, timezone) ||
+        toHHmm(instant, timezone) !== temporalOracle.toHHmm(instant, timezone),
+    );
+
+    // Then
+    expect(cases).toHaveLength(14 * QUARTER_HOURS_PER_TWO_DAYS);
+    expect(mismatches).toEqual([]);
+  });
+
+  it('날짜와 벽시계를 순간으로 바꾼 값이 서버 규칙(Temporal compatible)과 같다', () => {
+    // Given
+    const times = ['00:00', '00:15', '02:30', '03:30', '10:00', '23:45'];
+    const cases = BOUNDARY_ZONE_DAYS.flatMap(({ timezone, dates }) =>
+      dates.flatMap((date) => times.map((time) => ({ timezone, date, time }))),
+    );
+
+    // When
+    const mismatches = cases.filter(
+      ({ timezone, date, time }) =>
+        toZonedInstant({ date: createDateKey(date), time, timezone }) !==
+        temporalOracle.toZonedInstant(date, time, timezone),
+    );
+
+    // Then
+    expect(mismatches).toEqual([]);
+  });
+
+  it.each([
+    { label: '콜카타는 +5:30', timezone: 'Asia/Kolkata', date: '2026-11-26', time: '00:30' },
+    { label: '카트만두는 +5:45', timezone: 'Asia/Kathmandu', date: '2026-11-26', time: '00:45' },
+    {
+      label: '키리티마티는 +14',
+      timezone: 'Pacific/Kiritimati',
+      date: '2026-11-26',
+      time: '09:00',
+    },
+    { label: '아피아는 +13', timezone: 'Pacific/Apia', date: '2026-11-26', time: '08:00' },
+  ])('UTC 11-25 19:00은 $label라 $date $time이다', ({ timezone, date, time }) => {
+    // Given
+    const instant = toInstant('2026-11-25T19:00:00.000Z');
+
+    // When
+    const local = { date: toDateKey(instant, timezone), time: toHHmm(instant, timezone) };
+
+    // Then
+    expect(local).toEqual({ date, time });
+  });
+
+  it('아피아는 2011년 날짜선을 건너 12월 30일이 없어 29일 다음이 31일이다', () => {
+    // Given
+    const lastMinuteOfDecember29 = toInstant('2011-12-30T09:59:00.000Z');
+    const firstMinuteOfDecember31 = toInstant('2011-12-30T10:00:00.000Z');
+
+    // When
+    const dateKeys = [
+      toDateKey(lastMinuteOfDecember29, 'Pacific/Apia'),
+      toDateKey(firstMinuteOfDecember31, 'Pacific/Apia'),
+    ];
+
+    // Then
+    expect(dateKeys).toEqual(['2011-12-29', '2011-12-31']);
   });
 });

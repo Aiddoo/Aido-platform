@@ -1,14 +1,13 @@
+import { TODO_CATEGORY_LIMITS } from "@aido/api/vocabulary";
+
 import { ValueObject } from "#api/shared/domain/model/value-object";
 
 import { categoryNameLengthOutOfRange } from "./todo-categories.errors.js";
 
-// DB VarChar(50)·계약과 같은 상한이다
-const MAX_LENGTH = 50;
-
 export class CategoryName extends ValueObject<string> {
   static create(raw: string): CategoryName {
-    if (raw.length < 1 || raw.length > MAX_LENGTH) {
-      throw categoryNameLengthOutOfRange(MAX_LENGTH);
+    if (raw.length < 1 || raw.length > TODO_CATEGORY_LIMITS.NAME_MAX_LENGTH) {
+      throw categoryNameLengthOutOfRange(TODO_CATEGORY_LIMITS.NAME_MAX_LENGTH);
     }
     return new CategoryName(raw);
   }

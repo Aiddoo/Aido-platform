@@ -70,6 +70,8 @@ X.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
 <QueryErrorFallback.Inline message={t('friend:list.loadFailed')} reset={reset} hasInquiry />
 ```
 
+실패해도 화면 흐름에 지장이 없는 값 조각(설정 줄 끝 값, 개수, 보조 안내)은 `fallback={QueryErrorFallback.Hidden}`으로 자리를 비웁니다. 오류 보고는 경계가 하고, 비우는 이유는 경계 위 한 줄 주석에 적습니다.
+
 route 시트 안에서는 시트를 먼저 닫고 문의 화면을 엽니다. `onInquiry`는 초안이 담긴 문의 `href`를 받으므로
 `sheet.close({ type: 'dismiss-to', href })`로 넘깁니다. 문의는 탭 화면이라 시트와 그 아래 탭 위 화면을 닫고 탭 묶음 하나 안, 시트 아래 보던 탭에서 엽니다(`dismissToTab`). `RouteBottomSheet`가 이 경계를 갖고 있어 시트는 경계를 다시 두지 않습니다. 경계가 시트 밖에 있는
 폼 시트만 fallback이 `sheet`를 받을 수 있게 경계에서 넘깁니다.

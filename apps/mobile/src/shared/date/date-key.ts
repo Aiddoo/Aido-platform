@@ -1,6 +1,9 @@
 import { dateSchema } from '@aido/api/common';
 import { DAYS_PER_WEEK, MONTHS_PER_YEAR } from '@src/shared/constants/time-units';
+import { range } from 'es-toolkit';
 import { z } from 'zod';
+
+import { getDaysSinceAggregationWeekStart, getDaysSinceCalendarWeekStart } from './week-start';
 
 // Hinnant의 civil 날짜 ↔ 일수 변환(proleptic 그레고리력, "chrono-Compatible Low-Level Date Algorithms")이다.
 // Hermes에 Temporal이 없고 폴리필은 spike에서 버렸다. 3월을 해의 첫 달로 세면 윤일이 해의 끝에 와 식이 단순해진다
@@ -159,9 +162,8 @@ function toDayOfWeek(epochDay: number): number {
   return (((epochDay + EPOCH_DAY_OF_WEEK) % DAYS_PER_WEEK) + DAYS_PER_WEEK) % DAYS_PER_WEEK;
 }
 
-/** 월요일 시작 주의 월요일까지 지난 일수 */
 function getDaysSinceMonday(epochDay: number): number {
-  return (toDayOfWeek(epochDay) + DAYS_PER_WEEK - 1) % DAYS_PER_WEEK;
+  return getDaysSinceAggregationWeekStart(toDayOfWeek(epochDay));
 }
 
 export function addDaysToDateKey(dateKey: DateKey, days: number): DateKey {
@@ -202,6 +204,12 @@ export function getDayOfWeek(dateKey: DateKey): number {
 export function getMondayOfDateKey(dateKey: DateKey): DateKey {
   const epochDay = toEpochDay(dateKey);
   return formatDateKey(fromEpochDay(epochDay - getDaysSinceMonday(epochDay)));
+}
+
+/** 그 날이 속한 월요일 시작 주(ISO 주)의 월요일부터 일요일까지. 주간 성취·리포트가 서버와 같은 주를 본다 */
+export function getIsoWeekDateRange(dateKey: DateKey): { startDate: DateKey; endDate: DateKey } {
+  const startDate = getMondayOfDateKey(dateKey);
+  return { startDate, endDate: addDaysToDateKey(startDate, DAYS_PER_WEEK - 1) };
 }
 
 export function getYearOfDateKey(dateKey: DateKey): number {
@@ -274,10 +282,37 @@ export interface CalendarWeek extends WeekOfMonth {
 
 /** 일요일 시작 주. 2027-01-01(금)의 주는 2026-12-27에 시작하고 수요일 12월 30일이 속한 12월 5주차다 */
 export function getCalendarWeek(dateKey: DateKey): CalendarWeek {
-  const startDateKey = addDaysToDateKey(dateKey, -getDayOfWeek(dateKey));
+  const startDateKey = addDaysToDateKey(
+    dateKey,
+    -getDaysSinceCalendarWeekStart(getDayOfWeek(dateKey)),
+  );
   return {
     startDateKey,
     endDateKey: addDaysToDateKey(startDateKey, DAYS_PER_WEEK - 1),
     ...toWeekOfMonth(addDaysToDateKey(startDateKey, WEEK_MIDDLE_DAY_OFFSET)),
   };
+}
+
+/** 두 날이 속한 일요일 시작 주의 차이(to - from). 요일이 달라도 주로 센다 */
+export function diffDateKeysInCalendarWeeks(from: DateKey, to: DateKey): number {
+  return (
+    diffDateKeysInDays(getCalendarWeek(from).startDateKey, getCalendarWeek(to).startDateKey) /
+    DAYS_PER_WEEK
+  );
+}
+
+export function getWeekDateKeys(weekStartDateKey: DateKey): DateKey[] {
+  return range(DAYS_PER_WEEK).map((index) => addDaysToDateKey(weekStartDateKey, index));
+}
+
+/** 그 날이 속한 달이 걸친 일요일 시작 주의 첫날들. `minWeekCount`보다 적으면 뒤로 주를 더 붙인다 */
+export function getMonthCalendarWeekStartDateKeys(dateKey: DateKey, minWeekCount = 0): DateKey[] {
+  const firstWeekStartDateKey = getCalendarWeek(getMonthStartDateKey(dateKey)).startDateKey;
+  const lastWeekStartDateKey = getCalendarWeek(getMonthEndDateKey(dateKey)).startDateKey;
+  const weekCount =
+    diffDateKeysInDays(firstWeekStartDateKey, lastWeekStartDateKey) / DAYS_PER_WEEK + 1;
+
+  return range(Math.max(weekCount, minWeekCount)).map((weekIndex) =>
+    addDaysToDateKey(firstWeekStartDateKey, weekIndex * DAYS_PER_WEEK),
+  );
 }

@@ -1,5 +1,6 @@
-import { INVITE_FRIENDSHIP } from '@aido/api/vocabulary';
+import { INVITE_FRIENDSHIP, INVITEE_REWARDS } from '@aido/api/vocabulary';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
+import { UserPolicy } from '@src/features/identity/user/domains/user.model';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { getNowInstant } from '@src/shared/date/clock';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
@@ -19,20 +20,18 @@ import {
 } from '@src/shared/ui';
 import { useAppToast } from '@src/shared/ui';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
-import { type Href, router } from 'expo-router';
+import { type Href, useRouter } from 'expo-router';
 
-import { INVITEE_PREMIUM_DAYS } from '../constants/invite.constants';
 import type { InviteCode } from '../domains/invite-code.model';
 import { InviteRedemptionPolicy } from '../domains/invite-redemption.model';
-import { toRedeemFailureReason } from '../domains/invite.error';
-import { InviteeUserPolicy } from '../domains/invitee-user.model';
+import { InviteRewardPolicy } from '../domains/invite-reward.model';
+import { getRedeemFailure } from '../domains/invite.error';
 import type { InviteLinkSource } from '../domains/pending-redemption.model';
 import { useInviteParams } from '../hooks/use-invite-params';
 import { useRedeemInviteMutationOptions } from '../queries/invite.mutations';
 import { useGetInvitePreviewQueryOptions } from '../queries/invite.queries';
 import { pendingRedemptionStoredValue } from '../schemas/pending-redemption-storage.schema';
 
-/** 초대 카드 아래 행동. 로그인 전이면 초대를 기기에 남기고 가입·로그인으로 보낸다 */
 export function InviteCardActions() {
   const status = useAuthStatus();
   const [{ inviteCode, source }] = useInviteParams();
@@ -57,6 +56,7 @@ InviteCardActions.Guest = function Guest({
 }) {
   const { t } = useTranslation('invite');
   const storage = useStoredValueStorage(pendingRedemptionStoredValue);
+  const router = useRouter();
   const continueAsGuest = useSingleTap((pathname: '/sign-up' | '/login') => {
     writeStoredValue(storage, pendingRedemptionStoredValue, {
       inviteCode,
@@ -87,14 +87,10 @@ InviteCardActions.Guest = function Guest({
   );
 };
 
-/**
- * 로그인한 사용자의 수락 버튼. 가입한 지 얼마 안 된 계정은 보상을, 오래 쓴 계정은 친구 맺기만 안내한다.
- * 최종 판정은 서버가 하고 결과는 환영 시트가 보여 준다.
- */
+/** 최종 판정은 서버가 하고 결과는 환영 시트가 보여 준다 */
 InviteCardActions.Redeem = function Redeem({ inviteCode }: { inviteCode: InviteCode }) {
   const { t } = useTranslation('invite');
-  // 내 초대 정보(GET /v1/invites/me)는 처음 부르면 내 코드를 만들어 여기서 읽지 않는다.
-  // 내 링크를 열었으면 서버가 INVITE_2103으로 막고 수락 오류 처리가 내 초대 화면으로 보낸다
+  // 내 초대 정보(GET /v1/invites/me)는 처음 부르면 내 코드를 만들어 여기서 읽지 않는다
   const [{ data: preview }, { data: me }] = useSuspenseQueries({
     queries: [useGetInvitePreviewQueryOptions({ inviteCode }), useGetMeQueryOptions()],
   });
@@ -102,10 +98,10 @@ InviteCardActions.Redeem = function Redeem({ inviteCode }: { inviteCode: InviteC
   const toast = useAppToast();
   const now = useMinuteNow();
   const inviterName = preview.inviter.name ?? t('card.unnamedInviter');
-  const isRewardExpected = InviteeUserPolicy.isRewardExpected(me, now);
+  const isRewardExpected = UserPolicy.isInviteRewardExpected(me, now);
 
-  // 이동은 호출부 콜백에 둔다. 재조회를 기다리는 사이 화면을 떠났으면 콜백이 불리지 않아 끌려가지 않는다
-  const handleRedeem = () => {
+  // 이동은 호출부 콜백에 둬 화면을 떠났으면 끌려가지 않는다. isPending은 다음 렌더에야 켜져 두 번째 탭을 막지 못한다
+  const handleRedeem = useSingleTap(() => {
     redeem.mutate(inviteCode, {
       onSuccess: (result) => {
         const friendId = result.inviter.userId;
@@ -132,12 +128,12 @@ InviteCardActions.Redeem = function Redeem({ inviteCode }: { inviteCode: InviteC
       },
       onError: (error) => {
         // 내 링크를 연 경우에는 내 초대 화면으로 보내 친구에게 보내게 한다
-        if (toRedeemFailureReason(error) === 'self') {
+        if (getRedeemFailure(error) === 'self') {
           leaveInviteCard('/friends/invite');
         }
       },
     });
-  };
+  });
 
   return (
     <StyledSafeAreaView edges={['left', 'right', 'bottom']}>
@@ -157,7 +153,9 @@ InviteCardActions.Redeem = function Redeem({ inviteCode }: { inviteCode: InviteC
           isDisabled={redeem.isPending}
         >
           {isRewardExpected
-            ? t('card.redeemWithReward', { count: INVITEE_PREMIUM_DAYS })
+            ? t('card.redeemWithReward', {
+                count: InviteRewardPolicy.getPremiumDays(INVITEE_REWARDS),
+              })
             : t('card.connect', { name: inviterName })}
         </Button>
       </ReadableContent>
@@ -165,10 +163,7 @@ InviteCardActions.Redeem = function Redeem({ inviteCode }: { inviteCode: InviteC
   );
 };
 
-/**
- * 수락이 끝난 초대 카드를 떠난다. 카드는 루트 스택이라 replace하면 켜 둔 앱 위에 탭 묶음을 하나 더 쌓는다.
- * 켜 둔 앱이면 카드를 닫고 보던 탭에서, 카드로 앱을 열었으면 목적지 탭의 첫 화면을 깔고 연다. 뒤로 가도 카드로 돌아오지 않는다
- */
+/** 카드는 루트 스택이라 replace하면 켜 둔 앱 위에 탭 묶음을 하나 더 쌓는다. 뒤로 가도 카드로 돌아오지 않는다 */
 function leaveInviteCard(href: Href) {
   dismissToTab(href, { withAnchor: true });
 }

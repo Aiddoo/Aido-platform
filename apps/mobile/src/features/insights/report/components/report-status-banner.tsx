@@ -13,7 +13,7 @@ import { useSuspenseQueries } from '@tanstack/react-query';
 import { match } from 'ts-pattern';
 
 import { ReportStatusPolicy } from '../domains/report-status.model';
-import { useReportType } from '../hooks/use-report-type';
+import { useReportType } from '../hooks/use-report-params';
 import { useGetReportStatusQueryOptions } from '../queries/report.queries';
 
 export function ReportStatusBanner() {

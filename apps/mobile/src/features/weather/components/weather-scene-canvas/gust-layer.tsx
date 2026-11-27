@@ -13,7 +13,7 @@ import {
   PARTICLE_SEED_STRIDE,
   placeSprite,
   wrap,
-} from '../../utils/weather-scene-particles.view-model';
+} from '../../utils/weather-scene-particles.geometry';
 import {
   PARTICLE_SAMPLING,
   PARTICLE_SPRITES,
@@ -56,12 +56,12 @@ function getStreakStyle(tone: GustTone): StreakStyle {
     .exhaustive();
 }
 
-type GustStreaksProps = {
+interface GustStreaksProps {
   tone: GustTone;
   width: number;
   height: number;
   time: SharedValue<number>;
-};
+}
 
 /** 돌풍 리듬에 맞춰 세졌다 약해지며 화면을 가로지르는 물결 모양 바람 줄기 */
 export function GustStreaks({ tone, width, height, time }: GustStreaksProps) {
@@ -110,12 +110,12 @@ export function GustStreaks({ tone, width, height, time }: GustStreaksProps) {
   );
 }
 
-type GustLayerProps = {
+interface GustLayerProps {
   width: number;
   height: number;
   isLowEndDevice: boolean;
   time: SharedValue<number>;
-};
+}
 
 /** 강한 바람: 바람 줄기 사이로 마른 잎이 뒤집히며 날아간다. */
 export function GustLayer({ width, height, isLowEndDevice, time }: GustLayerProps) {

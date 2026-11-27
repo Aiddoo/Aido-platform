@@ -16,7 +16,7 @@ import {
 } from '@src/shared/ui';
 import { tv } from '@src/shared/utils/tv';
 
-import { type EntitlementFeature } from '../domains/entitlement.model';
+import { type EntitlementFeature } from '../domains/feature-quota.model';
 
 const FEATURE_ICONS = {
   AI_PARSE: AiFilledIcon,

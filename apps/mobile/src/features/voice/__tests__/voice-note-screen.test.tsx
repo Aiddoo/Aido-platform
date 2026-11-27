@@ -1,4 +1,3 @@
-import { ApiError } from '@src/core/errors/api-error';
 import { fail, ok } from '@src/core/errors/result';
 import '@src/shared/i18n/init';
 import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
@@ -11,11 +10,11 @@ import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-
 import { createMemo } from '@src/features/notes/memo/__tests__/memo.fixtures';
 import { MEMO_QUERY_KEYS } from '@src/features/notes/memo/queries/memo-query-keys';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/queries/todo-category-query-keys';
+import { createTodoDto } from '@src/features/planning/todo/__tests__/todo.fixtures';
 import { toInstant } from '@src/shared/date/instant';
 import { NetworkError } from '@src/shared/errors';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { OverlayProvider } from '@src/shared/ui';
 import {
+  createAnalyticsStub,
   createHttpClientStub,
   createAppLoggerStub,
   createMemoryKeyValueStorage,
@@ -24,15 +23,17 @@ import {
   createTestQueryClient,
   createVoiceNoteStorageFake,
   stubWindowDimensions,
+  createApiError,
+  getTrackedEvents,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
-import { act, screen, userEvent, waitFor } from '@testing-library/react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { act, fireEvent, screen, userEvent, waitFor } from '@testing-library/react-native';
+import { router, useIsFocused, useLocalSearchParams } from 'expo-router';
 
 import VoiceNoteRoute from '../../../../app/(app)/voice-notes/[draftId]';
+import { createPlanReviewDraft } from '../domains/plan-review-draft.model';
 import { voicePlanSchema } from '../domains/voice-plan.model';
-import { createPlanReviewDraft } from '../utils/plan-review-draft';
 import { createVoiceNoteDigest, createSpokenVoiceNote } from './voice-note.fixtures';
 import { createVoiceNoteDigestDto } from './voice.fixtures';
 
@@ -92,16 +93,21 @@ async function renderVoiceNote(
   queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: ACCOUNT_ID }));
   queryClient.setQueryData(ENTITLEMENT_QUERY_KEYS.snapshot(), entitlements);
   queryClient.setQueryData(TODO_CATEGORY_QUERY_KEYS.list(), {
-    categories: [{ id: 1, name: '기본', color: '#3B82F6', sortOrder: 0, todoCount: 0 }],
+    categories: [
+      { id: 1, name: '기본', color: '#3B82F6', sortOrder: 0, todoCount: 0 },
+      { id: 2, name: '업무', color: '#EF4444', sortOrder: 1, todoCount: 0 },
+    ],
   });
   queryClient.setQueryData(
     PREFERENCE_QUERY_KEYS.current(),
     createPreference({ timeFormat: 'TWELVE_HOUR' }),
   );
+  const analytics = createAnalyticsStub();
   const di = createTestDi({
     ports: {
       httpClient,
       queryClient,
+      analytics,
       syncStorage: createAllSeenCoachmarkStorage(ACCOUNT_ID).syncStorage,
       storage: createMemoryKeyValueStorage(),
       ...createVoiceNoteStorageFake().ports,
@@ -113,19 +119,52 @@ async function renderVoiceNote(
     createSpokenVoiceNote({ draftId: DRAFT_ID, ...note }),
   );
 
-  const { unmount } = await renderScreen(
-    <LocalDateProvider>
-      <OverlayProvider>
-        <VoiceNoteRoute />
-      </OverlayProvider>
-    </LocalDateProvider>,
-    { di },
-  );
+  const { unmount } = await renderScreen(<VoiceNoteRoute />, {
+    di,
+    withLocalDate: true,
+    withOverlay: true,
+  });
 
-  return { httpClient, di, unmount, queryClient };
+  return { httpClient, di, unmount, queryClient, analytics };
 }
 
-describe('VoiceNoteScreen', () => {
+function findPosts(httpClient: ReturnType<typeof createHttpClientStub>, path: string) {
+  return httpClient.post.mock.calls.filter(([postPath]) => postPath === path);
+}
+
+function createPlanTodoAction(overrides: Record<string, unknown>) {
+  return {
+    type: 'create-todo',
+    actionId: 'todo-1',
+    title: '운동',
+    startDate: '2026-11-05',
+    endDate: null,
+    scheduledTime: null,
+    repeat: null,
+    visibility: null,
+    items: [],
+    categoryId: null,
+    duplicateOfTodoId: null,
+    ...overrides,
+  };
+}
+
+/** 운동(정하지 않음)·회의(업무)·장보기(정하지 않음). 정하지 않은 카드는 기본 카테고리로 묶인다 */
+const planDraftWithThreeTodos = createPlanReviewDraft(
+  voicePlanSchema.parse({
+    planId: DRAFT_ID,
+    source: 'voice-note',
+    sourceMemoId: null,
+    omittedTodoCount: 0,
+    actions: [
+      createPlanTodoAction({ actionId: 'todo-1', title: '운동' }),
+      createPlanTodoAction({ actionId: 'todo-2', title: '회의', categoryId: 2 }),
+      createPlanTodoAction({ actionId: 'todo-3', title: '장보기' }),
+    ],
+  }),
+);
+
+describe('VoiceNoteRoute', () => {
   describe('말로 메모 화면', () => {
     // 화면을 떠난 뒤 오는 응답·동의 결과가 토스트를 띄워도 타이머가 테스트 밖에 남지 않게 한다
     setupFakeTimersPerTest({ advanceTimers: true });
@@ -140,7 +179,7 @@ describe('VoiceNoteScreen', () => {
       // Then
       expect(button).toBeOnTheScreen();
       expect(screen.getByTestId('voice-note-digest-cost')).toHaveTextContent(
-        '1회 사용 · 이번 달 3회 남음',
+        '1번 사용 · 이번 달 3번 남음',
       );
     });
 
@@ -161,7 +200,7 @@ describe('VoiceNoteScreen', () => {
       const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
       const { httpClient } = await renderVoiceNote({});
       httpClient.post.mockResolvedValue(
-        fail(new ApiError('AI_1301', '실패', 503, { charged: false })),
+        fail(createApiError('AI_1301', { message: '실패', details: { charged: false } })),
       );
 
       // When
@@ -194,7 +233,7 @@ describe('VoiceNoteScreen', () => {
       // Given
       const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
       const { httpClient } = await renderVoiceNote({});
-      httpClient.post.mockResolvedValue(fail(new ApiError('AI_1312', '너무 김', 422)));
+      httpClient.post.mockResolvedValue(fail(createApiError('AI_1312', { message: '너무 김' })));
 
       // When
       await user.press(await screen.findByRole('button', { name: '정리하기' }));
@@ -458,7 +497,9 @@ describe('VoiceNoteScreen', () => {
         digest: createVoiceNoteDigest({ keyPoints: [] }),
         planDraft: emptyPlanDraft,
       });
-      httpClient.post.mockResolvedValue(fail(new ApiError('AI_1318', '키 충돌', 409)));
+      httpClient.post.mockResolvedValue(
+        fail(createApiError('AI_1318', { message: '키 충돌', status: 409 })),
+      );
 
       // When
       await user.press(await screen.findByRole('button', { name: '메모로 저장' }));
@@ -468,6 +509,272 @@ describe('VoiceNoteScreen', () => {
       await waitFor(() =>
         expect(di.voiceNoteDraftRepository.find(ACCOUNT_ID, DRAFT_ID)?.memoSaveRequest).toBeNull(),
       );
+    });
+  });
+
+  describe('정리 요청', () => {
+    setupFakeTimersPerTest({ advanceTimers: true });
+
+    it('들은 문장을 구간과 함께 보내고 받은 요약·핵심·할 일 카드를 초안에 담아 이벤트를 한 번 보낸다', async () => {
+      // Given
+      const { httpClient, di, analytics } = await renderVoiceNote({});
+      httpClient.post.mockResolvedValue(
+        ok(
+          createVoiceNoteDigestDto({
+            plan: {
+              actions: [
+                {
+                  type: 'CREATE_TODO',
+                  key: 'a1',
+                  title: '시안 만들기',
+                  startDate: '2026-11-05',
+                  endDate: null,
+                  scheduledTime: null,
+                  repeat: null,
+                  visibility: null,
+                  items: [],
+                  categoryId: null,
+                  duplicateOfTodoId: null,
+                },
+              ],
+              omittedTodoCount: 0,
+            },
+          }),
+        ),
+      );
+
+      // When
+      await fireEvent.press(await screen.findByRole('button', { name: '정리하기' }));
+
+      // Then
+      expect(await screen.findByText('요약이에요')).toBeOnTheScreen();
+      const [digest] = findPosts(httpClient, 'v1/voice-notes/digest');
+      expect(digest?.[1]).toEqual({
+        text: '이번 주 목표는 온보딩 이탈을 줄이는 거예요.',
+        durationSeconds: 178,
+        segments: [
+          {
+            startMs: 12_000,
+            text: '이번 주 목표는 온보딩 이탈을 줄이는 거예요.',
+            isBookmarked: false,
+          },
+        ],
+      });
+      const saved = di.voiceNoteDraftRepository.find(ACCOUNT_ID, DRAFT_ID);
+      expect(saved?.digest?.title).toBe('온보딩 회의');
+      expect(saved?.digest?.keyPoints).toHaveLength(1);
+      expect(saved?.planDraft?.form.actions.map((action) => action.title)).toEqual(['시안 만들기']);
+      expect(saved?.digestRequest).toBeNull();
+      expect(getTrackedEvents(analytics, 'voice_plan_generated')).toHaveLength(1);
+      expect(analytics.trackEvent).toHaveBeenCalledWith(
+        'voice_plan_generated',
+        expect.objectContaining({ source: 'voice_note', todo_count: 1, charged: true }),
+      );
+    });
+  });
+
+  describe('할 일 고르기와 저장', () => {
+    setupFakeTimersPerTest({ advanceTimers: true });
+
+    async function renderTodosTab() {
+      const rendered = await renderVoiceNote(
+        { digest: createVoiceNoteDigest(), planDraft: planDraftWithThreeTodos },
+        'todos',
+      );
+      await screen.findByTestId('plan-review-apply');
+
+      return rendered;
+    }
+
+    function getApplyKeys(httpClient: ReturnType<typeof createHttpClientStub>) {
+      return findPosts(httpClient, 'v1/action-plans/apply').map(
+        ([, , config]) => config?.headers?.['Idempotency-Key'],
+      );
+    }
+
+    it('고른 카드를 묶어 보인 순서로 저장하고 추가한 수를 초안에 남겨 이벤트를 한 번 보낸다', async () => {
+      // Given
+      const { httpClient, di, analytics } = await renderTodosTab();
+      httpClient.post.mockResolvedValue(
+        ok({
+          todos: [
+            createTodoDto({ id: 1, title: '운동' }),
+            createTodoDto({ id: 2, title: '장보기' }),
+            createTodoDto({ id: 3, title: '회의' }),
+          ],
+          memo: null,
+        }),
+      );
+
+      // When
+      await fireEvent.press(screen.getByTestId('plan-review-apply'));
+
+      // Then
+      expect(await screen.findByTestId('voice-note-applied')).toHaveTextContent(
+        '할 일 3개를 추가했어요',
+      );
+      const applied = findPosts(httpClient, 'v1/action-plans/apply');
+      expect(applied).toHaveLength(1);
+      expect(applied[0]?.[1]).toEqual({
+        source: 'VOICE_NOTE',
+        actions: [
+          expect.objectContaining({ key: 'todo-1', title: '운동', categoryId: 1 }),
+          expect.objectContaining({ key: 'todo-3', title: '장보기', categoryId: 1 }),
+          expect.objectContaining({ key: 'todo-2', title: '회의', categoryId: 2 }),
+        ],
+      });
+      expect(di.voiceNoteDraftRepository.find(ACCOUNT_ID, DRAFT_ID)?.appliedAt).not.toBeNull();
+      expect(getTrackedEvents(analytics, 'voice_plan_applied')).toHaveLength(1);
+      expect(analytics.trackEvent).toHaveBeenCalledWith('voice_plan_applied', {
+        source: 'voice_note',
+        todo_count: 3,
+        memo_count: 0,
+        skipped_count: 0,
+      });
+    });
+
+    it('체크를 끄고 제목을 고친 카드는 뺀 채 고친 제목으로 보내고 고른 상태는 초안에 남는다', async () => {
+      // Given
+      const { httpClient, di } = await renderTodosTab();
+      httpClient.post.mockRejectedValue(new NetworkError());
+      await fireEvent.press(screen.getByLabelText('회의 추가하기'));
+      await fireEvent.press(screen.getByText('운동'));
+      await fireEvent.changeText(await screen.findByLabelText('할 일 제목'), '아침 운동');
+      await fireEvent.press(screen.getByTestId('plan-todo-edit-confirm'));
+      expect(await screen.findByText('아침 운동')).toBeOnTheScreen();
+
+      // When
+      await fireEvent.press(screen.getByRole('button', { name: '할 일 2개 추가' }));
+
+      // Then
+      await waitFor(() => expect(findPosts(httpClient, 'v1/action-plans/apply')).toHaveLength(1));
+      expect(findPosts(httpClient, 'v1/action-plans/apply')[0]?.[1]).toEqual({
+        source: 'VOICE_NOTE',
+        actions: [
+          expect.objectContaining({ key: 'todo-1', title: '아침 운동' }),
+          expect.objectContaining({ key: 'todo-3', title: '장보기' }),
+        ],
+      });
+      await act(() => jest.advanceTimersByTimeAsync(2_000));
+      const kept = di.voiceNoteDraftRepository.find(ACCOUNT_ID, DRAFT_ID);
+      expect(
+        kept?.planDraft?.form.actions.map(({ title, isSelected }) => ({ title, isSelected })),
+      ).toEqual([
+        { title: '아침 운동', isSelected: true },
+        { title: '회의', isSelected: false },
+        { title: '장보기', isSelected: true },
+      ]);
+    });
+
+    it('저장에 실패한 뒤 같은 카드로 다시 누르면 같은 키로 보내고 고쳐서 누르면 새 키로 보낸다', async () => {
+      // Given
+      const { httpClient } = await renderTodosTab();
+      httpClient.post.mockRejectedValue(new NetworkError());
+      await fireEvent.press(screen.getByTestId('plan-review-apply'));
+      await waitFor(() => expect(getApplyKeys(httpClient)).toHaveLength(1));
+      await waitFor(() => expect(screen.getByTestId('plan-review-apply')).toBeEnabled());
+      // 저장 버튼의 연타 가드(600ms)가 지난 뒤에 다시 누른다
+      await act(() => jest.advanceTimersByTimeAsync(600));
+
+      // When
+      await fireEvent.press(screen.getByTestId('plan-review-apply'));
+      await waitFor(() => expect(getApplyKeys(httpClient)).toHaveLength(2));
+      await waitFor(() => expect(screen.getByTestId('plan-review-apply')).toBeEnabled());
+      await fireEvent.press(screen.getByLabelText('회의 추가하기'));
+      await act(() => jest.advanceTimersByTimeAsync(600));
+      await fireEvent.press(screen.getByTestId('plan-review-apply'));
+      await waitFor(() => expect(getApplyKeys(httpClient)).toHaveLength(3));
+
+      // Then
+      const keys = getApplyKeys(httpClient);
+      expect(keys[1]).toBe(keys[0]);
+      expect(keys[2]).not.toBe(keys[0]);
+    });
+
+    it('할 일 추가를 같은 프레임에 두 번 눌러도 저장 요청과 저장 이벤트는 한 번이다', async () => {
+      // Given
+      const { httpClient, analytics } = await renderTodosTab();
+      const saved = createPendingResponse(ok({ todos: [], memo: null }));
+      httpClient.post.mockReturnValue(saved.response);
+      const apply = screen.getByTestId('plan-review-apply');
+
+      // When
+      await act(async () => {
+        await fireEvent.press(apply);
+        await fireEvent.press(apply);
+      });
+
+      // Then
+      expect(getApplyKeys(httpClient)).toHaveLength(1);
+
+      // When
+      await act(async () => saved.settle());
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+
+      // Then
+      expect(getTrackedEvents(analytics, 'voice_plan_applied')).toHaveLength(1);
+      expect(getApplyKeys(httpClient)).toHaveLength(1);
+    });
+
+    it('메모로 저장을 같은 프레임에 두 번 눌러도 저장 요청은 한 번이다', async () => {
+      // Given
+      const { httpClient } = await renderVoiceNote({
+        digest: createVoiceNoteDigest({ keyPoints: [] }),
+        planDraft: emptyPlanDraft,
+      });
+      const saved = createPendingResponse(ok({ todos: [], memo: null }));
+      httpClient.post.mockReturnValue(saved.response);
+      const saveMemo = await screen.findByRole('button', { name: '메모로 저장' });
+
+      // When
+      await act(async () => {
+        await fireEvent.press(saveMemo);
+        await fireEvent.press(saveMemo);
+      });
+
+      // Then
+      expect(getApplyKeys(httpClient)).toHaveLength(1);
+      await act(async () => saved.settle());
+    });
+  });
+
+  describe('조회와 다시 그리기', () => {
+    setupFakeTimersPerTest();
+
+    // 결과 화면 맨 위만 재생을 멈추려고 화면 떠남을 구독해, 그 호출 수가 맨 위가 그려진 횟수다
+    function countScreenRenders() {
+      return jest.mocked(useIsFocused).mock.calls.length;
+    }
+
+    it('캐시에 있는 값으로 열면 서버에 다시 묻지 않는다', async () => {
+      // When
+      const { httpClient } = await renderVoiceNote(
+        { digest: createVoiceNoteDigest(), planDraft: planDraftWithThreeTodos },
+        'todos',
+      );
+      await screen.findByTestId('plan-review-apply');
+
+      // Then
+      expect(httpClient.get).not.toHaveBeenCalled();
+    });
+
+    it('카드의 체크를 바꿔도 결과 화면 맨 위는 다시 그려지지 않는다', async () => {
+      // Given
+      await renderVoiceNote(
+        { digest: createVoiceNoteDigest(), planDraft: planDraftWithThreeTodos },
+        'todos',
+      );
+      const checkbox = await screen.findByLabelText('회의 추가하기');
+      const renderCountBeforeToggle = countScreenRenders();
+
+      // When
+      await fireEvent.press(checkbox);
+      await fireEvent.press(checkbox);
+      await fireEvent.press(checkbox);
+
+      // Then
+      expect(screen.getByRole('button', { name: '할 일 2개 추가' })).toBeOnTheScreen();
+      expect(countScreenRenders()).toBe(renderCountBeforeToggle);
     });
   });
 });

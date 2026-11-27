@@ -1,5 +1,7 @@
 import '@src/shared/i18n/init';
+import { pressTwiceInSameFrame } from '@src/testing/press';
 import { renderScreen } from '@src/testing/render';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import { noop } from 'es-toolkit';
 import { Pressable, Text } from 'react-native';
@@ -55,6 +57,8 @@ async function pressConfirm() {
 }
 
 describe('useConfirmDialog onConfirm', () => {
+  setupFakeTimersPerTest();
+
   it('실행하는 동안 열려 있고 취소할 수 없으며 끝나면 닫고 true를 돌려준다', async () => {
     // Given
     const deferred = Promise.withResolvers<void>();
@@ -107,6 +111,8 @@ describe('useConfirmDialog onConfirm', () => {
     expect(onResult).not.toHaveBeenCalled();
 
     // When
+    // 확인 버튼은 연타 가드(600ms)가 지난 뒤의 누름만 받는다
+    await act(() => jest.advanceTimersByTimeAsync(600));
     const { confirmPress: retryPress } = await pressConfirm();
     await act(async () => {
       retried.resolve();
@@ -117,5 +123,24 @@ describe('useConfirmDialog onConfirm', () => {
     expect(onConfirm).toHaveBeenCalledTimes(2);
     expect(onResult).toHaveBeenCalledWith(true);
     expect(screen.queryByText('삭제할까요?')).toBeNull();
+  });
+
+  it('같은 프레임에 확인을 두 번 눌러도 onConfirm은 한 번이다', async () => {
+    // Given
+    const deferred = Promise.withResolvers<void>();
+    const onConfirm = jest.fn(() => deferred.promise);
+    const onResult = await openDialog(onConfirm);
+    const confirm = screen.getByTestId('confirm');
+
+    // When
+    await pressTwiceInSameFrame(confirm);
+    await act(async () => {
+      deferred.resolve();
+    });
+
+    // Then
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    expect(onResult).toHaveBeenCalledTimes(1);
+    expect(onResult).toHaveBeenCalledWith(true);
   });
 });

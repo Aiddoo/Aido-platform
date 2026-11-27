@@ -4,7 +4,6 @@ import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
 import { useOpenAppSettings } from '@src/shared/hooks/use-open-app-settings';
 import { useTranslation } from '@src/shared/i18n';
-import { IS_IOS_APP_ON_MAC } from '@src/shared/infra/device/device-info';
 import { useStoredValue } from '@src/shared/storage/use-stored-value';
 import {
   Box,
@@ -28,15 +27,15 @@ import { Skeleton, Spinner } from 'heroui-native';
 import { useSyncExternalStore } from 'react';
 import { match } from 'ts-pattern';
 
-import { useTodoImportId } from '../hooks/use-todo-import-id';
+import { useTodoImportId } from '../hooks/use-todo-import-params';
 import { useCancelTodoImportMutationOptions } from '../queries/todo-import.mutations';
 import { useGetTodoImportQueryOptions } from '../queries/todo-import.queries';
 import { todoImportSessionStoredValue } from '../schemas/todo-import-session-storage.schema';
-import { type StageStatus, toProgressView } from '../utils/todo-import-progress.view-model';
+import { type StageStatus, getProgressView } from '../utils/todo-import-progress.view-model';
 import { TodoImportFailureAlert } from './todo-import-failure-alert';
 
-/** 막대의 접근성 값이 백분율로 읽히게 0~100으로 그린다 */
-const METER_MAX = 100;
+// 막대의 접근성 값이 백분율로 읽히게 0~100으로 그린다
+const METER_MAX_PERCENT = 100;
 
 const STAGE_ICON_SIZE = 12;
 
@@ -57,10 +56,10 @@ export function TodoImportProgress() {
   const snapshot = useSyncExternalStore(uploadSession.subscribe, uploadSession.getSnapshot);
   const [storedSession] = useStoredValue(todoImportSessionStoredValue, accountId);
   const isOnline = useIsOnline();
-  const cancelImport = useMutation(useCancelTodoImportMutationOptions({ importId }));
-  const openSettings = useOpenAppSettings();
+  const cancelImport = useMutation(useCancelTodoImportMutationOptions({ importId, accountId }));
+  const appSettings = useOpenAppSettings();
 
-  const view = toProgressView(todoImport, snapshot, {
+  const view = getProgressView(todoImport, snapshot, {
     hasStoredSession: storedSession?.importId === todoImport.id,
     isOnline,
   });
@@ -92,7 +91,7 @@ export function TodoImportProgress() {
         />
       </VStack>
 
-      <Meter value={Math.round(view.ratio * METER_MAX)} max={METER_MAX} size="medium" />
+      <TodoImportProgress.Meter ratio={view.ratio} />
 
       <TodoImportFailureAlert />
       {!isOnline && <InlineAlert status="warning" title={t('progress.offline')} />}
@@ -102,7 +101,7 @@ export function TodoImportProgress() {
           title={t('progress.paused')}
           action={
             <Button size="small" variant="weak" display="inline" onPress={handleRetryPress}>
-              {t('progress.retry')}
+              {t('common:actions.retry')}
             </Button>
           }
         />
@@ -112,14 +111,14 @@ export function TodoImportProgress() {
         <InlineAlert
           status="warning"
           title={t('progress.pausedPermission')}
-          // Mac(Designed for iPad)은 앱 설정 화면이 열리지 않아 글로 가는 길만 보인다
-          description={IS_IOS_APP_ON_MAC ? t('permission.deniedDescriptionMac') : undefined}
+          // 설정 화면이 없는 기기(Mac)는 글로 가는 길만 보인다
+          description={appSettings.canOpen ? undefined : t('permission.deniedDescriptionMac')}
           action={
-            IS_IOS_APP_ON_MAC ? undefined : (
-              <Button size="small" variant="weak" display="inline" onPress={openSettings}>
+            appSettings.canOpen ? (
+              <Button size="small" variant="weak" display="inline" onPress={appSettings.open}>
                 {t('permission.openSettings')}
               </Button>
-            )
+            ) : undefined
           }
         />
       )}
@@ -191,6 +190,18 @@ TodoImportProgress.Stage = function Stage({ status, label }: StageProps) {
         </Text>
       }
     />
+  );
+};
+
+interface ProgressMeterProps {
+  // 0~1
+  ratio: number;
+}
+
+// 진행 화면과 새 기능 소개 데모가 같은 막대를 쓴다
+TodoImportProgress.Meter = function ProgressMeter({ ratio }: ProgressMeterProps) {
+  return (
+    <Meter value={Math.round(ratio * METER_MAX_PERCENT)} max={METER_MAX_PERCENT} size="medium" />
   );
 };
 

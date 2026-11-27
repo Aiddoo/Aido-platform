@@ -22,8 +22,8 @@
     "latest": "최신순"
   },
   "input": {
-    "placeholder": "댓글 달기…",
-    "replyPlaceholder": "답글 달기…",
+    "placeholder": "댓글 달기",
+    "replyPlaceholder": "답글 달기",
     "editPlaceholder": "댓글을 수정해요",
     "replyingTo": "{{name}}님에게 답글 남기는 중",
     "editing": "댓글 수정 중",
@@ -32,13 +32,9 @@
   "actions": {
     "reply": "답글 달기",
     "replyTo": "{{name}}님에게 답글 달기",
-    "edit": "수정",
     "copy": "복사",
-    "delete": "삭제",
     "report": "신고",
     "block": "{{name}}님 차단",
-    "save": "저장",
-    "cancel": "취소",
     "closeComposer": "작성 닫기",
     "likeWithCount": "좋아요, {{count}}개",
     "unlikeWithCount": "좋아요 취소, {{count}}개",
@@ -47,7 +43,7 @@
   },
   "form": {
     "addToChain": "댓글 더 이어 쓰기",
-    "chainPlaceholder": "이어 쓸 댓글…",
+    "chainPlaceholder": "이어 쓸 댓글",
     "post": "게시",
     "remove": "삭제",
     "removeFromChain": "{{index}}번째 이어 쓸 댓글 삭제",
@@ -57,8 +53,7 @@
     "title": "댓글을 삭제할까요?",
     "description": "삭제한 댓글은 되돌릴 수 없어요.",
     "tombstoneDescription": "답글은 남고 이 댓글은 \"삭제된 댓글이에요\"로 보여요.",
-    "othersDescription": "내 할 일에 달린 댓글이라 지울 수 있어요. 모든 사람에게서 사라지고 되돌릴 수 없어요.",
-    "confirm": "삭제"
+    "othersDescription": "내 할 일에 달린 댓글이라 삭제할 수 있어요. 모든 사람에게서 사라지고 되돌릴 수 없어요."
   },
   "hint": {
     "doubleTap": "댓글을 두 번 탭하면 하트를 남길 수 있어요 🐾",
@@ -73,7 +68,7 @@
     "copied": "댓글을 복사했어요",
     "copyFailed": "댓글을 복사하지 못했어요",
     "alreadyDeleted": "이미 삭제된 댓글이에요",
-    "throttled": "너무 빨리 보내고 있어요. 잠시 후 다시 시도해주세요",
+    "throttled": "너무 빨리 보내고 있어요. 잠시 뒤 다시 시도해주세요",
     "anchorMissing": "찾는 댓글이 삭제됐거나 더 이상 볼 수 없어요"
   }
 }

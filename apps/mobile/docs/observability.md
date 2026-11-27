@@ -16,15 +16,15 @@
 
 ## 환경별 구현
 
-`shared/infra/observability/observability-env.ts`와 `create-device-ports.ts`가 정한다. 프로세스에 한 번 만들고 전역 `logger`도 이때 정한다(`composition-root.ts`).
+어느 환경에서 무엇을 켜나는 `shared/config/env.ts`의 `resolveTelemetryGates`(`ENV.TELEMETRY`) 한 곳이 정하고 표는 `env.test.ts`가 고정한다. `observability-env.ts`(Analytics)·`create-environment-error-reporter.ts`(ErrorReporter)·`create-device-ports.ts`(AppLogger)·`initErrorReporting`(`Sentry.init`)은 그 값만 읽는다. 포트는 프로세스에 한 번 만들고 전역 `logger`도 이때 정한다(`composition-root.ts`).
 
-| 포트·설정                     | 운영                                                                      | 개발·프리뷰                                             |
-| ----------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------- |
-| `Analytics`                   | Firebase                                                                  | console. 네이티브 자동 수집은 `traffic_type=internal`   |
-| `ErrorReporter`               | Sentry                                                                    | console                                                 |
-| `AppLogger`                   | console(warn 이상) + Sentry                                               | console                                                 |
-| `Sentry.init`의 `enabled`     | 항상                                                                      | `EXPO_PUBLIC_SENTRY_DEBUG=true`일 때만                  |
-| `Sentry.init`의 `environment` | `production`, 에뮬레이터·시뮬레이터는 `production-emulator`(운영 알림 밖) | `APP_ENV`, 에뮬레이터·시뮬레이터는 `-emulator`를 붙인다 |
+| 포트·설정(게이트)                                   | 운영                                                                      | 개발·프리뷰                                             |
+| --------------------------------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------- |
+| `Analytics`(`usesVendorAdapters`)                   | Firebase                                                                  | console. 네이티브 자동 수집은 `traffic_type=internal`   |
+| `ErrorReporter`(`usesVendorAdapters`)               | Sentry                                                                    | console                                                 |
+| `AppLogger`(`usesVendorAdapters`·`consoleMinLevel`) | console(warn 이상) + Sentry                                               | console(debug 이상)                                     |
+| `Sentry.init`의 `enabled`(`isSentrySdkEnabled`)     | 항상                                                                      | `EXPO_PUBLIC_SENTRY_DEBUG=true`일 때만                  |
+| `Sentry.init`의 `environment`                       | `production`, 에뮬레이터·시뮬레이터는 `production-emulator`(운영 알림 밖) | `APP_ENV`, 에뮬레이터·시뮬레이터는 `-emulator`를 붙인다 |
 
 `environment`는 `sentry-environment.ts`가 `IS_PHYSICAL_DEVICE`로 정하고 Mac의 iOS 앱은 실기기다. Sentry 알림·대시보드의 `environment:production` 필터는 `production-emulator`를 포함하지 않으므로 출시 빌드 QA 이벤트는 그 환경을 따로 골라 본다. `EXPO_PUBLIC_SENTRY_DEBUG`는 SDK만 켠다. JS 어댑터는 운영 빌드에서만 Sentry라서 이 값으로는 개발 빌드의 `captureException`·`logger.error`를 확인할 수 없다.
 
@@ -33,9 +33,10 @@
 ### 선언과 이름
 
 - 이벤트는 기능의 `constants/{entity}.events.ts`에서 `declare module '@src/shared/analytics/event-map'`으로 `AppEventMap`을 채워 먼저 정의한다. 기능에 속하지 않는 앱 공통 이벤트(`feature_action_success`, `local_day_changed`, `offline_banner_shown`, `view_tab_changed`, `error_fallback_retry_tapped`)만 `shared/analytics/event-map.ts`에 직접 있다. 맨 `string` 이름·파라미터를 쓰지 않는다.
-- 값의 출처가 도메인이면 도메인 타입을 import한다(`invite_redeem_failed.reason` = `RedeemFailureReason`). 이벤트가 도메인 타입을 정의하지 않는다.
-- 컴포넌트는 `useTrack().trackEvent(name, params)`, React 밖은 `track(analytics, name, params)`로 보낸다. `analytics.trackEvent('문자열', …)`를 직접 부르지 않는다.
-- 새 이벤트 이름은 `{entity}_{object?}_{verb}`, 파라미터는 snake_case이고 맨 `string`을 쓰지 않는다(`aido/analytics-event-catalog`). 동사 목록은 그 규칙의 `EVENT_VERBS`(`tooling/oxlint-plugin-aido/rules/observability.mjs`)이고, GA가 보는 기존 이름은 `frozenNames`로 동결해 바꿀 때 별칭 기간을 둔다. 안내는 `{entity}_shown`·`{entity}_dismissed`로 맞춘다.
+- 값의 출처가 도메인이면 도메인 타입을 import한다(`invite_redeem_failed.reason` = `RedeemFailure`). 이벤트가 도메인 타입을 정의하지 않는다.
+- 컴포넌트는 `useTrack().trackEvent(name, params)`, React 밖은 `track(analytics, name, params)`로 보낸다. `analytics.trackEvent('문자열', …)`를 직접 부르지 않는다. 파사드는 선언한 키만 받아 객체 리터럴로 넘긴 선언 밖 키는 typecheck가 실패한다(변수로 넘기면 초과 속성 검사를 지나므로 params는 호출 자리에서 리터럴로 쓴다).
+- 새 이벤트 이름은 `{entity}_{object?}_{verb}`, 파라미터는 snake_case이고 맨 `string`을 쓰지 않는다(`aido/analytics-event-catalog`). 동사 목록은 그 규칙의 `EVENT_VERBS`(`tooling/oxlint-plugin-aido/rules/observability.mjs`)이고, GA가 보는 기존 이름은 `frozenNames`로 동결해 바꿀 때 별칭 기간을 둔다. 안내는 `{entity}_shown`·`{entity}_dismissed`로 맞춘다. 새 이벤트의 동사는 사용자가 누름이면 `_tapped`, 앱이 보여 줌이면 `_shown`, 앱 밖(푸시·링크·위젯)에서 앱이 열림이면 `_opened`다. 이 기준 밖의 기존 이름(`paywall_viewed`·`weather_opened` 등)은 GA가 보는 이름이라 그대로 둔다.
+- `source`(온 UI)·`surface`(안내가 뜬 자리)의 값은 `shared/analytics/event-vocabulary.ts`의 튜플 한 곳에서 선언하고, 이벤트는 `AnalyticsSource<'settings'>`·`AnalyticsSurface<EntitlementGateSurface>`처럼 그 안에서 고른다(`aido/analytics-event-catalog`의 `vocabularyParams`). 나간 값의 철자는 바꾸지 않고 더하기만 한다. `view_tab_changed.view`도 같은 파일의 목록이고 `ViewTabs`는 그 안의 보기 스키마만 받는다.
 - 파라미터 예약어의 뜻은 정해져 있다: `source`(온 UI), `method`, `reason`, `result`. 앱 이벤트는 GA 예약 구매 이름(`purchase`·`in_app_purchase`·`refund`)을 쓸 수 없다(`AppReservedPurchaseEventGuard` 컴파일 검사).
 
 ### 어디서 추적하나
@@ -49,21 +50,24 @@
 | 같은 경로 안 단계                                          | `useStepper`의 `onStepChange`(entry마다 한 번, 뒤로 가면 다시)                                  |
 | 누름·외부 앱 열기                                          | 핸들러                                                                                          |
 | 서버가 확정한 결과                                         | mutation `onSuccess`·`onError`. `source`는 mutation 변수로 넘긴다                               |
+| 효과 안에서 받은 사건(구독 콜백·Promise 결과·상태 전이)    | `useEffectEvent` 핸들러. 효과는 구독하거나 전이를 판정해 그 핸들러를 부르기만 한다              |
 | 추적하지 않는 층                                           | api, service, repository, store, mapper, model, cache                                           |
 
 - 노출 이벤트는 보기마다 한 번이다. `useTrackView`는 params 객체를 새로 만들어 다시 그려도, 포커스가 돌아와도, 숨었다 다시 보여도 같은 key를 다시 보내지 않는다. 화면이 다시 마운트되면(뒤로 갔다 다시 열기) 새 보기로 센다. `null`은 아직 보이지 않은 것이라 뒤 탭·숨은 카드는 `null`을 넘긴다.
-- 화면·훅의 효과 본문에서 `trackEvent`를 바로 부르지 않는다(`aido/no-tracking-in-effect`). 예외는 줄 단위로 끄고 이유를 적는다: 노출과 닫힘이 한 수명의 짝인 `feature_hub_impression`·`coachmark_shown`, 보기가 아닌 디바운스 입력 `friend_search_submitted`, 마운트를 넘어 프로세스 수명 store가 막는 `invite_link_opened`.
+- 화면·훅의 효과 안에서 `trackEvent`를 부르지 않는다. 효과 본문과 그 안의 중첩 함수(구독 콜백·`.then`·cleanup)를 모두 본다(`aido/no-tracking-in-effect`). 예외는 줄 단위로 끄고 이유를 적는다: 노출과 닫힘이 한 수명의 짝인 `feature_hub_impression`·`feature_hub_dismissed`·`coachmark_shown`, 보기가 아닌 디바운스 입력 `friend_search_submitted`, 마운트를 넘어 프로세스 수명 store가 막는 `invite_link_opened`.
 - key는 "무엇을 봤나"다. 같은 화면에서 다른 것을 보면 key가 바뀐다(캐러셀 장 index, 주, 단계). 마운트를 넘어 막아야 하는 것(초대 링크 열림)은 DI store가 맡는다.
 - `weather_opened`는 경로와 URL param(`entry`)만 담아 원칙상 `screen_view`의 맥락이지만, KPI·퍼널·잠재고객이 이 이름을 써서 화면 진입 이벤트로 남기는 예외다. 날씨는 앱 Stack에 하나(`dangerouslySingular`)라 Stack에 남은 날씨를 알림으로 다시 열면 다시 마운트되지 않는다. 그래서 날씨를 여는 링크는 `toWeatherHref`로 연 시각(`openedAt`)을 붙이고, 날씨 화면의 노출(`weather_opened`·`weather_location_registered`·`weather_briefing_shown`·`weather_report_failed`)은 그 열기(`useWeatherOpenKey`)마다 한 번이다. 하위 화면에서 돌아오는 것은 세지 않는다. 1.15.1(화면을 열 때마다 새로 쌓음)과 같은 수다(`weather-screen.test.tsx`).
+- `paywall_viewed`도 맥락을 URL에서 얻는다. 요금제를 받아 실제로 보였을 때 `PlanPicker.Plans`가 결제 화면 params(`view`·`feature`)를 읽어 `useTrackView`로 보내고, key는 `view:feature`라 같은 보기·기능으로 다시 그려져도 한 번이다.
+- `push_permission_prompt_shown`은 대부분 노출(`useTrackView`)이지만, 할 일에 시간을 정할 때 시스템 권한 창을 바로 띄우는 길(`use-ask-push-permission-on-todo-time.ts`)은 보이는 앱 화면이 없어 그 핸들러가 창을 띄우기 직전에 `trackEvent`로 한 번 보낸다.
 
 ### 화면 조회
 
 - `useScreenTracking`(`AuthGateLayout`의 null 자식 `RouteWatchers`에서 호출)이 `screen_view.screen_name`에 실제 경로가 아닌 route 템플릿(`toScreenName(useSegments())`, 예 `/invite/[inviteCode]`)을 보낸다. 초대 코드·사용자 id가 남지 않는다. 그룹(`(app)`)과 `index`는 뺀다. 같은 템플릿의 다른 대상(`/todo/1` → `/todo/2`)도 경로가 바뀌면 한 번 더 센다. 상세·시트에서 돌아오면 아래 화면을 다시 센다(Expo Router·React Navigation의 표준 방식이고 이력도 이어진다). Sentry 내비게이션 breadcrumb도 같은 이름을 쓴다.
 - `screen_view`는 레이아웃 효과에서 보내 같은 이동에서 새 화면이 마운트하며 보내는 이벤트(`weather_opened`, `useTrackView`)보다 먼저 나간다. Firebase가 이벤트에 붙이는 화면 이름(`firebase_screen`)이 앞 화면이 되지 않는다. 순서는 `auth-gate-layout.test.tsx`가 지킨다.
-- 스플래시 뒤로 지나가는 입구 `/`·`/loading`·`/auth/[provider]`는 세지 않는다(1.15.2부터). 목록은 앱 경로를 아는 bootstrap(`RouteWatchers`의 `ENTRY_REDIRECT_SCREENS`)이 넘긴다. 건너뛴 화면은 앞 화면으로 기억하지 않아 `/feed` → `/` → `/feed` 왕복은 다시 세지 않는다. 콜드 스타트는 첫 화면 한 번, 로그인·로그아웃은 도착한 화면 한 번이다(`auth-gate-layout.test.tsx`).
-- 인증 가드가 막은 route(`(auth)`·`(app)`·`loading`) 안의 화면은 세지 않는다(1.15.2부터). 가드가 바뀌면 Expo Router가 그 route를 Redirect로 바꿔 묶음 navigator가 먼저 내려가고, 옮기기 전까지 묶음 첫 화면(가입 뒤 `/login`, 상세에서 로그아웃 뒤 `/feed`)에 focus가 머문다. 가드 값은 `AuthGateLayout`의 `routeGuards` 하나를 `Stack.Protected`와 tracker가 함께 읽는다. 가입 뒤는 `/sign-up` → `/feed`, 상세에서 로그아웃하면 `/todo/[todoId]` → `/login`이다.
+- 스플래시 뒤로 지나가는 입구 `/`·`/loading`·`/auth/[provider]`는 세지 않는다. 목록은 앱 경로를 아는 bootstrap(`RouteWatchers`의 `ENTRY_REDIRECT_SCREENS`)이 넘긴다. 건너뛴 화면은 앞 화면으로 기억하지 않아 `/feed` → `/` → `/feed` 왕복은 다시 세지 않는다. 콜드 스타트는 첫 화면 한 번, 로그인·로그아웃은 도착한 화면 한 번이다(`auth-gate-layout.test.tsx`).
+- 인증 가드가 막은 route(`(auth)`·`(app)`·`loading`) 안의 화면은 세지 않는다. 가드가 바뀌면 Expo Router가 그 route를 Redirect로 바꿔 묶음 navigator가 먼저 내려가고, 옮기기 전까지 묶음 첫 화면(가입 뒤 `/login`, 상세에서 로그아웃 뒤 `/feed`)에 focus가 머문다. 가드 값은 `AuthGateLayout`의 `routeGuards` 하나를 `Stack.Protected`와 tracker가 함께 읽는다. 가입 뒤는 `/sign-up` → `/feed`, 상세에서 로그아웃하면 `/todo/[todoId]` → `/login`이다.
 - URL로 바뀌는 탭 전환은 `ViewTabs`가 `view_tab_changed { screen_name, view }`를 보낸다(같은 탭을 다시 누르면 보내지 않는다). 조회 오류 화면의 다시 시도는 `error_fallback_retry_tapped { screen_name }`이다. `screen_name`은 모두 `useScreenName()`이다.
-- 넓은 화면(iPad·폴더블)에서 목록 옆 칸에 상세를 고르면 같은 전역 tracker가 좁은 화면의 상세 route 이름(`/todo/[todoId]`·`/memo/[memoId]`)으로 한 번 센다(1.15.2부터). 표는 bootstrap(`RouteWatchers`의 `PANE_DETAIL_SCREENS`: 목록 화면, 칸 query, 상세 템플릿)이 넘기고 query 이름은 기능 params 스키마의 키로 타입 검사한다. 다른 상세를 고르면 다시 세고, 칸을 닫거나 날짜 같은 query만 바뀌면 목록을 다시 세지 않는다. 칸에 상세를 연 채 접혀 상세 화면으로 넘기면 같은 보기라 다시 세지 않고, 거기서 뒤로 가면 목록을 센다(`auth-gate-layout.test.tsx`). 칸 query는 화면이 읽는 값과 같은 지금 화면의 params(`useFocusedRouteParams`)로 본다. 전역 params는 상위 route params를 합쳐 상세 링크로 연 앱(`/todo/3`)이 피드로 돌아와도 `todoId`가 남는다.
+- 넓은 화면(iPad·폴더블)에서 목록 옆 칸에 상세를 고르면 같은 전역 tracker가 좁은 화면의 상세 route 이름(`/todo/[todoId]`·`/memo/[memoId]`)으로 한 번 센다. 표는 bootstrap(`RouteWatchers`의 `PANE_DETAIL_SCREENS`: 목록 화면, 칸 query, 상세 템플릿)이 넘기고 query 이름은 기능 params 스키마의 키로 타입 검사한다. 다른 상세를 고르면 다시 세고, 칸을 닫거나 날짜 같은 query만 바뀌면 목록을 다시 세지 않는다. 칸에 상세를 연 채 접혀 상세 화면으로 넘기면 같은 보기라 다시 세지 않고, 거기서 뒤로 가면 목록을 센다(`auth-gate-layout.test.tsx`). 칸 query는 화면이 읽는 값과 같은 지금 화면의 params(`useFocusedRouteParams`)로 본다. 전역 params는 상위 route params를 합쳐 상세 링크로 연 앱(`/todo/3`)이 피드로 돌아와도 `todoId`가 남는다.
 - 경로 보기에 URL에서 나오는 맥락(진입점 등)이 더 필요하면 화면에 새 `*_opened` 마운트 이벤트를 만들지 않는다. 전역 tracker가 같은 효과에서 `trackScreenView(name, params)`로 붙이도록 bootstrap 표(`ENTRY_REDIRECT_SCREENS`·`PANE_DETAIL_SCREENS`와 같은 자리)에 화면별 params 순수 함수를 둔다. 받은 데이터에서 나오는 맥락은 경로 보기가 아니라 내용 노출이라 `useTrackView`가 맡는다. 지금 이 길로 옮긴 이벤트는 없다.
 
 ### 측정 규칙
@@ -78,7 +82,7 @@
 
 ### 푸시 권한 퍼널
 
-`source`는 `PushPermissionPromptSource`(`onboarding`·`todo_time`·`feed_card`·`settings`·`paywall`, 초대 환영 시트는 `invite_welcome`), `step`은 `PUSH_PERMISSION_STEP`(`ASK`·`REQUEST_SYSTEM`·`OPEN_SETTINGS`·`ENABLE_IN_APP`)이다. `shown`은 안내가 보일 때 마운트·단계마다 한 번이고(`useTrackView`, key는 `step`) 앱 안 다이얼로그는 `step=ASK`다. 피드 카드는 할 일 시각이 지나 숨었다 다음 할 일로 다시 보여도 같은 단계면 다시 세지 않는다(1.15.2부터, `push-permission-notice.test.tsx`). 단계 실행은 `usePushPermissionAction({ source }).runStep(step)` 하나이고, 권한 mutation이 `source`를 변수로 받아 `onSuccess`에서 한 번 추적한다(`requested`·`settings_opened`). 흐름은 [푸시 알림](./push-notifications.md)에 있다.
+`source`는 `PushPermissionPromptSource`(`onboarding`·`todo_time`·`feed_card`·`settings`·`paywall`, 초대 환영 시트는 `invite_welcome`), `step`은 `PUSH_PERMISSION_STEP`(`ASK`·`REQUEST_SYSTEM`·`OPEN_SETTINGS`·`ENABLE_IN_APP`)이다. `shown`은 안내가 보일 때 마운트·단계마다 한 번이고(`useTrackView`, key는 `step`) 앱 안 다이얼로그는 `step=ASK`다. 피드 카드는 할 일 시각이 지나 숨었다 다음 할 일로 다시 보여도 같은 단계면 다시 세지 않는다(`push-permission-notice.test.tsx`). 단계 실행은 `usePushPermissionAction({ source }).runStep(step)` 하나이고, 권한 mutation이 `source`를 변수로 받아 `onSuccess`에서 한 번 추적한다(`requested`·`settings_opened`). 흐름은 [푸시 알림](./push-notifications.md)에 있다.
 
 ## Sentry
 
@@ -95,11 +99,11 @@ errorReporter.captureMessage(ERROR_REPORT_MESSAGES.SESSION_EXPIRED, {
 });
 ```
 
-**Sentry 보고 자리는 정해져 있다.** mutation은 `meta.errorFeedback`을 읽는 앱 `MutationCache`의 캐시 단계 `onError`, 경계가 받는 조회는 `QueryErrorBoundary`, 경계 밖 조회(인라인 `useQuery`·데이터가 있는 재조회)는 앱 `QueryCache`의 `onError`(`feature: query_cache`), 그 밖은 훅(`useReportUnexpectedError` 등)이다. `useSuspenseQuery`가 데이터 없이 실패하거나 `throwOnError`가 경계로 보내면 `QueryCache`는 건너뛰고, 같은 오류 객체가 두 길로 와도 `captureError`가 한 번만 보낸다. 서비스는 삼킨 실패만 `logger.warn`하고 `captureException`을 부르지 않는다. mutation 실패의 햅틱·토스트·보고 규칙은 [오류 처리](./error-handling.md#mutation-오류-피드백)가 원본이다.
+**Sentry 보고 자리는 정해져 있다.** mutation은 `meta.errorFeedback`을 읽는 앱 `MutationCache`의 캐시 단계 `onError`, 경계가 받는 조회는 `QueryErrorBoundary`, 경계 밖 조회(인라인 `useQuery`·데이터가 있는 재조회)는 앱 `QueryCache`의 `onError`(`feature: query_cache`), 그 밖은 훅(`useReportUnexpectedError` 등)이다. `useSuspenseQuery`가 데이터 없이 실패하거나 `throwOnError`가 경계로 보내면 `QueryCache`는 건너뛰고, 같은 오류 객체가 두 길로 와도 `captureError`가 한 번만 보낸다. 서비스는 삼킨 실패만 `logger.warn`하고 `captureException`을 부르지 않는다. 보고 입구는 [AppLogger](#applogger)의 표다. Sentry SDK를 직접 부르는 곳은 어댑터뿐이다: `capture-error.ts`(`captureException`·오류 breadcrumb), `sentry-error-reporter.ts`(`captureMessage`·breadcrumb·사용자), `sentry-logger.ts`(로그 breadcrumb), `error-reporting.ts`(`init`·`wrap`). mutation 실패의 햅틱·토스트·보고 규칙은 [오류 처리](./error-handling.md#mutation-오류-피드백)가 원본이다.
 
 ### Breadcrumb: `addBreadcrumb`
 
-이벤트 직전의 행적이다. `category`는 `BREADCRUMB_CATEGORIES`(`http`·`navigation`·`auth`·`lifecycle`·`ui`·`widget`·`invite`·`network`·`voice`·`error`)로 고정한다.
+이벤트 직전의 행적이다. `category`는 `BREADCRUMB_CATEGORIES`(`http`·`navigation`·`auth`·`lifecycle`·`ui`·`widget`·`invite`·`keyboard`·`network`·`voice`·`error`)로 고정한다.
 
 - DI 밖(HTTP 훅, 전역 코드)은 `shared/infra/logger/global-logger`의 `logger`를 쓴다. `errorReporter`는 DI 포트로만 받는다.
 - `logger.info`·`warn`도 breadcrumb로 남지만 카테고리가 없다. 카테고리가 필요하면 `addBreadcrumb`를 쓴다.
@@ -107,7 +111,7 @@ errorReporter.captureMessage(ERROR_REPORT_MESSAGES.SESSION_EXPIRED, {
 ### User·Replay·Trace
 
 - `useSyncUserIdentity`가 로그인하면 `setUserId(id)`, 비인증이면 `setUserId(null)`을 부른다. 내부 계정 id만 싣는다. `sendDefaultPii: false`다. RN SDK 8은 이 값으로 IP 추론·라우트 URL·딥링크 수집을 가르므로 그대로 둔다.
-- Session Replay(`shared/infra/observability/error-reporting.ts`): `replaysSessionSampleRate` 0, `replaysOnErrorSampleRate` 0.2, `mobileReplayIntegration`의 `maskAllText`·`maskAllImages`·`maskAllVectors` 모두 `true`. 마스킹을 끄지 않는다(할 일·전사가 보인다). 무료 할당은 월 50개인데 30일 541개가 한도에 걸려 버려졌다. 그래서 `beforeErrorSampling`(`replay-error-sampling.ts`)이 앱이 잡지 못한 오류(`mechanism.handled === false`)와 강제 종료(`level: fatal`)만 녹화하게 한다(1.15.3부터). `captureException`·`logger.error`·경계로 보고한 오류는 녹화하지 않는다. 메시지 이벤트(`captureMessage`)는 SDK가 원래 녹화하지 않는다.
+- Session Replay(`shared/infra/observability/error-reporting.ts`): `replaysSessionSampleRate` 0, `replaysOnErrorSampleRate` 0.2, `mobileReplayIntegration`의 `maskAllText`·`maskAllImages`·`maskAllVectors` 모두 `true`. 마스킹을 끄지 않는다(할 일·전사가 보인다). 무료 할당(월 50개) 안에 들도록 `beforeErrorSampling`(`replay-error-sampling.ts`)이 앱이 잡지 못한 오류(`mechanism.handled === false`)와 강제 종료(`level: fatal`)만 녹화하게 한다. `captureException`·`logger.error`·경계로 보고한 오류는 녹화하지 않는다. 메시지 이벤트(`captureMessage`)는 SDK가 원래 녹화하지 않는다.
 - `tracePropagationTargets`는 `ENV.API_URL`의 출처 하나다(`trace-propagation-targets.ts`). 외부 주소에는 `sentry-trace`·`baggage`를 붙이지 않는다. `tracesSampleRate`는 두지 않아 앱 span을 보내지 않고 표본 여부는 서버가 정한다.
 
 ### Severity
@@ -152,14 +156,15 @@ Sentry로 나가는 모든 오류(`AppLogger.error`, `ErrorReporter.captureExcep
 - 레벨은 호출부가 정한다. 가변 정보는 message가 아니라 context로 넘긴다. context의 오류는 `{ error: getErrorMessage(error) }` 한 모양이다. 원본 `error` 객체·`instanceof` 분기를 넣지 않는다.
 - 어댑터(`console-*`, `composite-logger`)와 테스트 밖에서 `console.*`을 쓰지 않는다(`eslint/no-console`).
 
-| 상황                                                  | 호출                                                                           | Sentry                                     |
-| ----------------------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------ |
-| 운영 이벤트·격리된 실패                               | `logger.info/warn(KEY, { error: getErrorMessage(e) })`                         | breadcrumb                                 |
-| 예측 못한 오류(기능 이름을 아는 훅·전역 캐시·경계)    | `reportUnexpectedError`(`useReportUnexpectedError`·`useMutationErrorFeedback`) | 이벤트 `feature`·요청 태그                 |
-| 예측 못한 오류(로그 키가 기능을 밝히는 곳, 추가 문맥) | `logger.error(KEY, toError(e), context)`                                       | 이벤트 `source=logger`·`feature=<첫 마디>` |
-| 도메인 신호(세션 종료·결제 실패 등)                   | `errorReporter.captureMessage`                                                 | 이벤트 `feature`                           |
+| 상황                                                                              | 호출                                                                                                                          | Sentry                                     |
+| --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| 운영 이벤트·격리된 실패                                                           | `logger.info/warn(KEY, { error: getErrorMessage(e) })`                                                                        | breadcrumb                                 |
+| 예측 못한 오류만 오는 자리(기능 훅·전역 캐시·`QueryErrorBoundary`·시작·기기 작업) | `reportUnexpectedError(reporter, e, feature, { method?, errorCode? })`(`useReportUnexpectedError`·`useMutationErrorFeedback`) | 이벤트 `feature`·요청 태그·넘긴 태그       |
+| 무엇이든 오는 자리(루트·앱 오류 경계, 날씨 위치 등록)                             | `errorReporter.captureException(e, { feature, … })`                                                                           | 분류는 어댑터. 예상한 오류는 breadcrumb    |
+| 예측 못한 오류(로그 키가 기능을 밝히는 곳, 추가 문맥)                             | `logger.error(KEY, toError(e), context)`                                                                                      | 이벤트 `source=logger`·`feature=<첫 마디>` |
+| 도메인 신호(세션 종료·결제 실패 등)                                               | `errorReporter.captureMessage`                                                                                                | 이벤트 `feature`                           |
 
-**보고 API는 하나다.** 두 입구 모두 `captureError` 한 곳을 지나 `classifyError`로 이벤트·breadcrumb를 정하고 같은 오류 객체는 한 번만 보낸다. `reportUnexpectedError`는 예상한 오류를 아예 보내지 않고, `logger.error`는 예상한 오류를 breadcrumb로 남긴다. 기능 이름을 아는 React 코드는 `reportUnexpectedError` 쪽을, DI 밖 코드와 로그 키·문맥(`speech_error` 등)으로 남기는 코드는 `logger.error`를 쓴다.
+**보고 입구는 넷이다.** 오류는 `reportUnexpectedError`·포트 `captureException`·`logger.error`, 오류가 아닌 도메인 신호는 `errorReporter.captureMessage`(제목은 `ERROR_REPORT_MESSAGES`)다. 4xx·연결 끊김까지 올 수 있는 오류 경계와 날씨 위치 등록은 예상한 오류도 breadcrumb로 남기려고 포트 `captureException`을 불러 분류를 어댑터에 맡긴다. 오류 입구는 모두 `captureError` 한 곳을 지나 `classifyError`로 이벤트·breadcrumb를 정하고 같은 오류 객체는 한 번만 보낸다. `reportUnexpectedError`는 예상한 오류를 아예 보내지 않고, `logger.error`는 예상한 오류를 breadcrumb로 남긴다. 기능 이름을 아는 React 코드는 `reportUnexpectedError` 쪽을, 로그 키·문맥(`speech_error` 등)으로 남기는 코드는 `logger.error`를 쓴다. DI 밖의 루트 오류 경계(`app/_layout.tsx`)는 따로 만든 보고기(`createEnvironmentErrorReporter`)의 `captureException`을 부른다.
 
 - `logger.error(KEY, undefined, context)`는 breadcrumb만 남긴다. 이벤트가 필요하면 `Error`를 넘긴다. `logger.debug`는 Sentry에 남지 않는다.
 - 같은 오류는 한 곳에서 한 방법으로만 보낸다.
@@ -169,7 +174,7 @@ Sentry로 나가는 모든 오류(`AppLogger.error`, `ErrorReporter.captureExcep
 - `.catch(() => undefined)`·`.catch(noop)`·빈 `catch`로 끝내지 않는다. `logger.warn(KEY, { error: getErrorMessage(error) })`로 남긴다.
 - `mutateAsync`의 실패는 전역 `meta.errorFeedback`이 알리고 기록한다. 그래서 호출부 `.catch(noop)`은 흐름만 잇는 용도로 쓸 수 있다. `errorFeedback: false`이거나 `isHandledByFeature`로 뺀 오류는 호출부나 기능이 직접 보이고 기록한다.
 - 기다리지 않는 Promise는 내부에서 실패를 처리하는 함수이거나 호출부 `.catch`에서 기록한다.
-- 예측 가능한 4xx는 이벤트가 아니다. `Result.err()`로 UI가 처리하고 HTTP 실패는 `addBreadcrumb({ category: 'http' })`로만 남긴다. breadcrumb의 `requestId`는 요청마다 보내는 `X-Request-Id`(`shared/infra/http/request-headers.ts`)이고 서버 로그 `reqId`·서버 Sentry `request_id`와 같다.
+- 예측 가능한 4xx는 이벤트가 아니다. `fail` 결과로 UI가 처리하고 HTTP 실패는 `addBreadcrumb({ category: 'http' })`로만 남긴다. breadcrumb의 `requestId`는 요청마다 보내는 `X-Request-Id`(`shared/infra/http/request-headers.ts`)이고 서버 로그 `reqId`·서버 Sentry `request_id`와 같다.
 
 ## 개인정보
 
@@ -186,10 +191,10 @@ Sentry로 나가는 모든 오류(`AppLogger.error`, `ErrorReporter.captureExcep
 
 | 시나리오             | 방법                                                | 기대                                                                                     |
 | -------------------- | --------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| 일부러 500           | QA 서버에서 목록 API가 500을 내게 한다              | 이슈 1건. `request_id`가 서버 `reqId`와 같다. 토스트와 재시도                            |
+| 일부러 500           | 개발서버 목록 API가 500을 내게 한다                 | 이슈 1건. `request_id`가 서버 `reqId`와 같다. 토스트와 재시도                            |
 | 일부러 4xx(404, 409) | 지운 할 일 열기, 중복 요청                          | 이슈 없음. 다른 이슈의 breadcrumb에만 `error`·`http`                                     |
 | 비행기 모드·타임아웃 | 네트워크를 끊고 새로 고침                           | 이슈 없음                                                                                |
 | 응답 파싱 실패       | 서버 응답 필드를 일부러 어긋나게 한다               | 이슈 1건(`ParseError`, message에 어긋난 칸), `feature` 태그. 따로 남기는 로그는 없다     |
-| 렌더 오류            | 개발용 화면에서 렌더 중 throw                       | 이슈 1건, `feature=error_boundary`. 중복 없음                                            |
+| 렌더 오류            | 렌더 중 throw를 넣은 개발 DSN 빌드(커밋하지 않는다) | 이슈 1건, `feature=error_boundary`. 중복 없음                                            |
 | 루트 렌더 오류       | 루트 Provider 안에서 throw한 뒤 "다시 시도"         | 이슈 1건, `feature=root_error_boundary`. 로그인·피드·초안이 남는다                       |
 | 개인정보             | 메모·음성·댓글을 쓰고 위 오류를 낸 직후 이슈를 연다 | 이벤트 JSON에 본문·글자·토큰·이메일이 없고 사용자는 내부 id뿐. 로그아웃 뒤엔 사용자 없음 |

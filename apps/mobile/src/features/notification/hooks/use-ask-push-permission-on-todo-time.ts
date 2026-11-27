@@ -24,7 +24,7 @@ export function useAskPushPermissionOnTodoTime() {
   const askIfUndetermined = async () => {
     const permission = await ensurePushPermission(queryClient, permissionQueryOptions);
     if (
-      PushPermissionPolicy.findAskMoment(permission, { surface: 'todo-time' }) !==
+      PushPermissionPolicy.findAskMoment(permission, { surface: 'todo_time' }) !==
       PUSH_ASK_MOMENT.SYSTEM_DIALOG
     ) {
       return;

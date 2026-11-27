@@ -15,7 +15,7 @@ const StatusProbe = () => <Text testID="status">{useAuthStatus()}</Text>;
 
 setupFakeTimersPerTest();
 
-describe('앱 오류 화면의 로그아웃', () => {
+describe('ErrorBoundary', () => {
   it('토큰을 지워 다시 열어도 로그아웃 상태다', async () => {
     // Given
     const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });

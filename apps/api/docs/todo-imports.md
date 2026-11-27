@@ -1,6 +1,6 @@
 # 캘린더 가져오기
 
-기기 캘린더 일정을 할 일로 한 번 옮기는 흐름(`planning/todo-imports` slice)을 고치거나 새 출처를 더할 때 읽는다. 업무 용어와 상태 전이 표는 [planning 용어집](glossary/planning.md#todo-imports), 큐 일반 규칙은 [작업과 이벤트](jobs-and-events.md), 기간 권한은 [유료 기능과 권한](entitlements.md)이다.
+기기 캘린더 일정을 할 일로 한 번 옮기는 흐름(`planning/todo-imports` slice)을 고치거나 새 출처를 더할 때 읽는다. 업무 용어와 상태 전이 표는 [planning 용어집](glossary/planning.md#todo-imports), 큐 일반 규칙은 [작업과 이벤트](architecture/jobs-and-events.md), 기간 권한은 [유료 기능과 권한](entitlements.md)이다.
 
 ## 흐름
 
@@ -97,7 +97,7 @@ POST /v1/todo-imports/:id/undo   끝난 뒤 7일 안이고 남은 할 일이 있
 
 ## 출처 더하기
 
-서버가 가져오는 출처(Google Calendar API, Microsoft To Do, .ics)는 연결·토큰 slice, `TodoImportSourcePort` + `<Vendor>TodoImportSourceAdapter`·`*.wire.ts`·outbound policy, 같은 `TodoImportItem`을 채우고 확정으로 잇는 `planning.todo-import-fetch.v1` 작업만 더한다. HTTP·생성·링크·되돌리기는 그대로이고 `TODO_IMPORT_SOURCES`에 값만 추가한다.
+서버가 가져오는 출처(Google Calendar API, Microsoft To Do, .ics)는 연결·토큰 slice, 출처 포트와 업체별 어댑터·`*.wire.ts`·outbound policy, 같은 `TodoImportItem`을 채우고 확정으로 잇는 가져오기 큐 작업만 더한다. HTTP·생성·링크·되돌리기는 그대로이고 `TODO_IMPORT_SOURCES`에 값만 추가한다.
 
 ## 테스트
 

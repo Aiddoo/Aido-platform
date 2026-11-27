@@ -77,3 +77,75 @@ export function getSubscriptionDiagnosticCode(error: unknown): string {
     .with(P.instanceOf(ParseError), () => 'INVALID_RESPONSE')
     .otherwise(() => 'UNKNOWN');
 }
+
+/** network는 연결을 확인하면, server는 잠시 뒤 다시 하면 풀린다. store는 스토어에 닿지 못했거나 팔 요금제가 없다 */
+export type SubscriptionFailure =
+  | 'network'
+  | 'server'
+  | 'store'
+  | 'purchaseCancelled'
+  | 'paymentPending'
+  | 'purchaseFailed'
+  | 'restoreFailed';
+
+export function getSubscriptionFailure(error: unknown): SubscriptionFailure {
+  return match(error)
+    .returnType<SubscriptionFailure>()
+    .with(P.instanceOf(SubscriptionError), ({ code }) =>
+      match(code)
+        .returnType<SubscriptionFailure>()
+        .with(SUBSCRIPTION_ERROR_CODE.NETWORK, () => 'network')
+        .with(
+          SUBSCRIPTION_ERROR_CODE.STORE_UNAVAILABLE,
+          SUBSCRIPTION_ERROR_CODE.STORE_PROBLEM,
+          SUBSCRIPTION_ERROR_CODE.OFFERINGS_UNAVAILABLE,
+          () => 'store',
+        )
+        .with(SUBSCRIPTION_ERROR_CODE.PURCHASE_CANCELLED, () => 'purchaseCancelled')
+        .with(SUBSCRIPTION_ERROR_CODE.PAYMENT_PENDING, () => 'paymentPending')
+        .with(SUBSCRIPTION_ERROR_CODE.PURCHASE_FAILED, () => 'purchaseFailed')
+        .with(SUBSCRIPTION_ERROR_CODE.RESTORE_FAILED, () => 'restoreFailed')
+        .exhaustive(),
+    )
+    .with(P.instanceOf(NetworkError), P.instanceOf(TimeoutError), () => 'network')
+    .otherwise(() => 'server');
+}
+
+/** 예상한 상태라 오류 경계로 보내지 않고 화면이 안내한다. setup은 설정 문제, temporary는 스토어 일시 장애다 */
+export interface StoreUnavailable {
+  kind: 'setup' | 'temporary';
+  diagnosticCode: string;
+}
+
+export function findStoreUnavailableKind(error: unknown): StoreUnavailable['kind'] | null {
+  return match(error)
+    .returnType<StoreUnavailable['kind'] | null>()
+    .with(
+      P.instanceOf(SubscriptionError).and({ code: SUBSCRIPTION_ERROR_CODE.STORE_UNAVAILABLE }),
+      () => 'setup',
+    )
+    .with(
+      P.instanceOf(SubscriptionError).and({ code: SUBSCRIPTION_ERROR_CODE.STORE_PROBLEM }),
+      () => 'temporary',
+    )
+    .otherwise(() => null);
+}
+
+/** 스토어 사용 불가 안내를 보였을 때 남길 신호. 개발 빌드는 Test Store라 로그만, 배포 빌드의 설정 문제는 매출이 막혀 error, 일시 장애는 warning 이벤트다 */
+export type StoreUnavailableReport =
+  | { channel: 'log' }
+  | { channel: 'event'; severity: 'error' | 'warning' };
+
+export function getStoreUnavailableReport(
+  kind: StoreUnavailable['kind'],
+  { isDebugBuild }: { isDebugBuild: boolean },
+): StoreUnavailableReport {
+  if (isDebugBuild) {
+    return { channel: 'log' };
+  }
+  return match(kind)
+    .returnType<StoreUnavailableReport>()
+    .with('setup', () => ({ channel: 'event', severity: 'error' }))
+    .with('temporary', () => ({ channel: 'event', severity: 'warning' }))
+    .exhaustive();
+}

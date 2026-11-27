@@ -1,7 +1,7 @@
 import { USER_BLOCK_LIMITS } from '@aido/api/vocabulary';
 import { useModerationApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
-import { getNextCursor, selectPageItems } from '@src/shared/domains/cursor-page.model';
+import { getNextCursor, selectPageItems } from '@src/shared/query/cursor-page';
 import { type InfiniteData, infiniteQueryOptions } from '@tanstack/react-query';
 
 import type { BlockedUserPage } from '../domains/user-block.model';

@@ -1,31 +1,24 @@
+import { localDateIn, resolveDateBoundaryTimezone } from "#api/shared/domain/time/timezone-name";
 import { Timezone } from "#api/shared/domain/time/timezone.vo";
-import { localDateOf, toZonedInstant } from "#api/shared/domain/time/zoned-time";
+import { toZonedInstant } from "#api/shared/domain/time/zoned-time";
 
 // 할 일 날짜 계산은 모두 Temporal로 한다. 반복 규칙은 날짜를 YYYY-MM-DD 키로 들고 있어 여기서 오간다
 
-// 옛 날짜 함수(resolveTimezone)처럼 알 수 없는 시간대는 요청을 멈추지 않고 UTC로 계산한다.
+// 알 수 없는 시간대는 요청을 멈추지 않고 날짜 경계 규칙(UTC)으로 계산한다.
 // 묶음 생성은 한 번 풀어 둔 Timezone을 넘겨 초안마다 다시 검증하지 않는다
 export function toTodoTimezone(raw: string | Timezone): Timezone {
   if (raw instanceof Timezone) {
     return raw;
   }
-  try {
-    return Timezone.create(raw);
-  } catch {
-    return Timezone.UTC;
-  }
+  return Timezone.reconstitute(resolveDateBoundaryTimezone(raw));
 }
 
 export function addDaysToKey(dateKey: string, days: number): string {
   return Temporal.PlainDate.from(dateKey).add({ days }).toString();
 }
 
-export function localDateAt(at: Temporal.Instant, timezone: string): Temporal.PlainDate {
-  return localDateOf(at, toTodoTimezone(timezone));
-}
-
 export function localDateKeyAt(at: Temporal.Instant, timezone: string): string {
-  return localDateAt(at, timezone).toString();
+  return localDateIn(at, timezone).toString();
 }
 
 /** 순간이 그 시간대에서 가리키는 벽시계(HH:mm). resolveScheduledInstant의 역변환이다. */

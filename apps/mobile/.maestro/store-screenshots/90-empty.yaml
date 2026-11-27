@@ -1,4 +1,4 @@
-appId: com.aido.mobile
+appId: ${MAESTRO_APP_ID}
 name: 처음 가입한 계정의 빈 화면과 없는 화면
 tags:
   - free

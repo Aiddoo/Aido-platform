@@ -29,9 +29,9 @@
 
 ## 받은 자리(grant)와 충전 확장 지점
 
-초대 보상 등으로 받은 자리는 `FeatureGrant`(DB 테이블·enum 이름은 `ResourceBonus`·`ResourceType` 그대로)로 저장하고, 기능별 합계(`FeatureGrants`)를 `resolveFeatureLimit` 한 곳에서 요금제 한도에 더한다. 무제한(null) 한도는 무제한으로 두고, 0 이하 행은 reader와 도메인 둘 다 더하지 않는다. 지급은 1 이상의 정수만 받는다(`FeatureGrant.create`). 같은 출처 키는 저장소가 찾아 복원한 지급(`findBySourceKey`)이 있으면 `duplicate`다. 자리를 줄 수 있는 기능은 `@aido/api/vocabulary`의 `GRANTABLE_FEATURE_KEYS`(resource 기능만, DB enum `ResourceType`과 같은 튜플)이고, 기능을 더하면 enum 값을 추가하는 마이그레이션만 생긴다. 지금 자리는 만료되지 않는다.
+초대 보상 등으로 받은 자리는 `FeatureGrant`(DB 테이블·enum 이름은 `ResourceBonus`·`ResourceType`)로 저장하고, 기능별 합계(`FeatureGrants`)를 `resolveFeatureLimit` 한 곳에서 요금제 한도에 더한다. 무제한(null) 한도는 무제한으로 두고, 0 이하 행은 reader와 도메인 둘 다 더하지 않는다. 지급은 1 이상의 정수만 받는다(`FeatureGrant.create`). 같은 출처 키는 저장소가 찾아 복원한 지급(`findBySourceKey`)이 있으면 `duplicate`다. 자리를 줄 수 있는 기능은 `@aido/api/vocabulary`의 `GRANTABLE_FEATURE_KEYS`(resource 기능만, DB enum `ResourceType`과 같은 튜플)이고, 기능을 더하면 enum 값을 추가하는 마이그레이션만 생긴다. 받은 자리는 만료되지 않는다.
 
-나중에 횟수를 사서 채우는 충전(quota top-up)은 이 grant와 따로 둔다. 기간 창(KST 월·사용자 하루)에 묶인 지급이라 만료 시각이나 기간 키를 가진 지급 행을 더하고, `resolveQuotaLimit`의 집행 한도에 그 창의 합계를 더하는 한 곳만 고친다. 결제 확인은 billing이 하고 access는 `FeatureGranterPort`와 같은 모양의 문으로 지급만 받는다.
+횟수를 사서 채우는 충전(quota top-up)을 더할 때는 이 grant와 따로 둔다. 기간 창(KST 월·사용자 하루)에 묶인 지급이라 만료 시각이나 기간 키를 가진 지급 행을 더하고, `resolveQuotaLimit`의 집행 한도에 그 창의 합계를 더하는 한 곳만 고친다. 결제 확인은 billing이 하고 access는 `FeatureGranterPort`와 같은 모양의 문으로 지급만 받는다.
 
 ## 역할 변경
 
@@ -42,7 +42,7 @@
 
 ## 다운그레이드
 
-다운그레이드는 데이터를 지우지 않는다. 한도를 넘긴 카테고리·친구는 그대로 두고 새로 만들기만 막는다(`CreateTodoCategory`·`SendFriendRequest`의 `count >= limit`). 사용량은 창(일·월) 단위로 계속 세고 한도만 바뀌므로, 이번 달 무료 한도보다 많이 쓴 뒤 만료되면 다음 초기화까지 AI 할 일 만들기가 막힌다. 창 중간에 구독하면 바로 무제한으로 보인다(집행은 `fairUse.premium`).
+다운그레이드는 데이터를 지우지 않는다. 한도를 넘긴 카테고리·친구는 그대로 두고 새로 만들기만 막는다(`CreateTodoCategoryUseCase`·`SendFriendRequestUseCase`의 `count >= limit`). 사용량은 창(일·월) 단위로 계속 세고 한도만 바뀌므로, 이번 달 무료 한도보다 많이 쓴 뒤 만료되면 다음 초기화까지 AI 할 일 만들기가 막힌다. 창 중간에 구독하면 바로 무제한으로 보인다(집행은 `fairUse.premium`).
 
 ## 만료 타임라인 (UTC instant)
 
@@ -57,4 +57,4 @@
 
 ## 포트와 진입점
 
-다른 Context는 `feature-grants/access-feature-grants.public`(`AccessFeatureGrantsQueriesModule`·`EntitlementReaderPort`·`EntitlementCacheInvalidatorPort`·`FeatureGranterPort`·SQL 조건)과 `quota-charges/access-quota-charges.public`(`AccessQuotaChargesModule`·`QuotaLedgerPort`)만 import하고 클래스 토큰으로 주입받는다. `GET /v1/entitlements`는 social·planning이 센 사용량을 읽어야 해서 `AccessFeatureGrantsModule`에 두고, 다른 Context는 import 없는 queries Module만 받아 순환하지 않는다. Symbol 토큰과 옛 진입점은 없다.
+다른 Context는 `feature-grants/access-feature-grants.public`(`AccessFeatureGrantsQueriesModule`·`EntitlementReaderPort`·`EntitlementCacheInvalidatorPort`·`FeatureGranterPort`·SQL 조건)과 `quota-charges/access-quota-charges.public`(`AccessQuotaChargesModule`·`QuotaLedgerPort`)만 import하고 클래스 토큰으로 주입받는다. `GET /v1/entitlements`는 social·planning이 센 사용량을 읽어야 해서 `AccessFeatureGrantsModule`에 두고, 다른 Context는 import 없는 queries Module만 받아 순환하지 않는다.

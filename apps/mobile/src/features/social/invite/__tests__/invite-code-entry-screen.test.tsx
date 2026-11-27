@@ -1,26 +1,59 @@
 import '@src/shared/i18n/init';
-import { ok } from '@src/core/errors/result';
+import type { ErrorCodeType } from '@aido/api/errors';
+import { fail, ok } from '@src/core/errors/result';
+import { NetworkError } from '@src/shared/errors/infra-error';
 import {
   createAnalyticsStub,
+  createApiError,
+  createRouteParamsFake,
   createErrorReporterStub,
+  createHapticsGatewayStub,
   createHttpClientStub,
+  createPendingResponse,
   createTestQueryClient,
   createTestDi,
+  getTrackedEvents,
 } from '@src/testing/core';
+import { pressTwiceInSameFrame } from '@src/testing/press';
 import { renderScreen } from '@src/testing/render';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { onlineManager } from '@tanstack/react-query';
 import { act, fireEvent, screen, userEvent, waitFor } from '@testing-library/react-native';
 import { noop } from 'es-toolkit';
-import { router } from 'expo-router';
+import { router, useNavigation } from 'expo-router';
 
-import InviteCodeEntryRoute from '../../../../../app/invite';
+import InviteCodeEntryScreen from '../../../../../app/invite';
 import { parseInviteCode } from '../domains/invite-code.model';
 import { INVITE_QUERY_KEYS } from '../queries/invite-query-keys';
-import { createInvitePreviewDto } from './invite.fixtures';
+import { createInviteApiError, createInvitePreviewDto } from './invite.fixtures';
 
 const CODE = parseInviteCode('K7M2QX') ?? '';
 
-describe('초대 코드 입력 화면', () => {
+async function renderInviteCodeEntry(httpClient: ReturnType<typeof createHttpClientStub>) {
+  const analytics = createAnalyticsStub();
+  const haptics = createHapticsGatewayStub();
+  await renderScreen(<InviteCodeEntryScreen />, {
+    di: createTestDi({
+      ports: {
+        httpClient,
+        analytics,
+        haptics,
+        errorReporter: createErrorReporterStub(),
+        queryClient: createTestQueryClient(),
+      },
+    }),
+  });
+
+  return { analytics, haptics };
+}
+
+async function enterCode(code: string) {
+  const user = userEvent.setup();
+  await user.paste(await screen.findByLabelText('초대 코드'), code);
+  expect(await screen.findByRole('button', { name: '확인' })).toBeEnabled();
+}
+
+describe('InviteCodeEntryScreen', () => {
   afterEach(() => {
     onlineManager.setOnline(true);
   });
@@ -30,7 +63,7 @@ describe('초대 코드 입력 화면', () => {
     const queryClient = createTestQueryClient();
     onlineManager.setOnline(false);
     const user = userEvent.setup();
-    await renderScreen(<InviteCodeEntryRoute />, {
+    await renderScreen(<InviteCodeEntryScreen />, {
       di: createTestDi({
         ports: {
           analytics: createAnalyticsStub(),
@@ -58,7 +91,7 @@ describe('초대 코드 입력 화면', () => {
     httpClient.get.mockResolvedValue(ok(createInvitePreviewDto()));
     const queryClient = createTestQueryClient();
     const user = userEvent.setup();
-    await renderScreen(<InviteCodeEntryRoute />, {
+    await renderScreen(<InviteCodeEntryScreen />, {
       di: createTestDi({
         ports: {
           httpClient,
@@ -89,7 +122,7 @@ describe('초대 코드 입력 화면', () => {
     const httpClient = createHttpClientStub();
     httpClient.get.mockReturnValue(new Promise(noop));
     const user = userEvent.setup();
-    await renderScreen(<InviteCodeEntryRoute />, {
+    await renderScreen(<InviteCodeEntryScreen />, {
       di: createTestDi({
         ports: {
           httpClient,
@@ -113,7 +146,7 @@ describe('초대 코드 입력 화면', () => {
   it('채운 칸 뒤에 다른 코드를 붙여 넣으면 붙여 넣은 코드로 바꾼다', async () => {
     // Given
     const user = userEvent.setup();
-    await renderScreen(<InviteCodeEntryRoute />, {
+    await renderScreen(<InviteCodeEntryScreen />, {
       di: createTestDi({
         ports: {
           analytics: createAnalyticsStub(),
@@ -136,7 +169,7 @@ describe('초대 코드 입력 화면', () => {
   it('헷갈리는 글자를 넣으면 제출 전에 바로 알리고 고칠 때까지 확인을 끈다', async () => {
     // Given
     const user = userEvent.setup();
-    await renderScreen(<InviteCodeEntryRoute />, {
+    await renderScreen(<InviteCodeEntryScreen />, {
       di: createTestDi({
         ports: {
           analytics: createAnalyticsStub(),
@@ -160,5 +193,304 @@ describe('초대 코드 입력 화면', () => {
     // Then
     await waitFor(() => expect(screen.getByRole('button', { name: '확인' })).toBeEnabled());
     expect(screen.queryByText(/글자는 초대 코드에 없어요/u)).toBeNull();
+  });
+  it('앱 안에서 연 코드 입력으로 확인하면 초대 링크 열림을 한 번 남긴다', async () => {
+    // Given
+    const httpClient = createHttpClientStub();
+    httpClient.get.mockResolvedValue(ok(createInvitePreviewDto()));
+    const { analytics } = await renderInviteCodeEntry(httpClient);
+    await enterCode(CODE);
+
+    // When
+    await fireEvent.press(screen.getByRole('button', { name: '확인' }));
+
+    // Then
+    await waitFor(() => expect(router.replace).toHaveBeenCalledTimes(1));
+    expect(getTrackedEvents(analytics, 'invite_link_opened')).toEqual([{ source: 'code_entry' }]);
+  });
+
+  it('서버가 없는 코드라고 하면 코드 칸에 한 번만 알리고 고치면 알림을 지운다', async () => {
+    // Given
+    const httpClient = createHttpClientStub();
+    httpClient.get.mockResolvedValue(fail(createInviteApiError({ code: 'INVITE_2101' })));
+    const { haptics } = await renderInviteCodeEntry(httpClient);
+    await enterCode(CODE);
+
+    // When
+    await fireEvent.press(screen.getByRole('button', { name: '확인' }));
+
+    // Then
+    expect(await screen.findAllByText('초대 코드를 찾을 수 없어요')).toHaveLength(1);
+    expect(screen.getByRole('button', { name: '다시 확인' })).toBeOnTheScreen();
+    expect(screen.getByLabelText('초대 코드')).toHaveDisplayValue(CODE);
+    expect(haptics.notify).not.toHaveBeenCalledWith('error');
+    expect(router.replace).not.toHaveBeenCalled();
+
+    // When
+    await fireEvent.changeText(screen.getByLabelText('초대 코드'), 'BCDFGH');
+
+    // Then
+    await waitFor(() => expect(screen.queryByText('초대 코드를 찾을 수 없어요')).toBeNull());
+    expect(screen.getByRole('button', { name: '확인' })).toBeEnabled();
+  });
+
+  it('연결이 끊겨 확인하지 못하면 한 번 알리고 코드를 둔 채 화면에 머문다', async () => {
+    // Given
+    const httpClient = createHttpClientStub();
+    httpClient.get.mockRejectedValue(new NetworkError());
+    const { haptics } = await renderInviteCodeEntry(httpClient);
+    await enterCode(CODE);
+
+    // When
+    await fireEvent.press(screen.getByRole('button', { name: '확인' }));
+
+    // Then
+    expect(await screen.findAllByText(new NetworkError().message)).not.toHaveLength(0);
+    expect(haptics.notify).toHaveBeenCalledTimes(1);
+    expect(haptics.notify).toHaveBeenCalledWith('error');
+    expect(screen.getByLabelText('초대 코드')).toHaveDisplayValue(CODE);
+    expect(screen.queryByTestId('invite-code-error')).toBeNull();
+    expect(router.replace).not.toHaveBeenCalled();
+  });
+
+  it('오프라인이면 보내 보지 않고 연결 안내를 한 번만 띄우며 진동·보고·추적은 하지 않는다', async () => {
+    // Given
+    onlineManager.setOnline(false);
+    const httpClient = createHttpClientStub();
+    const analytics = createAnalyticsStub();
+    const haptics = createHapticsGatewayStub();
+    const errorReporter = createErrorReporterStub();
+    await renderScreen(<InviteCodeEntryScreen />, {
+      di: createTestDi({
+        ports: {
+          httpClient,
+          analytics,
+          haptics,
+          errorReporter,
+          queryClient: createTestQueryClient(),
+        },
+      }),
+    });
+    await enterCode(CODE);
+
+    // When
+    await fireEvent.press(screen.getByRole('button', { name: '확인' }));
+
+    // Then
+    expect(
+      await screen.findAllByText('인터넷에 연결되면 초대 코드를 확인할 수 있어요'),
+    ).toHaveLength(1);
+    expect(httpClient.get).not.toHaveBeenCalled();
+    expect(haptics.notify).not.toHaveBeenCalled();
+    expect(errorReporter.captureException).not.toHaveBeenCalled();
+    expect(getTrackedEvents(analytics, 'invite_link_opened')).toEqual([]);
+    expect(screen.getByLabelText('초대 코드')).toHaveDisplayValue(CODE);
+    expect(screen.queryByTestId('invite-code-error')).toBeNull();
+    expect(router.replace).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { code: 'INVITE_2102', reason: '링크가 바뀐 코드' },
+    { code: 'INVITE_2103', reason: '내 코드' },
+    { code: 'INVITE_2104', reason: '이미 다른 초대를 받은 계정' },
+  ] satisfies ReadonlyArray<{ code: ErrorCodeType; reason: string }>)(
+    '$reason($code)라고 거절되면 서버 문구를 코드 칸에 한 번 보이고 머문다',
+    async ({ code }) => {
+      // Given
+      const error = createApiError(code, { status: 400 });
+      const httpClient = createHttpClientStub();
+      httpClient.get.mockResolvedValue(fail(error));
+      const { haptics } = await renderInviteCodeEntry(httpClient);
+      await enterCode(CODE);
+
+      // When
+      await fireEvent.press(screen.getByRole('button', { name: '확인' }));
+
+      // Then
+      expect(await screen.findByTestId('invite-code-error')).toHaveTextContent(error.message);
+      expect(screen.getAllByText(error.message)).toHaveLength(1);
+      expect(haptics.notify).not.toHaveBeenCalledWith('error');
+      expect(router.replace).not.toHaveBeenCalled();
+    },
+  );
+
+  it('초대가 꺼져 있으면 코드 칸이 아니라 토스트로 한 번 알리고 코드를 둔다', async () => {
+    // Given
+    const error = createApiError('INVITE_2105', { status: 403 });
+    const httpClient = createHttpClientStub();
+    httpClient.get.mockResolvedValue(fail(error));
+    const { haptics } = await renderInviteCodeEntry(httpClient);
+    await enterCode(CODE);
+
+    // When
+    await fireEvent.press(screen.getByRole('button', { name: '확인' }));
+
+    // Then
+    expect(await screen.findAllByText(error.message)).toHaveLength(1);
+    expect(haptics.notify).toHaveBeenCalledWith('error');
+    expect(screen.queryByTestId('invite-code-error')).toBeNull();
+    expect(screen.getByLabelText('초대 코드')).toHaveDisplayValue(CODE);
+    expect(router.replace).not.toHaveBeenCalled();
+  });
+
+  it('시스템 링크로 연 코드 입력은 착지할 때 한 번 남기고 확인해도 다시 남기지 않는다', async () => {
+    // Given
+    createRouteParamsFake({ source: 'app_scheme', openedAt: '1000' });
+    const httpClient = createHttpClientStub();
+    httpClient.get.mockResolvedValue(ok(createInvitePreviewDto()));
+    const { analytics } = await renderInviteCodeEntry(httpClient);
+    await enterCode(CODE);
+
+    // When
+    await fireEvent.press(screen.getByRole('button', { name: '확인' }));
+
+    // Then
+    await waitFor(() => expect(router.replace).toHaveBeenCalledTimes(1));
+    expect(getTrackedEvents(analytics, 'invite_link_opened')).toEqual([{ source: 'app_scheme' }]);
+  });
+
+  it('같은 프레임에 확인을 두 번 누르면 조회가 한 번 나간다', async () => {
+    // Given
+    const httpClient = createHttpClientStub();
+    const pending = createPendingResponse(ok(createInvitePreviewDto()));
+    httpClient.get.mockReturnValue(pending.response);
+    await renderInviteCodeEntry(httpClient);
+    await enterCode(CODE);
+    const submit = screen.getByRole('button', { name: '확인' });
+
+    // When
+    await pressTwiceInSameFrame(submit);
+    await act(async () => {
+      pending.settle();
+    });
+
+    // Then
+    await waitFor(() => expect(router.replace).toHaveBeenCalled());
+    expect(httpClient.get).toHaveBeenCalledTimes(1);
+  });
+
+  it('덜 채운 코드는 완료 키를 눌러도 조회하지 않는다', async () => {
+    // Given
+    const httpClient = createHttpClientStub();
+    await renderInviteCodeEntry(httpClient);
+    const input = await screen.findByLabelText('초대 코드');
+    await fireEvent.changeText(input, 'K7M2');
+
+    // When
+    await fireEvent(input, 'submitEditing');
+
+    // Then
+    expect(screen.getByRole('button', { name: '확인' })).toBeDisabled();
+    expect(httpClient.get).not.toHaveBeenCalled();
+  });
+
+  it('확인하는 사이 화면을 떠났으면 조회가 끝나도 초대 카드로 바꾸지 않는다', async () => {
+    // Given
+    let isFocused = true;
+    jest.mocked(useNavigation).mockImplementation(() => ({
+      isFocused: () => isFocused,
+      getParent: () => undefined,
+      addListener: () => () => undefined,
+    }));
+    const httpClient = createHttpClientStub();
+    const pending = createPendingResponse(ok(createInvitePreviewDto()));
+    httpClient.get.mockReturnValue(pending.response);
+    const { analytics } = await renderInviteCodeEntry(httpClient);
+    await enterCode(CODE);
+    await act(async () => {
+      // 누름은 응답이 와야 끝나 기다리지 않는다
+      fireEvent.press(screen.getByRole('button', { name: '확인' })).catch(() => undefined);
+    });
+
+    // When
+    isFocused = false;
+    await act(async () => {
+      pending.settle();
+    });
+
+    // Then
+    await waitFor(() => expect(screen.getByRole('button', { name: '확인' })).toBeEnabled());
+    expect(router.replace).not.toHaveBeenCalled();
+    expect(analytics.trackEvent).not.toHaveBeenCalledWith('invite_link_opened', expect.anything());
+  });
+
+  describe('확인 뒤 떠나는 동안', () => {
+    setupFakeTimersPerTest();
+
+    it('확인해 초대 카드로 바뀌는 동안 다시 눌러도 조회는 한 번이다', async () => {
+      // Given
+      const httpClient = createHttpClientStub();
+      httpClient.get.mockResolvedValue(ok(createInvitePreviewDto()));
+      await renderInviteCodeEntry(httpClient);
+      await fireEvent.changeText(screen.getByLabelText('초대 코드'), CODE);
+      await waitFor(() => expect(screen.getByTestId('invite-code-submit')).toBeEnabled());
+      await fireEvent.press(screen.getByTestId('invite-code-submit'));
+      // 연타 가드(600ms)가 지난 뒤다. 화면은 바꾸는 전환이 끝나야 내려가 버튼이 아직 보인다
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+      expect(router.replace).toHaveBeenCalledTimes(1);
+
+      // When
+      await fireEvent.press(screen.getByTestId('invite-code-submit'));
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+
+      // Then
+      expect(httpClient.get).toHaveBeenCalledTimes(1);
+      expect(router.replace).toHaveBeenCalledTimes(1);
+    });
+
+    it('확인하는 사이 떠났다가 조회가 끝난 뒤 돌아오면 코드가 남아 있고 다시 확인할 수 있다', async () => {
+      // Given
+      let isFocused = true;
+      jest.mocked(useNavigation).mockImplementation(() => ({
+        isFocused: () => isFocused,
+        getParent: () => undefined,
+        addListener: () => () => undefined,
+      }));
+      const httpClient = createHttpClientStub();
+      const pending = createPendingResponse(ok(createInvitePreviewDto()));
+      httpClient.get
+        .mockReturnValueOnce(pending.response)
+        .mockResolvedValue(ok(createInvitePreviewDto()));
+      await renderInviteCodeEntry(httpClient);
+      await fireEvent.changeText(screen.getByLabelText('초대 코드'), CODE);
+      await waitFor(() => expect(screen.getByTestId('invite-code-submit')).toBeEnabled());
+      await fireEvent.press(screen.getByTestId('invite-code-submit'));
+      isFocused = false;
+      await act(async () => {
+        pending.settle();
+      });
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+      isFocused = true;
+
+      // When
+      await fireEvent.press(screen.getByTestId('invite-code-submit'));
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+
+      // Then
+      expect(screen.getByLabelText('초대 코드')).toHaveDisplayValue(CODE);
+      expect(httpClient.get).toHaveBeenCalledTimes(2);
+      expect(router.replace).toHaveBeenCalledTimes(1);
+    });
+
+    it('오프라인이라 확인하지 못하면 알린 뒤 다시 확인할 수 있다', async () => {
+      // Given
+      onlineManager.setOnline(false);
+      const httpClient = createHttpClientStub();
+      httpClient.get.mockResolvedValue(ok(createInvitePreviewDto()));
+      await renderInviteCodeEntry(httpClient);
+      await fireEvent.changeText(screen.getByLabelText('초대 코드'), CODE);
+      await waitFor(() => expect(screen.getByTestId('invite-code-submit')).toBeEnabled());
+      await fireEvent.press(screen.getByTestId('invite-code-submit'));
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+      onlineManager.setOnline(true);
+
+      // When
+      await fireEvent.press(screen.getByTestId('invite-code-submit'));
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+
+      // Then
+      expect(httpClient.get).toHaveBeenCalledTimes(1);
+      expect(router.replace).toHaveBeenCalledTimes(1);
+    });
   });
 });

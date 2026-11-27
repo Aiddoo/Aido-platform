@@ -7,11 +7,12 @@ import {
   useGetWeeklyAchievementsInfiniteQueryOptions,
 } from '@src/features/insights/achievement/queries/achievement.queries';
 import { getIsoWeekYear } from '@src/shared/date/date-key';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
   QueryErrorBoundary,
+  QueryErrorFallback,
   type QueryErrorFallbackProps,
   Spacing,
   StyledSafeAreaView,
@@ -27,11 +28,12 @@ export default function AchievementsScreen() {
   const [selectedYear] = useSelectedAchievementYear();
 
   const todayKey = useTodayKey();
+  const currentYear = getIsoWeekYear(todayKey);
   // 보일 해는 기록 있는 연도를 받아야 정해진다. 대개 고른 해나 올해라 그 목록을 함께 받기 시작해 기다림을 겹친다
   usePrefetchQuery(useGetAchievementYearsQueryOptions());
   usePrefetchInfiniteQuery(
     useGetWeeklyAchievementsInfiniteQueryOptions({
-      year: selectedYear ?? getIsoWeekYear(todayKey),
+      year: selectedYear ?? currentYear,
     }),
   );
 
@@ -41,8 +43,8 @@ export default function AchievementsScreen() {
 
       <StyledSafeAreaView className="flex-1 bg-white" edges={['left', 'right']}>
         <QueryErrorBoundary
-          resetKeys={[selectedYear, getIsoWeekYear(todayKey)]}
-          fallback={WeeklyAchievementListErrorFallback}
+          resetKeys={[selectedYear, currentYear]}
+          fallback={AchievementsScreen.Error}
         >
           <Suspense fallback={<WeeklyAchievementList.Loading header={<AchievementOverview />} />}>
             <WeeklyAchievementList header={<AchievementOverview />} />
@@ -53,9 +55,10 @@ export default function AchievementsScreen() {
   );
 }
 
-function WeeklyAchievementListErrorFallback(props: QueryErrorFallbackProps) {
+// 실패해도 화면이 가진 개요(배지·기록 머리)를 목록 오류 위에 그대로 그리려고 header를 넘긴다
+AchievementsScreen.Error = function ErrorFallback(props: QueryErrorFallbackProps) {
   return <WeeklyAchievementList.Error {...props} header={<AchievementOverview />} />;
-}
+};
 
 function AchievementOverview() {
   const { t } = useTranslation('achievement');
@@ -64,7 +67,8 @@ function AchievementOverview() {
     <>
       <Spacing size={16} />
 
-      <QueryErrorBoundary fallback={AchievementYearBar.Error}>
+      {/* 연도를 받지 못하면 배지·기록 경계가 다시 시도를 보이므로 막대는 자리를 비운다 */}
+      <QueryErrorBoundary fallback={QueryErrorFallback.Hidden}>
         {/* 기록이 올해뿐이면 숨는 막대라 받는 동안 자리를 비우지 않고, 숨을 때 간격도 사라지게 아래 12를 자기 className으로 가진다 */}
         <Suspense fallback={null}>
           <AchievementYearBar className="mb-3" />

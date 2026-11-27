@@ -21,9 +21,8 @@ import { FlatList } from 'react-native';
 import { match } from 'ts-pattern';
 
 import { PRECIPITATION_CHANCE_TEXT_CLASS } from '../constants/weather-colors.constants';
-import { VISIBLE_PRECIPITATION_CHANCE } from '../constants/weather.constants';
-import type { HourlySky, HourlySummary } from '../domains/weather-hourly.model';
-import type { HourlyForecastEntry, WeatherReport } from '../domains/weather-report.model';
+import { LABELED_PRECIPITATION_CHANCE_MIN_PERCENT } from '../constants/weather.constants';
+import type { ForecastHour, HourlySky, HourlySummary } from '../domains/forecast-hour.model';
 import { useFormatLocalTime, useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import {
@@ -39,7 +38,7 @@ import {
   formatDegrees,
   formatTemperature,
   type TemperatureUnit,
-  toDisplayTemperature,
+  getDisplayTemperature,
 } from '../utils/weather-temperature.view-model';
 import { WeatherCard } from './weather-card';
 import { WeatherIcon } from './weather-icon';
@@ -124,10 +123,7 @@ export function HourlyForecast() {
   const now = useMinuteNow();
   const [{ data: weather }, { data: preference }] = useSuspenseQueries({
     queries: [
-      {
-        ...useGetWeatherReportQueryOptions(),
-        select: (report: WeatherReport) => WeatherReportSelect.hourly(report, now),
-      },
+      { ...useGetWeatherReportQueryOptions(), select: WeatherReportSelect.hourly(now) },
       useGetPreferenceQueryOptions(),
     ],
   });
@@ -135,7 +131,7 @@ export function HourlyForecast() {
   const fontScaleRatio = useFontScaleRatio();
   const labelMinimumFontScale = useMinimumFontScale('b3');
   const valueText = useHourlyValueTextStyle();
-  const dateFormat = useLocationDateFormat(weather.location.timezone);
+  const dateFormat = useLocationDateFormat(weather.timezone);
 
   const { timeline, summary } = weather;
   const cellWidth = CELL_WIDTH[preference.timeFormat] * fontScaleRatio;
@@ -269,14 +265,14 @@ function HourCell({
   width,
   context: { t, unit, dateFormat, timeFormat, labelMinimumFontScale, valueText },
 }: {
-  hour: HourlyForecastEntry;
+  hour: ForecastHour;
   isNow: boolean;
   width: number;
   context: TimelineContext;
 }) {
   const time = isNow ? t('hourly.now') : formatInstantHour(hour.startsAt, timeFormat, dateFormat);
-  const temperature = toDisplayTemperature(hour.temperature, unit);
-  const isChanceVisible = hour.precipitationChance >= VISIBLE_PRECIPITATION_CHANCE;
+  const temperature = getDisplayTemperature(hour.temperature, unit);
+  const isChanceVisible = LABELED_PRECIPITATION_CHANCE_MIN_PERCENT <= hour.precipitationChance;
 
   return (
     <VStack
@@ -342,7 +338,6 @@ function SunCell({
 }) {
   const time = formatClockTime(at, timeFormat, dateFormat);
   const event = kind === 'sunrise' ? t('hourly.sunrise') : t('hourly.sunset');
-  const Icon = kind === 'sunrise' ? WeatherIcon.Sunrise : WeatherIcon.Sunset;
 
   return (
     <VStack
@@ -363,7 +358,7 @@ function SunCell({
         {time}
       </Text>
       <CellIcon chance={null}>
-        <Icon width={ICON_SIZE} height={ICON_SIZE} />
+        <WeatherIcon.Glyph glyph={kind} width={ICON_SIZE} height={ICON_SIZE} />
       </CellIcon>
       <Text
         size="b1"
@@ -390,7 +385,7 @@ function CellIcon({ chance, children }: { chance: string | null; children: React
         weight="semibold"
         className={cn('min-h-[14px] tabular-nums', PRECIPITATION_CHANCE_TEXT_CLASS)}
       >
-        {chance ?? ''}
+        {chance}
       </Text>
     </VStack>
   );

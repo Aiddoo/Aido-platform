@@ -1,5 +1,5 @@
 import { ErrorCode } from '@aido/api/errors';
-import { ApiError } from '@src/core/errors/api-error';
+import type { ApiError } from '@src/core/errors/api-error';
 import '@src/shared/i18n/init';
 import { fail, ok, type Result } from '@src/core/errors/result';
 import { TODO_QUERY_KEYS } from '@src/features/planning/todo/queries/todo-query-keys';
@@ -9,13 +9,14 @@ import {
   createHttpClientStub,
   createTestQueryClient,
   createTestDi,
+  createApiError,
 } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
 import { useMutation } from '@tanstack/react-query';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
-import type { PlannedAction } from '../domains/voice-plan.model';
+import type { PlannedAction } from '../domains/planned-action.model';
 import { useApplyActionPlanMutationOptions } from './voice.mutations';
 
 const TODO_ACTION: PlannedAction = {
@@ -125,7 +126,7 @@ describe('useApplyActionPlanMutationOptions', () => {
     // When
     const { queryClient } = await renderApply(
       null,
-      fail(new ApiError(ErrorCode.SYS_0001, '서버 오류', 500)),
+      fail(createApiError(ErrorCode.SYS_0001, { message: '서버 오류' })),
     );
 
     // Then
@@ -138,7 +139,7 @@ describe('useApplyActionPlanMutationOptions', () => {
     // When
     const { onMemoChanged } = await renderApply(
       42,
-      fail(new ApiError('MEMO_2001', '메모 없음', 404)),
+      fail(createApiError('MEMO_2001', { message: '메모 없음' })),
     );
 
     // Then

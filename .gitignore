@@ -27,6 +27,7 @@ coverage/
 *.jks
 *.p8
 *.p12
+*service-account*.json
 *.key
 *.pem
 *.mobileprovision

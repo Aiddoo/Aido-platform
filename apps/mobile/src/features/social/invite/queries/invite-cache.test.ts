@@ -8,7 +8,7 @@ import { createInvite } from '../__tests__/invite.fixtures';
 import {
   invalidateAfterRedeem,
   invalidateOnInviteNotification,
-  replaceMyInvite,
+  setMyInviteInCache,
 } from './invite-cache';
 import { INVITE_QUERY_KEYS } from './invite-query-keys';
 
@@ -23,7 +23,7 @@ describe('invite-cache', () => {
     queryClient = createQueryClient();
   });
 
-  describe('replaceMyInvite', () => {
+  describe('setMyInviteInCache', () => {
     it('새 요약을 바로 넣고 이전 코드 미리보기를 지운다', () => {
       // Given
       const myInvite = createInvite({ code: 'B7TZ2N' });
@@ -32,7 +32,7 @@ describe('invite-cache', () => {
       });
 
       // When
-      replaceMyInvite(queryClient, myInvite);
+      setMyInviteInCache(queryClient, myInvite);
 
       // Then
       expect(queryClient.getQueryData(INVITE_QUERY_KEYS.me())).toEqual(myInvite);

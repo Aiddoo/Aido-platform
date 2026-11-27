@@ -18,18 +18,15 @@ import {
 import { useAppToast } from '@src/shared/ui';
 import { formatCount } from '@src/shared/utils/number-format';
 import { useMutation } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { RadioGroup } from 'heroui-native';
 import type { ComponentProps } from 'react';
-import { type Control, Controller, useForm, useFormState, useWatch } from 'react-hook-form';
+import { Controller, FormState, useForm, Watch } from 'react-hook-form';
 
 import { isReportTargetUnavailableError } from '../domains/moderation.error';
 import type { UserReportTarget } from '../domains/user-report.model';
 import { useReportContentMutationOptions } from '../queries/moderation.mutations';
-import {
-  type UserReportFormValues,
-  userReportFormSchema,
-} from '../schemas/user-report-form.schema';
+import { userReportFormSchema } from '../schemas/user-report-form.schema';
 
 const TARGET_CAPTION_KEYS = {
   PROFILE: 'report.caption.PROFILE',
@@ -39,19 +36,16 @@ const TARGET_CAPTION_KEYS = {
   CHEER_MESSAGE: 'report.caption.CHEER_MESSAGE',
 } as const satisfies Record<UserReportTargetType, string>;
 
-type ReportReasonBottomSheetProps = Omit<
+interface ReportReasonBottomSheetProps extends Omit<
   ComponentProps<typeof KeyboardBottomSheet>,
   'children' | 'isOpen' | 'onOpenChange'
-> & {
+> {
   target: UserReportTarget;
   /** 신고한 뒤 토스트의 차단 바로가기에서 확인 문구에 쓴다 */
   targetDisplayName: string;
-};
+}
 
-/**
- * 신고 사유와 상세를 받아 신고한다. 신고하면 시트를 닫고 결과와 차단 바로가기를 토스트로 알린다.
- * 대상은 route 값을 읽는 바깥 시트(`TodoReportBottomSheet` 등)가 정하고, 이 시트는 신고 폼과 mutation만 가진다.
- */
+/** 대상은 route 값을 읽는 바깥 시트(`TodoReportBottomSheet` 등)가 정하고, 이 시트는 신고 폼과 mutation만 가진다 */
 export function ReportReasonBottomSheet({
   target,
   targetDisplayName,
@@ -67,8 +61,9 @@ export function ReportReasonBottomSheet({
     mode: 'onChange',
   });
 
+  const router = useRouter();
   // 실패는 여기서 받지 않는다. RHF가 실패로 알아야 isSubmitSuccessful이 꺼진 채 남아 다시 보낼 수 있다
-  const saveReport = form.handleSubmit(async (values) => {
+  const submitReport = form.handleSubmit(async (values) => {
     await reportContent.mutateAsync({ target, form: values });
     sheet.close();
     toast.success(t('report.toast'), {
@@ -86,7 +81,7 @@ export function ReportReasonBottomSheet({
 
   // isSubmitting은 다음 렌더에야 켜지고 신고에는 멱등 키가 없어 같은 프레임의 두 번째 탭이 신고를 한 번 더 보낸다
   const handleSavePress = useSingleTap(() => {
-    saveReport().catch((error: unknown) => {
+    submitReport().catch((error: unknown) => {
       // 실패 안내는 mutation의 meta.errorFeedback이 맡는다. 대상이 사라졌으면 더 신고할 수 없어 닫는다
       if (isReportTargetUnavailableError(error)) {
         sheet.close();
@@ -99,7 +94,31 @@ export function ReportReasonBottomSheet({
       {...sheetProps}
       isOpen={sheet.isOpen}
       onOpenChange={sheet.onOpenChange}
-      footer={<SubmitButton control={form.control} onPress={handleSavePress} />}
+      footer={
+        <Watch
+          control={form.control}
+          name="reason"
+          render={(reason) => (
+            <FormState
+              control={form.control}
+              render={({ isSubmitting, isSubmitSuccessful }) => (
+                <Button
+                  color="primary"
+                  size="large"
+                  display="block"
+                  onPress={handleSavePress}
+                  isDisabled={reason == null}
+                  // 신고하면 시트가 내려가는 동안에도 고른 사유가 남는다. 그동안 다시 보내지 않는다
+                  isLoading={isSubmitting || isSubmitSuccessful}
+                  testID="report-submit"
+                >
+                  {t('report.submit')}
+                </Button>
+              )}
+            />
+          )}
+        />
+      }
     >
       <VStack gap={16} pb={16} testID="report-reason-sheet">
         <VStack gap={2}>
@@ -162,7 +181,12 @@ export function ReportReasonBottomSheet({
               />
             )}
           />
-          <DetailLengthCounter control={form.control} />
+          {/* 상세 내용 길이만 구독해 글자를 칠 때 시트 전체가 다시 그려지지 않게 한다 */}
+          <Watch
+            control={form.control}
+            name="detail"
+            render={(detail) => <DetailLengthCounter length={detail?.length ?? 0} />}
+          />
         </VStack>
 
         <Text size="e1" shade={7}>
@@ -173,42 +197,14 @@ export function ReportReasonBottomSheet({
   );
 }
 
-/** 상세 내용 길이만 구독해 글자를 칠 때 시트 전체가 다시 그려지지 않게 한다 */
-function DetailLengthCounter({ control }: { control: Control<UserReportFormValues> }) {
-  const detail = useWatch({ control, name: 'detail' });
+function DetailLengthCounter({ length }: { length: number }) {
   const { locale } = useDateFormatContext();
 
   return (
     <HStack justify="end">
       <Text size="e1" weight="medium" shade={7} className="tabular-nums">
-        {formatCount(detail?.length ?? 0, locale)}/
-        {formatCount(USER_REPORT_LIMITS.MAX_DETAIL_LENGTH, locale)}
+        {formatCount(length, locale)}/{formatCount(USER_REPORT_LIMITS.MAX_DETAIL_LENGTH, locale)}
       </Text>
     </HStack>
-  );
-}
-
-interface SubmitButtonProps extends Pick<ComponentProps<typeof Button>, 'onPress'> {
-  control: Control<UserReportFormValues>;
-}
-
-function SubmitButton({ control, onPress }: SubmitButtonProps) {
-  const { t } = useTranslation('moderation');
-  const reason = useWatch({ control, name: 'reason' });
-  const { isSubmitting, isSubmitSuccessful } = useFormState({ control });
-
-  return (
-    <Button
-      color="primary"
-      size="large"
-      display="block"
-      onPress={onPress}
-      isDisabled={reason == null}
-      // 신고하면 시트가 내려가는 동안에도 고른 사유가 남는다. 그동안 다시 보내지 않는다
-      isLoading={isSubmitting || isSubmitSuccessful}
-      testID="report-submit"
-    >
-      {t('report.submit')}
-    </Button>
   );
 }

@@ -20,6 +20,7 @@ import {
 } from '../../utils/moon-phase.geometry';
 
 const MOON_ICON_SIZE = 46;
+const MOON_GLOW_COLOR = '#FFF6DA';
 /** 북반구에서 본 달의 바다 자리(반지름 비율): 폭풍의 대양·비·맑음·고요·위난·풍요·구름의 바다 순서 */
 const MOON_MARIA = [
   { cx: -0.5, cy: -0.02, rx: 0.26, ry: 0.42, opacity: 0.2 },
@@ -71,10 +72,10 @@ export function WeatherMoonIcon({
         >
           <Stop
             offset={MOON_RADIUS / MOON_CENTER}
-            stopColor="#FFF6DA"
+            stopColor={MOON_GLOW_COLOR}
             stopOpacity={0.22 * illumination}
           />
-          <Stop offset={1} stopColor="#FFF6DA" stopOpacity={0} />
+          <Stop offset={1} stopColor={MOON_GLOW_COLOR} stopOpacity={0} />
         </RadialGradient>
         <RadialGradient
           id={ids.dark}

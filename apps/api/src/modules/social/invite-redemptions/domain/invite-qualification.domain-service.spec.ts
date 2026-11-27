@@ -22,7 +22,7 @@ describe("invite-qualification — 사용 시작 판정", () => {
 
     // When
     const days = [
-      localActivityDate(occurredAt, Timezone.SEOUL).toString(),
+      localActivityDate(occurredAt, Timezone.reconstitute("Asia/Seoul")).toString(),
       localActivityDate(occurredAt, LOS_ANGELES).toString(),
     ];
 

@@ -1,7 +1,9 @@
 import { AI_DATA_SHARING_DECISION } from '@aido/api/vocabulary';
+import { settleOverlappingWrite } from '@src/shared/query/settle-overlapping-write';
 import type {
   DefaultError,
-  EnsureQueryDataOptions,
+  QueryExecuteOptions,
+  MutationKey,
   Query,
   QueryClient,
 } from '@tanstack/react-query';
@@ -10,9 +12,10 @@ import type { Consent } from '../domains/consent.model';
 import { CONSENT_QUERY_KEYS } from './consent-query-keys';
 
 /** 조회 함수가 DI Api를 써서 `useGetConsentQueryOptions`가 만든다 */
-type ConsentQueryOptions = EnsureQueryDataOptions<
+type ConsentQueryOptions = QueryExecuteOptions<
   Consent,
   DefaultError,
+  Consent,
   Consent,
   ReturnType<typeof CONSENT_QUERY_KEYS.detail>
 >;
@@ -22,9 +25,8 @@ export function getCachedConsent(queryClient: QueryClient) {
   return queryClient.getQueryData(CONSENT_QUERY_KEYS.detail());
 }
 
-/** 받은 동의 상태가 있으면 그대로, 없으면 받는다 */
 export function ensureConsent(queryClient: QueryClient, options: ConsentQueryOptions) {
-  return queryClient.ensureQueryData(options);
+  return queryClient.query({ ...options, staleTime: 'static' });
 }
 
 export function cancelConsent(queryClient: QueryClient) {
@@ -32,10 +34,7 @@ export function cancelConsent(queryClient: QueryClient) {
 }
 
 /** 받은 동의 상태가 있을 때만 바꾼다. 받기 전이면 그대로 둬 다음 조회가 서버 값을 쓴다 */
-export function updateConsentInCache(
-  queryClient: QueryClient,
-  update: (consent: Consent) => Consent,
-) {
+export function setConsentInCache(queryClient: QueryClient, update: (consent: Consent) => Consent) {
   queryClient.setQueryData(CONSENT_QUERY_KEYS.detail(), (consent) =>
     consent == null ? consent : update(consent),
   );
@@ -43,11 +42,28 @@ export function updateConsentInCache(
 
 /** AI_1311은 다른 기기에서 철회했거나 안내 버전이 바뀐 경우라 캐시를 서버 기준으로 맞춰 다음 AI 동작 전에 다시 묻는다 */
 export function markAiDataSharingConsentRequired(queryClient: QueryClient) {
-  updateConsentInCache(queryClient, (consent) => ({
+  setConsentInCache(queryClient, (consent) => ({
     ...consent,
     aiDataSharingDecision: AI_DATA_SHARING_DECISION.UNDECIDED,
     aiDataSharingAgreedAt: null,
   }));
+}
+
+/** 동의 하나를 바꾼 응답을 쓴다. 같은 동의를 겹쳐 바꿨으면 응답 대신 마지막에 서버 값을 다시 받는다 */
+export function settleConsentResponse(
+  queryClient: QueryClient,
+  {
+    mutationKey,
+    startedWithOthers,
+    writeResponse,
+  }: { mutationKey: MutationKey; startedWithOthers: boolean; writeResponse: () => void },
+) {
+  return settleOverlappingWrite(queryClient, {
+    mutationKey,
+    queryKey: CONSENT_QUERY_KEYS.detail(),
+    startedWithOthers,
+    writeResponse,
+  });
 }
 
 export function invalidateConsent(queryClient: QueryClient) {

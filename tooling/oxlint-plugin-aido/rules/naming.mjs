@@ -1,4 +1,4 @@
-import { collectImportedNames, isComponentName, isFunction } from '../ast.mjs';
+import { collectImportedNames, getKeyName, isComponentName, isFunction } from '../ast.mjs';
 
 const DEFAULT_FORBIDDEN_SUFFIXES = [
   'Body',
@@ -18,6 +18,10 @@ function getMemberPropertyName(node) {
     ? node.property.name
     : null;
 }
+
+// id를 좁혀 받는 조각의 정해진 이름(`X.Contents`, namespace-part-name이 `Content`를 이 이름으로 바꾸라고 한다).
+// 네임스페이스 조각으로 단 이름이 정확히 이것일 때만 접미사 금지에서 뺀다
+const NARROWED_PART_NAME = 'Contents';
 
 // 역할이 드러나지 않는 조각 이름(Body, Frame, Section, Blocks, Wrapper)을 막는다.
 // standaloneNames는 네임스페이스 조각(`X.Header`)이 아닌 선언에만 건다. allowNames는 공용 카탈로그가 정한 이름이라 예외다
@@ -42,6 +46,9 @@ const componentName = {
     const standaloneNames = new Set(context.options[0]?.standaloneNames ?? []);
     function check(node, name, isStandalone) {
       if (!isComponentName(name) || allowNames.has(name)) {
+        return;
+      }
+      if (!isStandalone && name === NARROWED_PART_NAME) {
         return;
       }
       const suffix = suffixes.find((candidate) => name.endsWith(candidate));
@@ -267,17 +274,68 @@ const iconPropName = {
   },
 };
 
-// 로딩 자리 조각은 `X.Loading`(행마다면 `X.Item.Loading`)으로 건다
-const loadingNamespaceName = {
+// 같은 뜻의 조각은 한 이름이다(docs/architecture/ui.md#네임스페이스반복-ui추출)
+const NAMESPACE_PART_NAMES = new Map([
+  ['Row', 'Item'],
+  ['Cell', 'Item'],
+  ['Entry', 'Item'],
+  ['PaneLoading', 'Loading'],
+  ['Skeleton', 'Loading'],
+  ['PaneError', 'Error'],
+  ['Fallback', 'Error'],
+  ['Content', 'Contents'],
+]);
+
+function getNamespacePartReplacement(property) {
+  if (NAMESPACE_PART_NAMES.has(property)) {
+    return NAMESPACE_PART_NAMES.get(property);
+  }
+  return property.endsWith('Skeleton') ? 'Loading' : null;
+}
+
+/** `export const X = { Root: XRoot, Item }`: 컴포넌트만 담은 객체 */
+function isComponentObject(node) {
+  return (
+    node?.type === 'ObjectExpression' &&
+    node.properties.length > 0 &&
+    node.properties.every(
+      (property) =>
+        property.type === 'Property' &&
+        isComponentName(getKeyName(property)) &&
+        ((property.value.type === 'Identifier' && isComponentName(property.value.name)) ||
+          isFunction(property.value)),
+    )
+  );
+}
+
+// 조각은 `X.Part = function Part`로 달고 이름은 Item·Loading·Error·Empty·Link·Contents다. 객체로 묶은 네임스페이스는 쓰지 않는다
+const namespacePartName = {
   meta: { type: 'suggestion' },
   createOnce(context) {
     return {
       AssignmentExpression(node) {
         const property = node.operator === '=' ? getMemberPropertyName(node.left) : null;
-        if (isComponentName(property) && property.endsWith('Skeleton')) {
+        if (!isComponentName(property) || node.left.object.type === 'ThisExpression') {
+          return;
+        }
+        const replacement = getNamespacePartReplacement(property);
+        if (replacement != null) {
           context.report({
             node: node.left.property,
-            message: `${property}: 로딩 자리 조각은 \`X.Loading\`으로 거세요. 행마다 다르면 \`X.Item.Loading\`처럼 그 행에 겁니다.`,
+            message: `${property}: 네임스페이스 조각은 \`X.${replacement}\`로 거세요. 행마다 다른 로딩은 \`X.Item.Loading\`처럼 그 행에 겁니다.`,
+          });
+        }
+      },
+      VariableDeclarator(node) {
+        if (
+          node.parent.parent?.type === 'ExportNamedDeclaration' &&
+          node.id.type === 'Identifier' &&
+          /^\p{Lu}[\p{Ll}\d]/u.test(node.id.name) &&
+          isComponentObject(node.init)
+        ) {
+          context.report({
+            node: node.id,
+            message: `${node.id.name}: 컴포넌트를 객체로 묶지 않습니다. 본체 함수에 \`${node.id.name}.Item = function Item\`처럼 조각을 답니다.`,
           });
         }
       },
@@ -319,7 +377,7 @@ const namespaceFunctionName = {
   },
 };
 
-// 서버 이름은 풀어 쓴다(apps/api/docs/conventions.md#변수상수). camelCase·snake_case 토큰마다 금지 목록과 비교한다.
+// 서버 이름은 풀어 쓴다(apps/api/docs/architecture/conventions.md#변수상수). camelCase·snake_case 토큰마다 금지 목록과 비교한다.
 // 외부가 정한 이름(import·객체 리터럴 키·계약 schema 키)은 보지 않고 우리가 선언하는 이름만 본다
 const DEFAULT_ABBREVIATIONS = {
   acc: 'accumulator',
@@ -428,7 +486,7 @@ const noAbbreviation = {
       if (found != null) {
         context.report({
           node,
-          message: `${name}: 축약어 "${found}" 대신 "${abbreviations[found]}"처럼 풀어 쓴다(conventions.md 변수·상수).`,
+          message: `${name}: 축약어 "${found}" 대신 "${abbreviations[found]}"처럼 풀어 쓴다(architecture/conventions.md 변수·상수).`,
         });
       }
     }
@@ -537,7 +595,7 @@ export default {
   'predicate-name': predicateName,
   'type-name': typeName,
   'icon-prop-name': iconPropName,
-  'loading-namespace-name': loadingNamespaceName,
+  'namespace-part-name': namespacePartName,
   'namespace-function-name': namespaceFunctionName,
   'no-abbreviation': noAbbreviation,
   'read-model-suffix': readModelSuffix,

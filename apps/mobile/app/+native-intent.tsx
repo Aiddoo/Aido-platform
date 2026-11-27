@@ -2,7 +2,7 @@ import { rememberColdStartLink } from '@src/bootstrap/navigation/cold-start-link
 import {
   createInviteLinkOpenStamp,
   findInviteSystemPath,
-} from '@src/features/social/invite/utils/invite-link.view-model';
+} from '@src/bootstrap/navigation/invite-system-path';
 import { ENV } from '@src/shared/config/env';
 import { getNowInstant } from '@src/shared/date/clock';
 import { toEpochMs } from '@src/shared/date/instant';

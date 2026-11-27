@@ -1,13 +1,13 @@
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
-import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
+import { TodoListPolicy } from '@src/features/planning/todo/domains/todo-list.model';
 import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTrack, useTrackView } from '@src/shared/analytics';
 import { getNowInstant } from '@src/shared/date/clock';
 import { toHHmm } from '@src/shared/date/zoned';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import { useStoredValue } from '@src/shared/storage/use-stored-value';
 import { Button, InlineAlert } from '@src/shared/ui';
@@ -49,7 +49,7 @@ export function PushPermissionNotice({ className }: PushPermissionNoticeProps) {
   const isVisible =
     PushPermissionPolicy.findAskMoment(permission, {
       surface: 'feed',
-      hasUpcomingTimedTodo: TodoPolicy.hasUpcomingTimedTodo(todayTodos.todos, {
+      hasUpcomingTimedTodo: TodoListPolicy.hasUpcomingTimedTodo(todayTodos, {
         dateKey: todayKey,
         time: toHHmm(now, timezone),
         timezone,

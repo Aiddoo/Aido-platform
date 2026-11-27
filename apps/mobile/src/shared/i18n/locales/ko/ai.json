@@ -51,7 +51,7 @@
       "premiumDescription": "할 일 데이터를 분석해서 리포트를 만들어드려요",
       "freeDescription": "프리미엄으로 매주·매월 AI 리포트를 받아보세요",
       "subscribeCta": "구독하고 리포트 받기",
-      "arrivalToday": "오늘 첫 번째 {{type}} 리포트가 도착해요!",
+      "arrivalToday": "오늘 첫 번째 {{type}} 리포트가 도착해요",
       "arrivalInDays": "{{count}}일 뒤에 첫 번째 {{type}} 리포트가 도착해요"
     },
     "unavailable": {
@@ -121,7 +121,7 @@
       "hasSuggestionsDescription": "반복으로 만들면 매번 적지 않아도 돼요",
       "analyzing": "최근 할 일을 살펴보고 있어요",
       "analyzingDescription": "잠시만 기다려주세요",
-      "doneForToday": "오늘 제안을 모두 정리했어요",
+      "doneForToday": "오늘 제안을 모두 확인했어요",
       "noPatternFound": "아직 반복할 만한 할 일이 없어요",
       "unavailableToday": "오늘은 분석하지 못했어요",
       "needsMoreTodos": "아직 살펴볼 할 일이 없어요",
@@ -146,10 +146,10 @@
       "subscribeCta": "구독하고 제안 받기"
     },
     "toasts": {
-      "premiumOnly": "AI 반복 제안은 프리미엄 구독자만 이용할 수 있어요",
-      "retryLater": "잠시 후 다시 시도해주세요",
+      "premiumOnly": "AI 제안은 프리미엄 기능이에요",
+      "retryLater": "잠시 뒤 다시 시도해주세요",
       "accepted": "매주 {{days}} 반복으로 만들었어요",
-      "rejected": "제안을 정리했어요"
+      "rejected": "제안을 삭제했어요"
     },
     "preview": {
       "title": "반복하면 좋은 할 일",
@@ -170,7 +170,7 @@
       },
       "usage": {
         "title": "쓰는 곳",
-        "description": "AI 기능에만 써요. AI 학습·광고에는 쓰지 않고, 업체는 최대 30일 안에 지워요."
+        "description": "AI 기능에만 써요. AI 학습·광고에는 쓰지 않고, 업체는 최대 30일 안에 삭제해요."
       }
     },
     "privacyLink": "개인정보처리방침 보기",

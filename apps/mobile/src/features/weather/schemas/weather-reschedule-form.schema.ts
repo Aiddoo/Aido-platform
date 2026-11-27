@@ -6,3 +6,8 @@ export const weatherRescheduleFormSchema = z.object({
 });
 
 export type WeatherRescheduleFormValues = z.infer<typeof weatherRescheduleFormSchema>;
+
+/** react-hook-form은 숫자 경로를 배열 index로 읽어 selections를 배열로 만들므로 숫자만으로 된 키를 쓰지 않는다 */
+export function toSelectionKey(todoId: number): string {
+  return `todo-${todoId}`;
+}

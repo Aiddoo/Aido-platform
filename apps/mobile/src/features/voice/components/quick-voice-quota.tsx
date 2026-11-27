@@ -1,17 +1,26 @@
-import { QuotaChip } from '@src/features/billing/subscription/components/quota-chip';
 import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
+import type { EntitlementFeature } from '@src/features/billing/subscription/domains/feature-quota.model';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { useFormatRefillSentence } from '@src/features/billing/subscription/hooks/use-format-refill-sentence';
 import { useQuotaStatus } from '@src/features/billing/subscription/hooks/use-quota-status';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useLocaleContext } from '@src/shared/hooks/use-locale-context';
+import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
-import { AiFilledIcon, HintPopoverContent, HStack, InfoIcon, Text, VStack } from '@src/shared/ui';
+import {
+  AiFilledIcon,
+  HintPopoverContent,
+  HStack,
+  InfoIcon,
+  LabelChip,
+  Text,
+  VStack,
+} from '@src/shared/ui';
 import { formatCount } from '@src/shared/utils/number-format';
 import { useQuery } from '@tanstack/react-query';
-import { Popover, PressableFeedback, Separator } from 'heroui-native';
-import { useState } from 'react';
+import { Chip, Popover, PressableFeedback, Separator } from 'heroui-native';
+import { type ComponentProps, useState } from 'react';
 
 /** 빠른 말하기가 쓰는 AI 정리 횟수. 누르면 무엇에 쓰이고 언제 다시 차는지 알린다 */
 export function QuickVoiceQuota() {
@@ -21,9 +30,10 @@ export function QuickVoiceQuota() {
   // 말풍선 내용은 DI·Query provider 바깥의 PortalHost에 그려져 그 안에서 조회할 수 없다
   const { data: snapshot } = useQuery(useGetEntitlementsQueryOptions());
   const formatRefillSentence = useFormatRefillSentence();
+  const now = useMinuteNow();
   const remaining =
     snapshot == null ? null : EntitlementPolicy.findRemainingCount(snapshot, 'AI_PARSE');
-  const refill = formatRefillSentence(snapshot, 'AI_PARSE');
+  const refill = formatRefillSentence(snapshot, 'AI_PARSE', now);
   const { type: quotaType } = useQuotaStatus('AI_PARSE');
   // 팝오버 안은 LocalDateProvider 바깥이라 useDateFormatContext를 쓸 수 없다
   const { intlLocale } = useLocaleContext();
@@ -92,6 +102,38 @@ export function QuickVoiceQuota() {
       </Popover>
       {quotaType === 'used-up' ? <UsedUpQuotaChip /> : <QuotaChip feature="AI_PARSE" />}
     </HStack>
+  );
+}
+
+interface QuotaChipProps extends Omit<
+  ComponentProps<typeof Chip>,
+  'children' | 'color' | 'variant'
+> {
+  feature: EntitlementFeature;
+}
+
+/** 남은 횟수 알약. 프리미엄·관리자처럼 말할 횟수가 없으면 그리지 않는다 */
+function QuotaChip({ feature, size = 'sm', ...chipProps }: QuotaChipProps) {
+  const { type, label } = useQuotaStatus(feature);
+
+  if (label == null) {
+    return null;
+  }
+
+  return type === 'remaining' ? (
+    <LabelChip
+      color="accent"
+      label={label}
+      size={size}
+      labelProps={{ weight: 'semibold', numberOfLines: 1, className: 'shrink tabular-nums' }}
+      {...chipProps}
+    />
+  ) : (
+    <Chip size={size} variant="soft" color="default" {...chipProps}>
+      <Text size="e1" weight="semibold" shade={6} numberOfLines={1} className="shrink">
+        {label}
+      </Text>
+    </Chip>
   );
 }
 

@@ -1,5 +1,4 @@
 import * as Device from 'expo-device';
-import { Platform } from 'react-native';
 
 export const IS_IOS_APP_ON_MAC =
   process.env.EXPO_OS === 'ios' && Device.deviceType === Device.DeviceType.DESKTOP;
@@ -16,11 +15,10 @@ export const IS_PHYSICAL_DEVICE = Device.isDevice;
 export const DEVICE_TOTAL_MEMORY_BYTES = Device.totalMemory;
 
 /** Android API 레벨. Android가 아니면 null */
-export const ANDROID_API_LEVEL =
-  process.env.EXPO_OS === 'android' && typeof Platform.Version === 'number'
-    ? Platform.Version
-    : null;
+export const ANDROID_API_LEVEL = process.env.EXPO_OS === 'android' ? Device.platformApiLevel : null;
 
 /** iOS 주 버전. iOS가 아니면 null */
 export const IOS_MAJOR_VERSION =
-  process.env.EXPO_OS === 'ios' ? Number.parseInt(String(Platform.Version), 10) : null;
+  process.env.EXPO_OS === 'ios' && Device.osVersion != null
+    ? Number.parseInt(Device.osVersion, 10)
+    : null;

@@ -1,6 +1,6 @@
 import type { PushDispatchSkipReason } from "@aido/api/vocabulary";
 
-import { resolveTimezone } from "#api/shared/domain/time/timezone-name";
+import { resolveDateBoundaryTimezone } from "#api/shared/domain/time/timezone-name";
 import { Timezone } from "#api/shared/domain/time/timezone.vo";
 
 import type { CreateNotificationData } from "../../shared/domain/notification-draft.constants.js";
@@ -67,7 +67,7 @@ export function decidePushExpiry<TCandidate>(
   input: PushExpiryDecisionInput<TCandidate>,
 ): PushDeliverySettingsDecision<TCandidate> {
   const { candidate, data } = input;
-  const timezone = Timezone.reconstitute(resolveTimezone(input.timezone));
+  const timezone = Timezone.reconstitute(resolveDateBoundaryTimezone(input.timezone));
   const expiry = resolvePushExpiry({
     type: data.type,
     now: input.now,

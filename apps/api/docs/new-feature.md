@@ -4,7 +4,7 @@
 
 ## 0. 소유자부터 정한다
 
-- 데이터와 판단을 누가 소유하는지 먼저 정한다. 이름만 보고 새 Context를 만들지 않는다. 기존 Context의 Aggregate가 바뀌면 그 slice에 UseCase를 더하고, 새 Aggregate Root면 새 slice다([구조](architecture.md#폴더-구조)).
+- 데이터와 판단을 누가 소유하는지 먼저 정한다. 이름만 보고 새 Context를 만들지 않는다. 기존 Context의 Aggregate가 바뀌면 그 slice에 UseCase를 더하고, 새 Aggregate Root면 새 slice다([구조](architecture/structure.md#폴더-구조)).
 - 다른 Context의 데이터가 필요하면 그 Context가 public으로 연 포트를 쓴다. 테이블을 직접 읽지 않는다. 없으면 소유 Context에 좁은 조회 포트를 먼저 연다.
 - 판단은 서버, 표시는 앱이다. 앱이 같은 판단을 다시 하지 않도록 결과를 응답에 싣는다([서버·앱 책임](../../../docs/conventions/ownership.md)).
 
@@ -29,26 +29,26 @@ pnpm gen:api-slice   # context · slice(복수) · aggregate(단수) · id 종�
 ## 2. 도메인을 채운다
 
 - 이름은 [용어집](glossary.md)의 그 Context 표를 따른다. 표에 없는 업무 용어·상태 전이는 같은 PR에서 `glossary/<context>.md`에 더한다.
-- Aggregate는 `create`·`reconstitute`·`toPrimitives()`만 팩토리·꺼내기 이름으로 쓴다(저장하지 않는 Aggregate는 `create`·`toPrimitives()`만). 상태 전이 메서드는 바뀌면 `true`를 돌려주고 그때만 `raise`한다([도메인 모델](domain-modeling.md)).
+- Aggregate는 `create`·`reconstitute`·`toPrimitives()`만 팩토리·꺼내기 이름으로 쓴다(저장하지 않는 Aggregate는 `create`·`toPrimitives()`만). 상태 전이 메서드는 바뀌면 `true`를 돌려주고 그때만 `raise`한다([도메인 모델](architecture/domain-modeling.md)).
 - 값 검증은 VO `create`, 여러 모델에 걸친 판단은 `*.domain-service.ts` 순수 함수(판별 유니온 반환, `now`는 인자)다.
-- 서버만 아는 값 목록은 `domain/<slice>.constants.ts` 튜플, 앱과 함께 아는 값은 `@aido/api/vocabulary` 튜플이다. 리터럴 유니온을 손으로 쓰지 않는다([이름 사전](conventions.md#공유-값은-한-곳에서-선언한다)).
+- 서버만 아는 값 목록은 `domain/<slice>.constants.ts` 튜플, 앱과 함께 아는 값은 `@aido/api/vocabulary` 튜플이다. 리터럴 유니온을 손으로 쓰지 않는다([이름 사전](architecture/conventions.md#공유-값은-한-곳에서-선언한다)).
 
 ## 3. UseCase와 포트
 
 - 행동 하나가 `<Verb><Noun>UseCase.execute(command)` 하나다. "잠금 → 읽기 → 도메인 행동 → 저장 → enqueue·publish"가 위에서 아래로 읽히게 쓴다.
-- 같은 Aggregate를 바꾸는 UseCase는 모두 같은 잠금을 읽기 전에 잡는다([저장과 잠금](persistence.md#저장과-잠금)).
+- 같은 Aggregate를 바꾸는 UseCase는 모두 같은 잠금을 읽기 전에 잡는다([저장과 잠금](architecture/persistence.md#저장과-잠금)).
 - 업무 오류는 `<slice>.errors.ts`의 이름 있는 함수(`memoNotFound(memoId)`)로 만들고 기존 `ErrorCode`를 쓴다. 거부는 `application/`, 불변식은 `domain/`의 errors 파일이다. 새 코드가 필요하면 `@aido/api/errors`와 ko·en 오류 문구에 함께 더한다.
 - 포트는 abstract class, 구현은 `Drizzle<Noun>Repository`·`<Vendor><Capability>Adapter`다. 조립은 `*.providers.ts`의 `provideUseCase`이고 의존성은 `Pick<Port, "…">`로 좁힌다.
-- 외부 공급자는 어댑터 + `*.wire.ts` Zod + `<vendor>-outbound.policy.ts`로만 부르고 트랜잭션 밖에서 한다([외부 호출](outbound.md)). 고르는 방법은 [공급자 선택](configuration.md#공급자-선택)이다.
-- 후속 작업이 상태를 바꾸면 같은 트랜잭션 enqueue(`defineQueue`) 또는 `publish` + durable 구독이다. 커밋 뒤 in-process는 캐시 정리만이다([작업과 이벤트](jobs-and-events.md)).
+- 외부 공급자는 어댑터 + `*.wire.ts` Zod + `<vendor>-outbound.policy.ts`로만 부르고 트랜잭션 밖에서 한다([외부 호출](architecture/outbound.md)). 고르는 방법은 [공급자 선택](configuration.md#공급자-선택)이다.
+- 후속 작업이 상태를 바꾸면 같은 트랜잭션 enqueue(`defineQueue`) 또는 `publish` + durable 구독이다. 커밋 뒤 in-process는 캐시 정리만이다([작업과 이벤트](architecture/jobs-and-events.md)).
 - 새 설정은 slice `<context>-<slice>.config.ts`의 `defineConfig`, 운영에서 위험한 값은 시작 검증에 더한다([설정](configuration.md)).
 
 ## 4. HTTP와 계약
 
-- 계약은 `packages/api`가 소유한다. 새 목록은 `cursorPageSchema`, 새 응답에 앱이 읽지 않는 값(`message` 등)을 넣지 않는다([HTTP 계약](http-contracts.md)).
-- 서버 DTO는 `http/v1/<noun>.dto.ts` 한 파일에 `schema.meta({ id })`로 모은다. Controller는 검증·Command 변환·응답 매핑만 하고 `@ApiDoc`으로 응답 schema를 선언한다(운영 밖에서는 선언과 실제 응답을 [대조](http-contracts.md#응답-계약-검사)한다).
+- 계약은 `packages/api`가 소유한다. 새 목록은 `cursorPageSchema`, 새 응답에 앱이 읽지 않는 값(`message` 등)을 넣지 않는다([HTTP 계약](architecture/http-contracts.md)).
+- 서버 DTO는 `http/v1/<noun>.dto.ts` 한 파일에 `schema.meta({ id })`로 모은다. Controller는 검증·Command 변환·응답 매핑만 하고 `@ApiDoc`으로 응답 schema를 선언한다(운영 밖에서는 선언과 실제 응답을 [대조](architecture/http-contracts.md#응답-계약-검사)한다).
 - 앱 헤더는 `RequestClient` 데코레이터로 읽는다. 시각은 계약에서 문자열, 변환은 presentation 경계에서 한다.
-- 요청 한도가 필요하면 `presentation/http/<slice>.rate-limits.ts`의 `defineRateLimits`에 행동별로 더하고 `@RateLimit(…)`을 붙인다([HTTP 계약](http-contracts.md#요청-헤더와-throttle)).
+- 요청 한도가 필요하면 `presentation/http/<slice>.rate-limits.ts`의 `defineRateLimits`에 행동별로 더하고 `@RateLimit(…)`을 붙인다([HTTP 계약](architecture/http-contracts.md#요청-헤더와-throttle)).
 
 **출시 앱 호환 체크리스트**([호환](../../../docs/conventions/compatibility.md))
 

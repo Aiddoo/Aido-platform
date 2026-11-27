@@ -120,7 +120,12 @@ function weatherDay(condition: WeatherCondition, temperatureMin = -3.4, temperat
 }
 
 function formatTimeFor(locale: SupportedLocale) {
-  return (instant: Date) => formatWeatherNotificationTime(instant, { locale, timezone: TIMEZONE });
+  return (instant: Date) =>
+    formatWeatherNotificationTime(instant, {
+      locale,
+      timezone: TIMEZONE,
+      timeFormat: "TWELVE_HOUR",
+    });
 }
 
 const SCHEDULER_CASES: readonly CopyCase[] = [
@@ -254,6 +259,7 @@ const WEATHER_CASES: readonly CopyCase[] = [
           },
           formatTime: formatTimeFor(locale),
           timezone: TIMEZONE,
+          timeFormat: "TWELVE_HOUR",
           locale,
           variantContext,
         }),
@@ -271,6 +277,7 @@ const WEATHER_CASES: readonly CopyCase[] = [
         },
         formatTime: formatTimeFor(locale),
         timezone: TIMEZONE,
+        timeFormat: "TWELVE_HOUR",
         locale,
         variantContext,
       }),
@@ -283,6 +290,7 @@ const WEATHER_CASES: readonly CopyCase[] = [
           briefing: { kind: "wetLater", startsAt, isSnow },
           formatTime: formatTimeFor(locale),
           timezone: TIMEZONE,
+          timeFormat: "TWELVE_HOUR",
           locale,
           variantContext,
         }),
@@ -295,6 +303,7 @@ const WEATHER_CASES: readonly CopyCase[] = [
         briefing: { kind: "summary", day: weatherDay(condition) },
         formatTime: formatTimeFor(locale),
         timezone: TIMEZONE,
+        timeFormat: "TWELVE_HOUR",
         locale,
         variantContext,
       }),

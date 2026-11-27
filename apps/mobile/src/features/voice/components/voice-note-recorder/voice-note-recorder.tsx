@@ -5,9 +5,10 @@ import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
 import { useMyPendingCoachmark } from '@src/features/device/coachmark/hooks/use-my-pending-coachmark';
 import { useSuspenseMyAccountId } from '@src/features/identity/user/hooks/use-suspense-my-account-id';
-import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time-units';
+import { SECOND_MS, SECONDS_PER_MINUTE } from '@src/shared/constants/time-units';
 import { getErrorMessage } from '@src/shared/errors/to-error';
 import { useAndroidBackHandler } from '@src/shared/hooks/use-android-back-handler';
+import { useAppWindow } from '@src/shared/hooks/use-app-window';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
 import { useOnScreenBlur } from '@src/shared/hooks/use-on-screen-blur';
@@ -22,6 +23,8 @@ import {
   Flex,
   HStack,
   PauseIcon,
+  QueryErrorFallback,
+  type QueryErrorFallbackProps,
   STACK_CLOSE_ICON,
   StopIcon,
   SurfaceCard,
@@ -32,10 +35,9 @@ import {
 import { useAppToast } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useQuery } from '@tanstack/react-query';
-import { Stack, router } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { type ComponentProps, useEffect, useEffectEvent, useLayoutEffect, useRef } from 'react';
-import { useWindowDimensions } from 'react-native';
 import { match, P } from 'ts-pattern';
 
 import { VOICE_LOG_EVENT } from '../../constants/voice-log-events';
@@ -59,7 +61,7 @@ const MARK_HINT_HEIGHT = 124;
 
 /** 화면 전체가 녹음이라 이 컴포넌트가 곧 화면이다. 들은 글자 없이 끝나면 돌아간다 */
 export function VoiceNoteRecorder() {
-  const { t } = useTranslation('voiceNote');
+  const { t } = useTranslation(['voiceNote', 'common']);
   const isCompact = useWindowSizeClass() === 'compact';
   const toast = useAppToast();
   const reportUnexpectedError = useReportUnexpectedError('voice');
@@ -69,13 +71,15 @@ export function VoiceNoteRecorder() {
   const [locale] = useRecognitionLanguage();
   const [{ draftId: seedDraftId, entry }] = useRouteParams(voiceNoteRecordParamsSchema);
 
-  const recording = useVoiceNoteRecording({
+  const router = useRouter();
+  const [recording, recorder] = useVoiceNoteRecording({
     accountId,
     locale,
     seedDraftId,
     entry,
     maxSeconds,
-    onLimitReached: () => finishOrPromptLimit(recording),
+    onLimitReached: () =>
+      finishOrPromptLimit({ hasText: recording.hasText, finish: recorder.finish }),
     onFinished: (draftId) =>
       router.replace({ pathname: '/voice-notes/[draftId]', params: { draftId } }),
     onEmpty: () => {
@@ -83,20 +87,25 @@ export function VoiceNoteRecorder() {
       router.back();
     },
   });
-  useOnScreenBlur(recording.interrupt);
-  const requestClose = useRecordClose(recording);
-  const requestFinish = useRecordFinish(recording);
-  // 글자를 받을 때마다 recording이 새로 만들어진다. 헤더 옵션이 그때마다 바뀌면 내비게이터까지 다시 그려져 정체성을 고정한다
-  const close = useSingleTap(requestClose);
-  const changeLocaleRef = useRef(recording.changeLocale);
-  useLayoutEffect(() => {
-    changeLocaleRef.current = recording.changeLocale;
-  });
   const { state } = recording;
+  useOnScreenBlur(recorder.interrupt);
+  const requestClose = useRecordClose({
+    state,
+    hasText: recording.hasText,
+    discard: recorder.discard,
+    finish: recorder.finish,
+  });
+  const requestFinish = useRecordFinish({ state, finish: recorder.finish });
+  // 글자를 받을 때마다 동작 함수가 새로 만들어진다. 헤더 옵션이 그때마다 바뀌면 내비게이터까지 다시 그려져 정체성을 고정한다
+  const close = useSingleTap(requestClose);
+  const changeLocaleRef = useRef(recorder.changeLocale);
+  useLayoutEffect(() => {
+    changeLocaleRef.current = recorder.changeLocale;
+  });
 
   // 화면에 들어올 때 한 번만 녹음을 시작한다. 그 시점의 언어·힌트를 읽는다
   const startRecording = useEffectEvent(() => {
-    recording.start({ startLocale: locale, hintWords: getSpeechContext() }).catch((error) => {
+    recorder.start({ startLocale: locale, hintWords: getSpeechContext() }).catch((error) => {
       reportUnexpectedError(error);
       toast.error(t('record.failedTitle'));
     });
@@ -117,7 +126,7 @@ export function VoiceNoteRecorder() {
       <Stack.Toolbar placement="left">
         <Stack.Toolbar.Button
           icon={STACK_CLOSE_ICON}
-          accessibilityLabel={t('record.close')}
+          accessibilityLabel={t('common:actions.close')}
           onPress={close}
         />
       </Stack.Toolbar>
@@ -143,12 +152,12 @@ export function VoiceNoteRecorder() {
               state={state}
               limitMs={limitMs}
               markCount={recording.markCount}
-              onPause={recording.pause}
+              onPause={recorder.pause}
               onFinish={requestFinish}
-              onMark={recording.mark}
-              onSummarize={recording.finish}
+              onMark={recorder.mark}
+              onSummarize={recorder.finish}
               onClose={requestClose}
-              onResume={recording.resume}
+              onResume={recorder.resume}
             />
           )}
         </VStack>
@@ -160,12 +169,12 @@ export function VoiceNoteRecorder() {
             state={state}
             limitMs={limitMs}
             markCount={recording.markCount}
-            onPause={recording.pause}
+            onPause={recorder.pause}
             onFinish={requestFinish}
-            onMark={recording.mark}
-            onSummarize={recording.finish}
+            onMark={recorder.mark}
+            onSummarize={recorder.finish}
             onClose={requestClose}
-            onResume={recording.resume}
+            onResume={recorder.resume}
           />
         )}
       </Flex>
@@ -286,7 +295,7 @@ VoiceNoteRecorder.StoppedControls = function StoppedControls({
   onClose,
   onResume,
 }: VoiceNoteRecorderStoppedControlsProps) {
-  const { t } = useTranslation('voiceNote');
+  const { t } = useTranslation(['voiceNote', 'common']);
   const hasHeard = VoiceCapturePolicy.canFinish(state);
 
   return (
@@ -330,7 +339,7 @@ VoiceNoteRecorder.StoppedControls = function StoppedControls({
               onPress={onClose}
               testID="voice-note-stopped-close"
             >
-              {t('record.close')}
+              {t('common:actions.close')}
             </Button>
           )}
         </Box>
@@ -350,7 +359,7 @@ VoiceNoteRecorder.StoppedControls = function StoppedControls({
 VoiceNoteRecorder.Loading = function Loading() {
   const isOnline = useIsOnline();
   const isCompact = useWindowSizeClass() === 'compact';
-  const { height: windowHeight } = useWindowDimensions();
+  const { height: windowHeight } = useAppWindow();
   const { size: ringSize } = getRecordingRingLayout(windowHeight);
 
   return match(isOnline)
@@ -374,6 +383,10 @@ VoiceNoteRecorder.Loading = function Loading() {
     )
     .with(false, () => <VoiceNoteOffline className="px-4" />)
     .exhaustive();
+};
+
+VoiceNoteRecorder.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
+  return <QueryErrorFallback reset={reset} />;
 };
 
 interface RecordLanguageTabsProps {
@@ -462,6 +475,7 @@ function useRecordClose({ state, hasText, discard, finish }: RecordCloseOptions)
   const logger = useLogger();
   const confirmDialog = useConfirmDialog();
 
+  const router = useRouter();
   const handleClose = async () => {
     if (VoiceCapturePolicy.isWrappingUp(state)) {
       return;
@@ -511,7 +525,6 @@ interface RecordFinishOptions {
   finish: () => void;
 }
 
-/** 끝내기. 아직 들은 글자가 없으면 그래도 끝낼지 묻는다 */
 function useRecordFinish({ state, finish }: RecordFinishOptions) {
   const { t } = useTranslation('voiceNote');
   const logger = useLogger();
@@ -552,7 +565,7 @@ function useVoiceNoteRecordLimit() {
     snapshot == null ? null : EntitlementPolicy.findMaxSeconds(snapshot, 'VOICE_NOTE');
 
   const finishOrPromptLimit = ({ hasText, finish }: { hasText: boolean; finish: () => void }) => {
-    const minutes = Math.round(((maxSeconds ?? 0) * SECOND_MS) / MINUTE_MS);
+    const minutes = Math.round((maxSeconds ?? 0) / SECONDS_PER_MINUTE);
     if (snapshot != null && EntitlementPolicy.hasFullAccess(snapshot)) {
       if (hasText) {
         toast.warning(t('limit.premium', { minutes }));
@@ -564,7 +577,7 @@ function useVoiceNoteRecordLimit() {
       snapshot == null
         ? null
         : EntitlementPolicy.findPlanMaxSeconds(snapshot, 'VOICE_NOTE', 'premium');
-    const premiumMinutes = Math.round(((premiumMaxSeconds ?? 0) * SECOND_MS) / MINUTE_MS);
+    const premiumMinutes = Math.round((premiumMaxSeconds ?? 0) / SECONDS_PER_MINUTE);
     gate.promptLimit({
       title: t('limit.title', { minutes }),
       description: hasText

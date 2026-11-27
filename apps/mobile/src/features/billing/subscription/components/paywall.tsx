@@ -10,7 +10,7 @@ import type { ComponentProps } from 'react';
 import { match } from 'ts-pattern';
 
 import { BENEFIT_SLIDES } from '../constants/subscription.constants';
-import { type EntitlementFeature } from '../domains/entitlement.model';
+import { type EntitlementFeature } from '../domains/feature-quota.model';
 import { useFormatPlanAmount } from '../hooks/use-format-plan-amount';
 import { useSubscriptionParams } from '../hooks/use-subscription-params';
 import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';

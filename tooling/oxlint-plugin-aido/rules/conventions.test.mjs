@@ -26,11 +26,16 @@ tester.run('no-object-method-shorthand', rules['no-object-method-shorthand'], {
     'const a = { run: function run() {} };',
     'const a = { get value() { return 1; } };',
     'const { run } = a;',
+    'export const TodoPolicy = { canDelete(todo) { return this.canEdit(todo); } };',
+    'const TodoPolicy = { canDelete(todo) { return true; } } as const;',
   ],
   invalid: [
     { code: 'const a = { run() {} };', errors: 1 },
     { code: 'const a = { async load() {} };', errors: 1 },
     { code: 'const a = { *gen() {} };', errors: 1 },
+    { code: 'const todoPolicy = { canDelete() {} };', errors: 1 },
+    { code: 'const TodoPolicy = { rules: { canDelete() {} } };', errors: 1 },
+    { code: 'run({ canDelete() {} });', errors: 1 },
   ],
 });
 

@@ -18,7 +18,7 @@ function toPlatformLabel(platform: string) {
 }
 
 /** 서버가 앱 버전·기기를 문의에 붙이지 않아 여기서 담는다. 토큰·사용자 ID·영수증 같은 민감한 값은 넣지 않는다 */
-export function toSubscriptionInquiryDraft({
+export function formatSubscriptionInquiryDraft({
   subject,
   diagnosticCode,
   installation,

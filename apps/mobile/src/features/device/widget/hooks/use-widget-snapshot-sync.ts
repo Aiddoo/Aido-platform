@@ -2,22 +2,28 @@ import { useErrorReporter, useWidgetSyncService } from '@src/bootstrap/providers
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import { useMyAccountId } from '@src/features/identity/user/hooks/use-my-account-id';
 import {
-  useGetDailyCompletionsQueryOptions,
+  useGetDailyCompletionsInRangeQueriesOptions,
   useGetTodoSummaryQueryOptions,
 } from '@src/features/planning/todo/queries/todo.queries';
 import { getNowInstant } from '@src/shared/date/clock';
 import { addDaysToDateKey, getCalendarWeek, type DateKey } from '@src/shared/date/date-key';
+import { reportUnexpectedError } from '@src/shared/errors';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { i18n } from '@src/shared/i18n';
 import { toResolvedLanguage } from '@src/shared/preferences/language.preference';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
-import { useQueries, useQuery } from '@tanstack/react-query';
+import { useQueries } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import { useEffect, useEffectEvent } from 'react';
 import { match } from 'ts-pattern';
 
-import type { WidgetSnapshotContext, WidgetSummaryInput } from '../apis/widget-snapshot.mapper';
+import type { WidgetSummaryInput } from '../apis/widget-snapshot.mapper';
 import { WIDGET_TOP_TODOS_LIMIT } from '../constants/widget.constants';
-import type { WidgetSyncResult, WidgetSyncService } from '../services/widget-sync.service';
+import type {
+  WidgetSnapshotContext,
+  WidgetSyncResult,
+  WidgetSyncService,
+} from '../services/widget-sync.service';
 import type { WidgetTranslateFn } from '../utils/widget-snapshot.view-model';
 
 export type WidgetSyncAuthState = 'authenticated' | 'unauthenticated' | 'resolving';
@@ -106,7 +112,7 @@ function reportWidgetSync(
       }),
     )
     .with({ status: 'failed' }, ({ error }) =>
-      errorReporter.captureException(error, { feature: 'widget', method }),
+      reportUnexpectedError(errorReporter, error, 'widget', { method }),
     )
     .with({ status: 'unchanged' }, { status: 'superseded' }, noop)
     .exhaustive();
@@ -115,7 +121,8 @@ function reportWidgetSync(
 export function useWidgetSnapshotSync(authState: WidgetSyncAuthState): void {
   const widgetSyncService = useWidgetSyncService();
   const errorReporter = useErrorReporter();
-  const { currentLocalDateKey: date, currentTimezone } = useLocalDate();
+  const date = useTodayKey();
+  const { currentTimezone } = useLocalDate();
   const { startDateKey: rangeStart, endDateKey: rangeEnd } = getCalendarWeek(date);
   const userId = useMyAccountId({ isEnabled: authState === 'authenticated' });
   const tomorrowDate = addDaysToDateKey(date, 1);
@@ -133,10 +140,17 @@ export function useWidgetSnapshotSync(authState: WidgetSyncAuthState): void {
   const [{ data }, { data: tomorrowData }] = useQueries({
     queries: [todayQueryOptions, tomorrowQueryOptions],
   });
-  const { data: completions } = useQuery({
-    ...useGetDailyCompletionsQueryOptions({ startDate: rangeStart, endDate: rangeEnd }),
-    enabled: isUserDataEnabled,
-    throwOnError: false,
+  const weekCompletionsOptions = useGetDailyCompletionsInRangeQueriesOptions({
+    startDate: rangeStart,
+    endDate: rangeEnd,
+  });
+  const completions = useQueries({
+    queries: weekCompletionsOptions.queries.map((options) => ({
+      ...options,
+      enabled: isUserDataEnabled,
+      throwOnError: false,
+    })),
+    combine: weekCompletionsOptions.combine,
   });
 
   const syncCurrent = useEffectEvent(() => {
@@ -161,7 +175,7 @@ export function useWidgetSnapshotSync(authState: WidgetSyncAuthState): void {
       return;
     }
     try {
-      errorReporter.captureException(failure.error, { feature: 'widget', method: failure.method });
+      reportUnexpectedError(errorReporter, failure.error, 'widget', { method: failure.method });
     } catch {
       // 관측 실패가 앱 시작을 막지 않는다
     }

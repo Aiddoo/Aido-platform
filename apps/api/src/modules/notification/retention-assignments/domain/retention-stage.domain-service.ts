@@ -1,4 +1,4 @@
-import { localDateIn, resolveTimezone } from "#api/shared/domain/time/timezone-name";
+import { localDateIn, resolveDateBoundaryTimezone } from "#api/shared/domain/time/timezone-name";
 
 import type { RetentionStageName } from "./retention-assignments.constants.js";
 
@@ -124,6 +124,6 @@ function isAtOrAfterLocalTime(
   timezone: string,
   { hour, minute }: { readonly hour: number; readonly minute: number },
 ): boolean {
-  const local = instant.toZonedDateTimeISO(resolveTimezone(timezone));
+  const local = instant.toZonedDateTimeISO(resolveDateBoundaryTimezone(timezone));
   return local.hour > hour || (local.hour === hour && local.minute >= minute);
 }

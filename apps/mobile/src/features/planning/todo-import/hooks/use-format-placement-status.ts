@@ -1,24 +1,26 @@
 import { useTranslation } from '@src/shared/i18n';
 import { match } from 'ts-pattern';
 
-import type { TargetPlacement } from '../domains/todo-import-target.model';
-import { getPlacementStatus } from '../utils/todo-import.view-model';
+import {
+  type TodoImportPlacement,
+  TodoImportPlacementPolicy,
+} from '../domains/todo-import-placement.model';
 
-export interface PlacementStatusText {
+interface PlacementStatusText {
   message: string;
-  /** 자리가 모자라 일정을 건너뛴다 */
+  // 자리가 모자라 일정을 건너뛴다
   isWarning: boolean;
 }
 
-/** 넣을 곳에 더 넣을 수 있는 수, 또는 몇 개를 건너뛰는지 알리는 한 줄. `name`은 보이는 넣을 곳 이름이다 */
+// 넣을 곳에 더 넣을 수 있는 수, 또는 몇 개를 건너뛰는지 알리는 한 줄. name은 보이는 넣을 곳 이름이다
 export function useFormatPlacementStatus(): (
-  placement: TargetPlacement,
+  placement: TodoImportPlacement,
   name: string,
 ) => PlacementStatusText {
   const { t } = useTranslation('todoImport');
 
   return (placement, name) =>
-    match(getPlacementStatus(placement))
+    match(TodoImportPlacementPolicy.getStatus(placement))
       .with('fits', () => ({
         message: t('categories.roomLeft', { count: placement.remainingCount }),
         isWarning: false,

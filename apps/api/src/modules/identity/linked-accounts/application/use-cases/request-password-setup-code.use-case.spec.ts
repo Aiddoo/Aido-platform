@@ -30,36 +30,31 @@ describe("RequestPasswordSetupCode — 소셜 계정의 비밀번호 설정 요�
     expect(fixture.accountRepository.storedByProvider(fixture.user.id, "CREDENTIAL")).toBeNull();
   });
 
-  it.each(["존재하지 않는", "탈퇴한", "이미 비밀번호가 있는"] as const)(
-    "%s 사용자에게 코드를 발송하지 않는다",
-    async (state) => {
-      // Given
-      const fixture = createAuthCredentialFixture({
-        empty: state === "존재하지 않는",
-        socialOnly: state !== "이미 비밀번호가 있는",
-      });
-      if (state === "탈퇴한") {
-        const user = createUserFixture(fixture.user);
-        user.requestDeletion(AUTH_CREDENTIAL_NOW);
-        await fixture.userRepository.save(user);
-      }
-      const useCase = new RequestPasswordSetupCodeUseCase(fixture);
-      const errorCode =
-        state === "존재하지 않는"
-          ? ErrorCode.USER_0601
-          : state === "탈퇴한"
-            ? ErrorCode.USER_0606
-            : ErrorCode.USER_0614;
+  it.each([
+    ["존재하지 않는", ErrorCode.USER_0601],
+    ["탈퇴한", ErrorCode.USER_0606],
+    ["이미 비밀번호가 있는", ErrorCode.USER_0614],
+  ] as const)("%s 사용자에게 코드를 발송하지 않는다", async (state, errorCode) => {
+    // Given
+    const fixture = createAuthCredentialFixture({
+      empty: state === "존재하지 않는",
+      socialOnly: state !== "이미 비밀번호가 있는",
+    });
+    if (state === "탈퇴한") {
+      const user = createUserFixture(fixture.user);
+      user.requestDeletion(AUTH_CREDENTIAL_NOW);
+      await fixture.userRepository.save(user);
+    }
+    const useCase = new RequestPasswordSetupCodeUseCase(fixture);
 
-      // When
-      const pending = useCase.execute({ userId: fixture.user.id, emailLocale: "ko" });
+    // When
+    const pending = useCase.execute({ userId: fixture.user.id, emailLocale: "ko" });
 
-      // Then
-      await expect(pending).rejects.toMatchObject({ errorCode });
-      expect(fixture.emailSender.getSentCount()).toBe(0);
-      expect(fixture.verificationRepository.all).toEqual([]);
-    },
-  );
+    // Then
+    await expect(pending).rejects.toMatchObject({ errorCode });
+    expect(fixture.emailSender.getSentCount()).toBe(0);
+    expect(fixture.verificationRepository.all).toEqual([]);
+  });
 
   it("재발송 대기 중 재요청하면 기존 코드를 유지하고 재발송하지 않는다", async () => {
     // Given

@@ -24,7 +24,7 @@ describe('recheckPermission', () => {
     const permission = await expoLocationGateway.recheckPermission();
 
     // Then
-    expect(permission).toEqual({ isGranted: true, canAskAgain: true });
+    expect(permission).toEqual({ status: 'granted', canAskAgain: true });
     expect(Location.getForegroundPermissionsAsync).not.toHaveBeenCalled();
   });
 });

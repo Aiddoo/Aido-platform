@@ -147,7 +147,7 @@ describe("UpdatePreference — 부분 수정과 리마인더 즉시 반영", () 
       expect(fixture.reminderEnqueuer.jobs).toEqual([]);
     },
   );
-  it("IANA 별칭은 정규 timezone으로 저장하고 새 응답에 반영한다", async () => {
+  it("IANA 별칭은 다른 이름으로 바꾸지 않고 대소문자만 맞춰 저장하고 새 응답에 반영한다", async () => {
     // Given
     const fixture = createUserSettingsFixture({ preference: { timezone: "Asia/Seoul" } });
     const query = new GetPreferenceUseCase(fixture);
@@ -155,11 +155,52 @@ describe("UpdatePreference — 부분 수정과 리마인더 즉시 반영", () 
     // When
     await new UpdatePreferenceUseCase(fixture).execute({
       userId: fixture.userId,
-      timezone: "Etc/UTC",
+      timezone: "asia/kolkata",
     });
     // Then
-    expect(fixture.preferenceRepository.stored(fixture.userId)?.timezone).toBe("UTC");
-    expect((await query.execute({ userId: fixture.userId })).timezone).toBe("UTC");
+    expect(fixture.preferenceRepository.stored(fixture.userId)?.timezone).toBe("Asia/Kolkata");
+    expect((await query.execute({ userId: fixture.userId })).timezone).toBe("Asia/Kolkata");
+  });
+  it.each(["+09:00", "UTC", "Etc/UTC"])(
+    "%s는 오류 없이 저장하지 않고 나머지 설정만 바꾼다",
+    async (timezone) => {
+      // Given
+      const fixture = createUserSettingsFixture({
+        preference: { timezone: "Asia/Seoul", pushEnabled: false },
+      });
+      // When
+      await new UpdatePreferenceUseCase(fixture).execute({
+        userId: fixture.userId,
+        timezone,
+        pushEnabled: true,
+      });
+      // Then
+      expect(fixture.preferenceRepository.stored(fixture.userId)).toMatchObject({
+        timezone: "Asia/Seoul",
+        pushEnabled: true,
+      });
+      expect(fixture.todoTimezoneRebase.enqueued).toEqual([]);
+    },
+  );
+  it("저장하지 않은 시간대만 보내면 활성 시간대 목록을 비우지 않는다", async () => {
+    // Given
+    const fixture = createUserSettingsFixture({ preference: { timezone: "Asia/Seoul" } });
+    // When
+    await new UpdatePreferenceUseCase(fixture).execute({ userId: fixture.userId, timezone: "UTC" });
+    // Then
+    expect(fixture.reminderTimezoneCache.activeTimezoneInvalidations).toBe(0);
+  });
+  it("이름만 다른 같은 시간대는 쓰지 않고 재계산 작업도 넣지 않는다", async () => {
+    // Given
+    const fixture = createUserSettingsFixture({ preference: { timezone: "Asia/Calcutta" } });
+    // When
+    await new UpdatePreferenceUseCase(fixture).execute({
+      userId: fixture.userId,
+      timezone: "Asia/Kolkata",
+    });
+    // Then
+    expect(fixture.preferenceRepository.stored(fixture.userId)?.timezone).toBe("Asia/Calcutta");
+    expect(fixture.todoTimezoneRebase.enqueued).toEqual([]);
   });
   it("활성 timezone 캐시 삭제 실패를 전달하며 이미 저장된 설정을 되돌리지 않는다", async () => {
     // Given
@@ -224,11 +265,11 @@ describe("UpdatePreference — 부분 수정과 리마인더 즉시 반영", () 
 
   it.each([
     { name: "시간대를 바꾸면 재계산 작업을 등록한다", timezone: "America/New_York", enqueued: 1 },
-    { name: "같은 시간대를 보내면 등록하지 않는다", timezone: "UTC", enqueued: 0 },
+    { name: "같은 시간대를 보내면 등록하지 않는다", timezone: "Asia/Seoul", enqueued: 0 },
     { name: "시간대가 없는 수정은 등록하지 않는다", timezone: undefined, enqueued: 0 },
   ])("$name", async ({ timezone, enqueued }) => {
     // Given
-    const fixture = createUserSettingsFixture();
+    const fixture = createUserSettingsFixture({ preference: { timezone: "Asia/Seoul" } });
     // When
     await new UpdatePreferenceUseCase(fixture).execute({ userId: fixture.userId, timezone });
     // Then

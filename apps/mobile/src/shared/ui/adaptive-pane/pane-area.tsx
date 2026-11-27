@@ -28,10 +28,7 @@ const INSETS_OCCUPY_PANE = process.env.EXPO_OS === 'ios';
 
 const PaneAreaContext = createContext<PaneAreaMetrics | null>(null);
 
-/**
- * 탭 Stack을 감싸 그 탭의 폭과 좌우 inset을 잰다. NativeTabs는 사이드바 배치를 알려 주지 않고, iPadOS 26+ 사이드바는 탭 폭을 줄이지 않고 inset으로 온다.
- * 칸 나누기와 고른 항목을 칸에 열지 push할지를 같은 값으로 정해야 둘이 어긋나지 않는다
- */
+/** NativeTabs는 사이드바 배치를 알려 주지 않고, iPadOS 26+ 사이드바는 탭 폭을 줄이지 않고 inset으로 온다 */
 export function PaneArea({ children }: PropsWithChildren) {
   return (
     <SafeAreaProvider>

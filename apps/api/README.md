@@ -27,10 +27,10 @@ src/
 ├── shared/              # Context 공통 순수 규칙·Application 계약
 └── bootstrap.ts         # 운영 진입점
 drizzle/                 # SQL 마이그레이션
-test/                    # fixtures · doubles · contracts · integration · e2e · performance
+test/                    # architecture · contracts · dev-fixtures · doubles · e2e · fixtures · integration · performance · setup
 ```
 
-의존 방향은 HTTP → Presentation → UseCase → Domain/Port ← Infrastructure다. 상세 규칙은 [docs/architecture.md](./docs/architecture.md)에 있다. 새 slice는 루트에서 `pnpm gen:api-slice`로 만든다.
+의존 방향은 HTTP → Presentation → UseCase → Domain/Port ← Infrastructure다. 상세 규칙은 [docs/architecture/structure.md](./docs/architecture/structure.md)에 있다. 새 slice는 루트에서 `pnpm gen:api-slice`로 만든다.
 
 ## 명령어
 
@@ -62,17 +62,17 @@ test/                    # fixtures · doubles · contracts · integration · e2
 
 ## 참고 문서
 
-| 작업                 | 문서                                                                                         |
-| -------------------- | -------------------------------------------------------------------------------------------- |
-| 작업 경계·완료 기준  | [AGENTS.md](./AGENTS.md)                                                                     |
-| 레이어·코드 규칙     | [architecture](./docs/architecture.md), [conventions](./docs/conventions.md)                 |
-| REST 계약·구 앱 호환 | [http-contracts](./docs/http-contracts.md)                                                   |
-| DB·마이그레이션      | [persistence](./docs/persistence.md)                                                         |
-| 테스트               | [testing](./docs/testing.md)                                                                 |
-| 로그·개인정보        | [observability](./docs/observability.md)                                                     |
-| AI 업체·프롬프트     | [ai](./docs/ai.md)                                                                           |
-| 푸시 알림 운영       | [push-notifications](./docs/push-notifications.md), [push-delivery](./docs/push-delivery.md) |
-| 관리자 알림          | [admin-notifications](./docs/admin-notifications.md)                                         |
-| 구독·결제 웹훅       | [billing](./docs/billing.md)                                                                 |
-| CI·배포·롤백         | [CI](./docs/ci.md), [deployment](./docs/deployment.md)                                       |
-| 전체 서버 문서 안내  | [docs/README.md](./docs/README.md)                                                           |
+| 작업                 | 문서                                                                                                |
+| -------------------- | --------------------------------------------------------------------------------------------------- |
+| 작업 경계·완료 기준  | [AGENTS.md](./AGENTS.md)                                                                            |
+| 레이어·코드 규칙     | [architecture](./docs/architecture/structure.md), [conventions](./docs/architecture/conventions.md) |
+| REST 계약·구 앱 호환 | [http-contracts](./docs/architecture/http-contracts.md)                                             |
+| DB·마이그레이션      | [persistence](./docs/architecture/persistence.md)                                                   |
+| 테스트               | [testing](./docs/testing.md)                                                                        |
+| 로그·개인정보        | [observability](./docs/observability.md)                                                            |
+| AI 업체·프롬프트     | [ai](./docs/ai.md)                                                                                  |
+| 푸시 알림 운영       | [push-notifications](./docs/push-notifications.md), [push-delivery](./docs/push-delivery.md)        |
+| 관리자 알림          | [admin-notifications](./docs/admin-notifications.md)                                                |
+| 구독·결제 웹훅       | [billing](./docs/billing.md)                                                                        |
+| CI·배포·롤백         | [CI](./docs/ci.md), [deployment](./docs/deployment.md)                                              |
+| 전체 서버 문서 안내  | [docs/README.md](./docs/README.md)                                                                  |

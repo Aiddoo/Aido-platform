@@ -19,13 +19,15 @@ import { AddTodoRequestEntry } from '@src/features/planning/todo/components/add-
 import { Calendar } from '@src/features/planning/todo/components/calendar/calendar';
 import { FriendCalendar } from '@src/features/planning/todo/components/calendar/friend-calendar';
 import { MyCalendar } from '@src/features/planning/todo/components/calendar/my-calendar';
+import { RepeatHorizonHint } from '@src/features/planning/todo/components/calendar/repeat-horizon-hint';
 import { FriendTodoList } from '@src/features/planning/todo/components/friend-todo-list';
-import { TodoList } from '@src/features/planning/todo/components/todo-list/todo-list';
-import { useFeedDateKey, useFeedFriendId } from '@src/features/planning/todo/hooks/use-feed-params';
+import { TodoList } from '@src/features/planning/todo/components/todo-list';
 import {
+  useFeedDateKey,
+  useFeedFriendId,
   useFeedSelectedTodoId,
-  useFeedTodoDetailHandoff,
-} from '@src/features/planning/todo/hooks/use-feed-selected-todo-id';
+} from '@src/features/planning/todo/hooks/use-feed-params';
+import { useFeedTodoDetailHandoff } from '@src/features/planning/todo/hooks/use-feed-todo-detail-handoff';
 import { useStableFeedForeground } from '@src/features/planning/todo/hooks/use-stable-feed-foreground';
 import {
   refreshFeedTodos,
@@ -36,8 +38,8 @@ import { FriendStrip } from '@src/features/social/friend/components/friend-strip
 import type { FriendUser } from '@src/features/social/friend/domains/friend.model';
 import {
   type RouteFriend,
-  useRouteFriend,
-} from '@src/features/social/friend/hooks/use-route-friend';
+  useSuspenseRouteFriend,
+} from '@src/features/social/friend/hooks/use-suspense-route-friend';
 import { useGetFriendsInfiniteQueryOptions } from '@src/features/social/friend/queries/friend.queries';
 import { InviteEntryBanner } from '@src/features/social/invite/components/invite-entry-banner';
 import { useIsInviteAvailable } from '@src/features/social/invite/hooks/use-is-invite-available';
@@ -54,6 +56,8 @@ import {
   AdaptivePane,
   Box,
   QueryErrorBoundary,
+  QueryErrorFallback,
+  type QueryErrorFallbackProps,
   SafeAreaScrollView,
   Spacing,
   StyledSafeAreaView,
@@ -61,11 +65,10 @@ import {
 } from '@src/shared/ui';
 import { useInfiniteQuery, usePrefetchQuery, useQueryClient } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
-import { type ComponentProps, Suspense, useEffect, useState } from 'react';
+import { type ComponentProps, Fragment, Suspense, useEffect, useState } from 'react';
 import { ScrollViewContainer } from 'react-native-reorderable-list';
 import { match, P } from 'ts-pattern';
 
-/** 친구 피드가 친구를 읽는 단계. 세 단계 모두 같은 뼈대에 그린다. 더는 친구가 아니면 내 피드로 돌아간다 */
 type FriendFeedView = Exclude<RouteFriend, { status: 'missing' }>;
 
 export default function FeedScreen() {
@@ -77,24 +80,14 @@ export default function FeedScreen() {
   // 피드를 내리기 시작하면 위에 떠 있는 친구 줄 안내가 내용을 가리지 않게 닫는다
   const [hasScrolledFeed, setHasScrolledFeed] = useState(false);
 
-  // 말풍선은 한 번에 하나다. 친구가 없어 친구 줄 안내가 남았으면 그 안내를 닫거나 피드를 내린 뒤에 AI 개편 안내를 연다
-  const [isFriendHintPending] = useMyPendingCoachmark('friend-strip');
-  const { data: friends } = useInfiniteQuery(useGetFriendsInfiniteQueryOptions());
-  const isFriendHintAhead =
-    isFriendHintPending && !hasScrolledFeed && (friends?.items.length ?? 0) === 0;
-
   const openMyInvite = useOpenMyInvite();
-
-  // 첫 피드는 알림 화면 → 새로운 기능 → 말풍선 순서라 앞 화면을 열지 정해진 뒤에만 말풍선을 띄운다
-  const isPushOnboardingSettled = usePushOnboardingGuardState() === 'closed';
-  const { shouldShowCoachmarks } = useWhatsNewAutoOpen({
-    isOnboardingSettled: isPushOnboardingSettled,
-  });
+  const shouldShowCoachmarks = useShouldShowCoachmarks();
+  const shouldFriendHintGoFirst = useShouldFriendHintGoFirst({ hasScrolledFeed });
 
   // 펼친 화면에서 고른 할 일이 있는 채로 접히면 그 할 일과 댓글 위치를 상세 화면으로 넘긴다
   useFeedTodoDetailHandoff();
 
-  const closeDetail = () => setSelectedTodoId(undefined);
+  const closeTodoDetail = () => setSelectedTodoId(undefined);
 
   return (
     <>
@@ -106,22 +99,35 @@ export default function FeedScreen() {
             <QueryErrorBoundary fallback={FriendStrip.Error}>
               <Suspense fallback={<FriendStrip.Loading />}>
                 <FriendStrip
-                  onInvite={
-                    isInviteAvailable ? () => openMyInvite('friend_strip_empty') : undefined
+                  empty={
+                    <FriendStrip.Empty
+                      onInvite={
+                        isInviteAvailable ? () => openMyInvite('friend_strip_empty') : undefined
+                      }
+                      isHintDismissed={hasScrolledFeed}
+                      shouldShowHint={shouldShowCoachmarks}
+                    />
                   }
-                  isHintDismissed={hasScrolledFeed}
-                  shouldShowHint={shouldShowCoachmarks}
                 />
               </Suspense>
             </QueryErrorBoundary>
 
             {match(friendId)
-              .with(P.string, (id) => <FriendFeed.Route key={id} friendId={id} />)
+              .with(P.string, (id) => (
+                <Fragment key={id}>
+                  <FriendTodosPrefetch friendId={id} />
+                  <QueryErrorBoundary fallback={FriendFeed.Error}>
+                    <Suspense fallback={<FriendFeed.Loading />}>
+                      <FriendFeed />
+                    </Suspense>
+                  </QueryErrorBoundary>
+                </Fragment>
+              ))
               .with(undefined, () => (
                 <MyFeed
                   onScrollBeginDrag={() => setHasScrolledFeed(true)}
                   shouldShowHint={shouldShowCoachmarks}
-                  shouldShowSuggestionHint={shouldShowCoachmarks && !isFriendHintAhead}
+                  shouldShowSuggestionHint={shouldShowCoachmarks && !shouldFriendHintGoFirst}
                 />
               ))
               .exhaustive()}
@@ -143,8 +149,8 @@ export default function FeedScreen() {
                 {/* 펼친 피드의 오른쪽 칸이라 네이티브 헤더가 없어 제목 줄을 직접 두고, 뒤로가기는 선택만 푼다 */}
                 <TodoCommentPane
                   titleBar={<TodoCommentTitleBar />}
-                  onClose={closeDetail}
-                  onExit={closeDetail}
+                  onClose={closeTodoDetail}
+                  onExit={closeTodoDetail}
                 />
               </StyledSafeAreaView>
             </KeyboardBottomGapProvider>
@@ -155,10 +161,13 @@ export default function FeedScreen() {
   );
 }
 
-interface MyFeedProps
-  extends
-    Pick<ComponentProps<typeof ScrollViewContainer>, 'onScrollBeginDrag'>,
-    Pick<ComponentProps<typeof MyCalendar>, 'shouldShowHint'> {
+interface MyFeedProps extends Pick<
+  ComponentProps<typeof ScrollViewContainer>,
+  'onScrollBeginDrag'
+> {
+  /** 먼저 뜰 자동 화면(알림 화면·새로운 기능)이 남았으면 false라 말풍선을 미룬다 */
+  shouldShowHint: boolean;
+  /** 위의 친구 줄 안내가 남아 있으면 false라 AI 안내를 미룬다. 말풍선은 한 번에 하나다 */
   shouldShowSuggestionHint: boolean;
 }
 
@@ -166,23 +175,12 @@ function MyFeed({ onScrollBeginDrag, shouldShowHint, shouldShowSuggestionHint }:
   const [selectedDateKey] = useFeedDateKey();
 
   const queryClient = useQueryClient();
-  const authStatus = useAuthStatus();
-  const hasPendingNavigation = useHasPendingPushNotificationEntry();
-  const isPushOnboardingSettled = usePushOnboardingGuardState() === 'closed';
   const isReminderOff = useIsPushReminderOff();
 
   // 말풍선은 열 때 잰 자리에 머물러 피드가 움직이는 동안 AI 제안 입구 안내를 내렸다가 멈춘 자리에서 다시 잰다
   const [isScrolling, setIsScrolling] = useState(false);
 
-  // 내 피드에서만 도는 첫 화면 조율이다. 앱이 앞에 안정적으로 떠 있으면(로그인, 알림 이동 없음)
-  // 알림 켜기 화면을 열고, 그 화면이 정해진 뒤 새로운 기능 안내를 연다. 닫은 안내는 다시 보기 카드로 남는다
-  const isStable = useStableFeedForeground({
-    authStatus,
-    hasPendingNavigation,
-  });
-  useOpenPushOnboarding({ isStable });
-  const whatsNew = useWhatsNewFeed({ isStable, isOnboardingSettled: isPushOnboardingSettled });
-
+  const whatsNew = useFirstFeedGuides();
   const [isRefreshing, handleRefresh] = useRefresh(() => {
     // 날씨는 위치부터 다시 읽어 늦을 수 있다. 당김 표시는 할 일만 기다리고 날씨 실패는 날씨 칸이 보인다
     refreshWeather(queryClient).catch(noop);
@@ -204,7 +202,7 @@ function MyFeed({ onScrollBeginDrag, shouldShowHint, shouldShowSuggestionHint }:
     >
       <StyledSafeAreaView edges={['left', 'right']}>
         <AddTodoRequestEntry />
-        <MyCalendar shouldShowHint={shouldShowHint} />
+        <MyCalendar repeatHorizonHint={<RepeatHorizonHint shouldShowHint={shouldShowHint} />} />
 
         <Spacing size={12} />
 
@@ -232,7 +230,7 @@ function MyFeed({ onScrollBeginDrag, shouldShowHint, shouldShowSuggestionHint }:
         )}
 
         {/* 조회해야 보일지 아는 안내 카드라 로딩·실패 때 자리를 잡지 않는다. 대부분 안 보여 자리를 잡으면 아래가 밀린다 */}
-        <QueryErrorBoundary fallback={() => null}>
+        <QueryErrorBoundary fallback={QueryErrorFallback.Hidden}>
           <Suspense fallback={null}>
             <PushPermissionNotice className="mx-4 mb-3" />
           </Suspense>
@@ -252,8 +250,19 @@ function MyFeed({ onScrollBeginDrag, shouldShowHint, shouldShowSuggestionHint }:
   );
 }
 
+function FriendFeed() {
+  const routeFriend = useSuspenseRouteFriend();
+
+  return match(routeFriend)
+    .with({ status: 'missing' }, () => <ReturnToMyFeed />)
+    .with({ status: P.union('loading', 'error', 'ready') }, (view) => (
+      <FriendFeed.Contents view={view} />
+    ))
+    .exhaustive();
+}
+
 /** 친구 피드 뼈대 하나. 친구를 읽는 동안·실패·다 읽은 뒤가 같은 자리에 그려져 상태가 바뀌어도 칸이 밀리지 않는다 */
-function FriendFeed({ view }: { view: FriendFeedView }) {
+FriendFeed.Contents = function Contents({ view }: { view: FriendFeedView }) {
   const [selectedDateKey] = useFeedDateKey();
 
   const queryClient = useQueryClient();
@@ -277,11 +286,11 @@ function FriendFeed({ view }: { view: FriendFeedView }) {
         ) : undefined
       }
     >
+      {/* 친구인지 확인한 뒤에만 친구의 달력을 받는다. 그 전에는 빈 달력이 같은 자리를 잡는다 */}
       {match(view)
-        .with({ status: 'ready' }, ({ friend }) => <FriendCalendar friendId={friend.id} />)
-        .otherwise(() => (
-          <Calendar />
-        ))}
+        .with({ status: 'ready' }, () => <FriendCalendar />)
+        .with({ status: P.union('loading', 'error') }, () => <Calendar />)
+        .exhaustive()}
 
       <Spacing size={8} />
 
@@ -308,7 +317,7 @@ function FriendFeed({ view }: { view: FriendFeedView }) {
               fallback={FriendTodoList.Error}
             >
               <Suspense fallback={<FriendTodoList.Loading />}>
-                <FriendFeed.TodoList key={selectedDateKey} friend={friend} />
+                <FriendNudgeTodoList key={selectedDateKey} friend={friend} />
               </Suspense>
             </QueryErrorBoundary>
           ))
@@ -316,16 +325,23 @@ function FriendFeed({ view }: { view: FriendFeedView }) {
       </Box>
     </SafeAreaScrollView>
   );
-}
+};
+
+FriendFeed.Loading = function Loading() {
+  return <FriendFeed.Contents view={{ status: 'loading' }} />;
+};
+
+FriendFeed.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
+  return <FriendFeed.Contents view={{ status: 'error', error, reset }} />;
+};
 
 /** 콕 버튼·메뉴처럼 친구와 날짜가 필요한 행동을 피드가 한 번 읽어 목록에 넘긴다 */
-FriendFeed.TodoList = function TodoList({ friend }: { friend: FriendUser }) {
+function FriendNudgeTodoList({ friend }: { friend: FriendUser }) {
   const [selectedDateKey] = useFeedDateKey();
   const getNudgeMenuAction = useFriendTodoNudgeMenuAction({ friend, selectedDateKey });
 
   return (
     <FriendTodoList
-      friendId={friend.id}
       renderRowAction={(todo) => (
         <FriendTodoNudgeAction todo={todo} friend={friend} selectedDateKey={selectedDateKey} />
       )}
@@ -333,43 +349,61 @@ FriendFeed.TodoList = function TodoList({ friend }: { friend: FriendUser }) {
       emptyAction={<FriendRemindNudgeAction friend={friend} />}
     />
   );
-};
+}
 
-/**
- * 링크로 처음 연 친구 피드. 친구인지 확인하는 동안 그날 할 일을 함께 받아 확인 → 할 일 순서로 기다리지 않는다
- */
-FriendFeed.Route = function Route({ friendId }: { friendId: string }) {
+/** 링크로 처음 연 친구 피드. 친구인지 확인하는 동안 그날 할 일을 함께 받아 확인 → 할 일 순서로 기다리지 않는다 */
+function FriendTodosPrefetch({ friendId }: { friendId: string }) {
   const [selectedDateKey] = useFeedDateKey();
 
   usePrefetchQuery(
     useGetFriendTodosQueryOptions({ friendUserId: friendId, date: selectedDateKey }),
   );
 
-  return (
-    <QueryErrorBoundary fallback={(props) => <FriendFeed view={{ status: 'error', ...props }} />}>
-      <Suspense fallback={<FriendFeed view={{ status: 'loading' }} />}>
-        <FriendFeed.RouteFriend />
-      </Suspense>
-    </QueryErrorBoundary>
-  );
-};
-
-FriendFeed.RouteFriend = function RouteFriend() {
-  const routeFriend = useRouteFriend();
-
-  return match(routeFriend)
-    .with({ status: 'missing' }, () => <ReturnToMyFeed />)
-    .with({ status: P.union('loading', 'error', 'ready') }, (view) => <FriendFeed view={view} />)
-    .exhaustive();
-};
+  return null;
+}
 
 // <Redirect>는 피드 탭 첫 화면을 replace해 화면이 다시 마운트된다. 같은 화면에서 친구 선택만 지운다
 function ReturnToMyFeed() {
-  const [, selectFriend] = useFeedFriendId();
+  const [, setFriendId] = useFeedFriendId();
 
   useEffect(() => {
-    selectFriend(undefined);
-  }, [selectFriend]);
+    setFriendId(undefined);
+  }, [setFriendId]);
 
   return null;
+}
+
+/** 첫 피드는 알림 화면 → 새로운 기능 → 말풍선 순서라 앞 화면을 열지 정해진 뒤에만 말풍선을 띄운다 */
+function useShouldShowCoachmarks(): boolean {
+  const isPushOnboardingSettled = useIsPushOnboardingSettled();
+  const { shouldShowCoachmarks } = useWhatsNewAutoOpen({
+    isOnboardingSettled: isPushOnboardingSettled,
+  });
+
+  return shouldShowCoachmarks;
+}
+
+/** 말풍선은 한 번에 하나다. 친구가 없어 친구 줄 안내가 남았으면 그 안내를 닫거나 피드를 내린 뒤에 AI 개편 안내를 연다 */
+function useShouldFriendHintGoFirst({ hasScrolledFeed }: { hasScrolledFeed: boolean }): boolean {
+  const [isFriendHintPending] = useMyPendingCoachmark('friend-strip');
+  const { data: friends } = useInfiniteQuery(useGetFriendsInfiniteQueryOptions());
+
+  return isFriendHintPending && !hasScrolledFeed && (friends?.items.length ?? 0) === 0;
+}
+
+/** 앱이 앞에 안정적으로 떠 있으면(로그인, 알림 이동 없음) 알림 켜기 화면을 열고, 그 화면이 정해진 뒤 새로운 기능 안내를 연다 */
+function useFirstFeedGuides() {
+  const authStatus = useAuthStatus();
+  const hasPendingNavigation = useHasPendingPushNotificationEntry();
+  const isPushOnboardingSettled = useIsPushOnboardingSettled();
+  const isStable = useStableFeedForeground({ authStatus, hasPendingNavigation });
+
+  useOpenPushOnboarding({ isStable });
+
+  return useWhatsNewFeed({ isStable, isOnboardingSettled: isPushOnboardingSettled });
+}
+
+/** 알림 켜기 화면을 열지 정해졌고 열지 않는다. 그 뒤에야 다음 자동 화면(새 기능 안내·말풍선)을 연다 */
+function useIsPushOnboardingSettled(): boolean {
+  return usePushOnboardingGuardState() === 'closed';
 }

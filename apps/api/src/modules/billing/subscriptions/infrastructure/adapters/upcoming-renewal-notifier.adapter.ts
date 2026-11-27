@@ -11,7 +11,7 @@ import {
   NotificationRecipientTimezoneReaderPort,
 } from "#api/modules/notification/push-dispatches/notification-push-dispatches.public";
 import { instantToDate } from "#api/shared/domain/time/instant";
-import { DEFAULT_DELIVERY_TIMEZONE } from "#api/shared/domain/time/timezone-name";
+import { resolveDeliveryTimezone } from "#api/shared/domain/time/timezone-name";
 
 import type { UpcomingRenewalNotifierPort } from "../../application/ports/upcoming-renewal-notifier.port.js";
 import type { UpcomingRenewalNotice } from "../../domain/upcoming-renewal-notice.entity.js";
@@ -47,7 +47,7 @@ export class UpcomingRenewalNotifierAdapter implements UpcomingRenewalNotifierPo
       notices.map((notice) => {
         const message = createPremiumRenewalUpcomingNotificationMessage({
           locale: localeOf(notice.userId.value),
-          timezone: timezones.get(notice.userId.value) ?? DEFAULT_DELIVERY_TIMEZONE,
+          timezone: resolveDeliveryTimezone(timezones.get(notice.userId.value)),
           renewsAt: instantToDate(notice.expiresAt),
           now: instantToDate(now),
           variantContext: {

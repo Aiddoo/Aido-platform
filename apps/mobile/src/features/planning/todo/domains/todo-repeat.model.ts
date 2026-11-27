@@ -17,7 +17,6 @@ import {
   getDayOfMonth,
   getDaysInDateKeyMonth,
   getMondayOfDateKey,
-  getMonthEndDateKey,
   getMonthStartDateKey,
   dateKeyFieldSchema,
   type DateKey,
@@ -33,17 +32,6 @@ import { z } from 'zod';
 
 /** 반복을 횟수로 끝낼 때의 범위. 서버 시리즈 한도와 같다 */
 export const todoRepeatCountSchema = z.int().min(1).max(TODO_SERIES_LIMITS.MAX_COUNT);
-
-/** 평일·주말 반복으로 읽는 요일 묶음. 반복 피커의 평일·주말 칩도 같은 요일을 고른다 */
-const REPEAT_PRESET_DAYS = {
-  WEEKDAYS,
-  WEEKENDS: WEEKEND_DAYS,
-} as const satisfies Record<'WEEKDAYS' | 'WEEKENDS', readonly DayOfWeek[]>;
-type RepeatPreset = keyof typeof REPEAT_PRESET_DAYS;
-
-export function getRepeatPresetDays(preset: RepeatPreset): readonly DayOfWeek[] {
-  return REPEAT_PRESET_DAYS[preset];
-}
 
 const todoEditScopeSchema = z.enum(TODO_EDIT_SCOPES);
 export type TodoEditScope = z.infer<typeof todoEditScopeSchema>;
@@ -88,67 +76,8 @@ const TODO_REPEAT_KINDS = [
 ] as const;
 type TodoRepeatKind = (typeof TODO_REPEAT_KINDS)[number];
 
-export function getRepeatKind(repeat: TodoRepeat): TodoRepeatKind {
-  return match(repeat)
-    .returnType<TodoRepeatKind>()
-    .with({ frequency: 'DAILY' }, () => 'DAILY')
-    .with({ frequency: 'MONTHLY' }, () => 'MONTHLY')
-    .with({ frequency: 'WEEKLY', interval: 2 }, () => 'BIWEEKLY')
-    .with({ frequency: 'WEEKLY', interval: 1 }, ({ weekdays }) =>
-      match(weekdays)
-        .returnType<TodoRepeatKind>()
-        .when(
-          (days) => days.length === DAYS_OF_WEEK.length,
-          () => 'DAILY',
-        )
-        .when(
-          (days) => hasSameDaysOfWeek(days, REPEAT_PRESET_DAYS.WEEKDAYS),
-          () => 'WEEKDAYS',
-        )
-        .when(
-          (days) => hasSameDaysOfWeek(days, REPEAT_PRESET_DAYS.WEEKENDS),
-          () => 'WEEKENDS',
-        )
-        .otherwise(() => 'WEEKLY'),
-    )
-    .exhaustive();
-}
-
 function withRepeatEnd(repeat: TodoRepeat, end: TodoRepeatEnd): TodoRepeat {
   return { ...repeat, end };
-}
-
-export function isRepeatMonthDayClamped(repeat: TodoRepeat): boolean {
-  return repeat.frequency === 'MONTHLY' && repeat.monthDay >= TODO_REPEAT_MONTH_DAY_CLAMP_FROM;
-}
-
-export function withRepeatStartDate(
-  repeat: TodoRepeat,
-  previousStartDate: DateKey,
-  nextStartDate: DateKey,
-): TodoRepeat {
-  const adjusted = match(repeat)
-    .returnType<TodoRepeat>()
-    .with({ frequency: 'DAILY' }, (daily) => daily)
-    .with({ frequency: 'MONTHLY' }, (monthly) => ({
-      ...monthly,
-      monthDay: getDayOfMonth(nextStartDate),
-    }))
-    .with({ frequency: 'WEEKLY' }, (weekly) =>
-      hasSameDaysOfWeek(weekly.weekdays, [getDateKeyDayOfWeek(previousStartDate)])
-        ? { ...weekly, weekdays: [getDateKeyDayOfWeek(nextStartDate)] }
-        : weekly,
-    )
-    .exhaustive();
-
-  return adjusted.end.type === 'UNTIL' && adjusted.end.date < nextStartDate
-    ? withRepeatEnd(adjusted, { type: 'UNTIL', date: nextStartDate })
-    : adjusted;
-}
-
-// 저장된 모양이 달라도(7요일 매주·요일 순서) 같은 규칙이면 true. 바뀌지 않은 규칙으로 회차를 나누지 않는다
-export function hasSameRepeat(repeat: TodoRepeat | null, other: TodoRepeat | null): boolean {
-  return isEqual(normalizeRepeat(repeat), normalizeRepeat(other));
 }
 
 function normalizeRepeat(repeat: TodoRepeat | null): TodoRepeat | null {
@@ -158,31 +87,6 @@ function normalizeRepeat(repeat: TodoRepeat | null): TodoRepeat | null {
   return repeat.interval === 1 && repeat.weekdays.length === DAYS_OF_WEEK.length
     ? { frequency: 'DAILY', end: repeat.end }
     : { ...repeat, weekdays: sortDaysOfWeek(repeat.weekdays) };
-}
-
-type TodoEditScopeDecision = 'no-scope' | 'this-only' | 'ask' | 'ask-following-only';
-
-interface TodoEditScopeInput {
-  isSeries: boolean;
-  /** 생략은 규칙 유지, null은 반복 끝내기 */
-  repeat?: TodoRepeat | null;
-  isDateOnly: boolean;
-}
-
-// 서버는 회차 규칙 변경을 THIS_AND_FOLLOWING으로만(TODO_0845), 끝내기는 범위 없이 받고 날짜 이동은 이 회차에만 적용한다
-export function getTodoEditScopeDecision({
-  isSeries,
-  repeat,
-  isDateOnly,
-}: TodoEditScopeInput): TodoEditScopeDecision {
-  // oxlint-disable-next-line aido/no-strict-nullish -- repeat null은 반복 끝내기, 생략은 규칙 유지다
-  if (!isSeries || repeat === null) {
-    return 'no-scope';
-  }
-  if (repeat != null) {
-    return 'ask-following-only';
-  }
-  return isDateOnly ? 'this-only' : 'ask';
 }
 
 // 서버 RepeatRule과 같은 걷기: 하루씩 보지 않고 규칙이 맞는 날로 건너뛴다. 격주는 시작일이 속한 월요일 시작 주 기준이다
@@ -281,61 +185,97 @@ function* walkOccurrenceDateKeys(
   }
 }
 
-// from~to(포함) 안의 회차 날짜. 시작일 전이거나 종료 조건 뒤는 포함하지 않는다
-export function getRepeatOccurrenceDateKeys(
-  repeat: TodoRepeat,
-  startDate: DateKey,
-  { from, to }: { from: DateKey; to: DateKey },
-): DateKey[] {
-  return [...walkOccurrenceDateKeys(repeat, startDate, to)].filter((date) => date >= from);
-}
-
-// 시작일 이후 첫 회차(서버가 처음 만드는 할 일 날짜). 종료 조건 안에 회차가 없으면 null
-export function findFirstRepeatOccurrenceDateKey(
-  repeat: TodoRepeat,
-  startDate: DateKey,
-): DateKey | null {
-  const [first] = walkOccurrenceDateKeys(
-    repeat,
-    startDate,
-    addDaysToDateKey(startDate, TODO_REPEAT_OCCURRENCE_SEARCH_DAYS),
-  );
-  return first ?? null;
-}
-
-export function findLastRepeatOccurrenceDateKey(
-  repeat: TodoRepeat,
-  startDate: DateKey,
-): DateKey | null {
-  const limit = match(repeat.end)
-    .with({ type: 'NEVER' }, () => null)
-    .with({ type: 'UNTIL' }, ({ date }) => date)
-    .with({ type: 'COUNT' }, ({ count }) =>
-      addDaysToDateKey(startDate, count * TODO_REPEAT_OCCURRENCE_SEARCH_DAYS),
-    )
-    .exhaustive();
-  if (limit == null) {
-    return null;
-  }
-  return [...walkOccurrenceDateKeys(repeat, startDate, limit)].at(-1) ?? null;
-}
-
-// 서버가 반복 회차를 미리 만드는 범위(오늘 + VISIBLE_AHEAD_DAYS, 그 날 포함)를 넘어간 날짜인지
-export function isBeyondRepeatHorizon(dateKey: DateKey, todayKey: DateKey): boolean {
-  return dateKey > addDaysToDateKey(todayKey, TODO_SERIES_LIMITS.VISIBLE_AHEAD_DAYS);
-}
-
-// 그 날짜가 속한 달의 마지막 날이 미리 만드는 범위를 넘어가는지. 달력에서 일부라도 비어 보일 수 있는 달이다
-export function isMonthBeyondRepeatHorizon(dateKey: DateKey, todayKey: DateKey): boolean {
-  return isBeyondRepeatHorizon(getMonthEndDateKey(dateKey), todayKey);
-}
-
 export const TodoRepeatPolicy = {
-  getRepeatKind,
-  hasSameRepeat,
-  withRepeatStartDate,
-  isRepeatMonthDayClamped,
-  getRepeatOccurrenceDateKeys,
-  findFirstRepeatOccurrenceDateKey,
-  findLastRepeatOccurrenceDateKey,
-} as const;
+  // 월~금 매주는 평일, 토·일 매주는 주말로 읽는다. 반복 피커의 평일·주말 칩도 같은 요일 묶음을 고른다
+  getRepeatKind(repeat: TodoRepeat): TodoRepeatKind {
+    return match(repeat)
+      .returnType<TodoRepeatKind>()
+      .with({ frequency: 'DAILY' }, () => 'DAILY')
+      .with({ frequency: 'MONTHLY' }, () => 'MONTHLY')
+      .with({ frequency: 'WEEKLY', interval: 2 }, () => 'BIWEEKLY')
+      .with({ frequency: 'WEEKLY', interval: 1 }, ({ weekdays }) =>
+        match(weekdays)
+          .returnType<TodoRepeatKind>()
+          .when(
+            (days) => days.length === DAYS_OF_WEEK.length,
+            () => 'DAILY',
+          )
+          .when(
+            (days) => hasSameDaysOfWeek(days, WEEKDAYS),
+            () => 'WEEKDAYS',
+          )
+          .when(
+            (days) => hasSameDaysOfWeek(days, WEEKEND_DAYS),
+            () => 'WEEKENDS',
+          )
+          .otherwise(() => 'WEEKLY'),
+      )
+      .exhaustive();
+  },
+
+  isRepeatMonthDayClamped(repeat: TodoRepeat): boolean {
+    return repeat.frequency === 'MONTHLY' && repeat.monthDay >= TODO_REPEAT_MONTH_DAY_CLAMP_FROM;
+  },
+
+  withRepeatStartDate(
+    repeat: TodoRepeat,
+    previousStartDate: DateKey,
+    nextStartDate: DateKey,
+  ): TodoRepeat {
+    const adjusted = match(repeat)
+      .returnType<TodoRepeat>()
+      .with({ frequency: 'DAILY' }, (daily) => daily)
+      .with({ frequency: 'MONTHLY' }, (monthly) => ({
+        ...monthly,
+        monthDay: getDayOfMonth(nextStartDate),
+      }))
+      .with({ frequency: 'WEEKLY' }, (weekly) =>
+        hasSameDaysOfWeek(weekly.weekdays, [getDateKeyDayOfWeek(previousStartDate)])
+          ? { ...weekly, weekdays: [getDateKeyDayOfWeek(nextStartDate)] }
+          : weekly,
+      )
+      .exhaustive();
+
+    return adjusted.end.type === 'UNTIL' && adjusted.end.date < nextStartDate
+      ? withRepeatEnd(adjusted, { type: 'UNTIL', date: nextStartDate })
+      : adjusted;
+  },
+
+  // 저장된 모양이 달라도(7요일 매주·요일 순서) 같은 규칙이면 true. 바뀌지 않은 규칙으로 회차를 나누지 않는다
+  hasSameRepeat(repeat: TodoRepeat | null, other: TodoRepeat | null): boolean {
+    return isEqual(normalizeRepeat(repeat), normalizeRepeat(other));
+  },
+
+  // from~to(포함) 안의 회차 날짜. 시작일 전이거나 종료 조건 뒤는 포함하지 않는다
+  getRepeatOccurrenceDateKeys(
+    repeat: TodoRepeat,
+    startDate: DateKey,
+    { from, to }: { from: DateKey; to: DateKey },
+  ): DateKey[] {
+    return [...walkOccurrenceDateKeys(repeat, startDate, to)].filter((date) => date >= from);
+  },
+
+  // 시작일 이후 첫 회차(서버가 처음 만드는 할 일 날짜). 종료 조건 안에 회차가 없으면 null
+  findFirstRepeatOccurrenceDateKey(repeat: TodoRepeat, startDate: DateKey): DateKey | null {
+    const [first] = walkOccurrenceDateKeys(
+      repeat,
+      startDate,
+      addDaysToDateKey(startDate, TODO_REPEAT_OCCURRENCE_SEARCH_DAYS),
+    );
+    return first ?? null;
+  },
+
+  findLastRepeatOccurrenceDateKey(repeat: TodoRepeat, startDate: DateKey): DateKey | null {
+    const limit = match(repeat.end)
+      .with({ type: 'NEVER' }, () => null)
+      .with({ type: 'UNTIL' }, ({ date }) => date)
+      .with({ type: 'COUNT' }, ({ count }) =>
+        addDaysToDateKey(startDate, count * TODO_REPEAT_OCCURRENCE_SEARCH_DAYS),
+      )
+      .exhaustive();
+    if (limit == null) {
+      return null;
+    }
+    return [...walkOccurrenceDateKeys(repeat, startDate, limit)].at(-1) ?? null;
+  },
+};

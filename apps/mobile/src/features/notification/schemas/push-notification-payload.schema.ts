@@ -5,10 +5,7 @@ import {
 } from '@aido/api/contracts/notification/v1';
 import type { z } from 'zod';
 
-/**
- * 앱이 읽는 푸시 data 칸을 계약 그대로 검사한다. 틀린 칸의 경로를 로그로 남기는 데 쓴다.
- * 서버가 옛 앱을 위해 함께 싣는 이동 재료(context·routing)는 읽지 않는다
- */
+/** 틀린 칸의 경로를 로그로 남기려 계약 그대로 검사하고, 옛 앱용 이동 재료(context·routing)는 읽지 않는다 */
 export const pushNotificationPayloadSchema = pushNotificationDataSchema
   .pick({
     notificationId: true,

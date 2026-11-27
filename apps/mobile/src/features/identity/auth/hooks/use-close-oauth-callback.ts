@@ -1,6 +1,6 @@
 import { useSocialAuth } from '@src/bootstrap/providers/di-context';
-import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback } from 'react';
+import { useGoBack } from '@src/shared/hooks/use-go-back';
+import { useFocusEffect } from 'expo-router';
 
 /**
  * Android OAuth 콜백 deep link가 연 화면을 바로 닫는다. 열어 둔 브라우저 세션이 URL을 받게 끝낸 뒤 로그인·계정 연결을
@@ -9,17 +9,11 @@ import { useCallback } from 'react';
  */
 export function useCloseOAuthCallback() {
   const socialAuth = useSocialAuth();
-  const router = useRouter();
+  const goBack = useGoBack({ fallbackHref: '/' });
 
   // 꺼진 앱이 이 화면으로 열리면 첫 렌더가 끝나기 전이라 전역 router를 쓸 수 없다. Redirect처럼 focus에서 이동한다
-  useFocusEffect(
-    useCallback(() => {
-      socialAuth.completeOAuthSession();
-      if (router.canGoBack()) {
-        router.back();
-        return;
-      }
-      router.replace('/');
-    }, [router, socialAuth]),
-  );
+  useFocusEffect(() => {
+    socialAuth.completeOAuthSession();
+    goBack();
+  });
 }

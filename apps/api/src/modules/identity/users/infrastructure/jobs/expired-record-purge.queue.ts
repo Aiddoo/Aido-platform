@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { JOB_SCHEDULE_TIMEZONE } from "#api/shared/application/job-schedule-timezone";
 import {
   defineQueue,
   JOB_POLLING_SECONDS,
@@ -26,7 +27,7 @@ export const EXPIRED_RECORD_PURGE_QUEUE = defineQueue({
     {
       key: "daily-expired-record-purge-scheduler",
       cron: "40 3 * * *",
-      timezone: "Asia/Seoul",
+      timezone: JOB_SCHEDULE_TIMEZONE,
       missed: "skip",
       payload: {},
     },

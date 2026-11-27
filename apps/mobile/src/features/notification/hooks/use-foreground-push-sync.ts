@@ -19,7 +19,6 @@ interface UseForegroundPushSyncOptions {
   invalidateByType: (type: NotificationType) => Promise<unknown>;
 }
 
-/** 앱이 앞에 있을 때 받은 푸시로 알림함·안 읽은 수와 그 타입의 화면을 다시 받는다 */
 export function useForegroundPushSync({
   authStatus,
   invalidateByType,

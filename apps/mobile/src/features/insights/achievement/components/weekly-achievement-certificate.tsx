@@ -4,8 +4,7 @@ import { useTrack } from '@src/shared/analytics';
 import { formatDateKeyRange, formatIsoWeekLabel } from '@src/shared/date/format/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
-import { useRouteParams } from '@src/shared/hooks/use-route-params';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import { CapturableView } from '@src/shared/infra/view-capture/capturable-view';
 import {
@@ -26,11 +25,11 @@ import { range } from 'es-toolkit';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { useRef } from 'react';
 
-import { ACHIEVEMENT_BADGE_NAME_KEYS } from '../constants/achievement-labels';
-import { AchievementPolicy } from '../domains/achievement.model';
+import { WeeklyAchievementPolicy } from '../domains/weekly-achievement.model';
+import { useAchievementWeek } from '../hooks/use-achievement-params';
 import { useShareViewCapture } from '../hooks/use-share-view-capture';
 import { useGetWeeklyAchievementQueryOptions } from '../queries/achievement.queries';
-import { achievementParamsSchema } from '../schemas/achievement-params.schema';
+import { getBadgeNameKey } from '../utils/badge-label.view-model';
 import { BadgeIcon } from './badge-icon';
 import { Certificate } from './certificate';
 
@@ -38,7 +37,7 @@ const CERTIFICATE_LINE_COUNT = 4;
 
 export function WeeklyAchievementCertificate() {
   const fontScaledSize = useFontScaledSize();
-  const [{ year, week }] = useRouteParams(achievementParamsSchema);
+  const [{ year, week }] = useAchievementWeek();
   const [{ data: achievement }, { data: user }] = useSuspenseQueries({
     queries: [useGetWeeklyAchievementQueryOptions({ year, week }), useGetMeQueryOptions()],
   });
@@ -48,20 +47,22 @@ export function WeeklyAchievementCertificate() {
 
   const { trackEvent } = useTrack();
   const viewShotRef = useRef<ViewCaptureHandle>(null);
-  const { shareCapture, isSharing } = useShareViewCapture(viewShotRef);
-
-  const badgeType = AchievementPolicy.getBadgeType(achievement);
-  const badgeName = t(ACHIEVEMENT_BADGE_NAME_KEYS[badgeType]);
-
-  const handleShare = async () => {
-    trackEvent('badge_share_attempted', { badge_type: badgeType, year, week });
-    await shareCapture();
-  };
+  const badgeType = WeeklyAchievementPolicy.getBadgeType(achievement);
+  const { shareCapture, isSharing } = useShareViewCapture({
+    viewShotRef,
+    onShare: () => trackEvent('badge_share_attempted', { badge_type: badgeType, year, week }),
+  });
 
   return (
     <>
       <CapturableView ref={viewShotRef}>
-        <Certificate subtitle={<Certificate.Subtitle>{badgeName}</Certificate.Subtitle>}>
+        <Certificate
+          subtitle={
+            <Text size="b4" shade={6} weight="medium">
+              {t(getBadgeNameKey(badgeType))}
+            </Text>
+          }
+        >
           <Spacing size={16} />
 
           <VStack align="center" gap={8}>
@@ -134,7 +135,7 @@ export function WeeklyAchievementCertificate() {
       <Spacing size={8} />
 
       <PressableFeedback
-        onPress={handleShare}
+        onPress={shareCapture}
         isDisabled={isSharing}
         className="flex-row items-center gap-1.5 self-end py-1"
       >

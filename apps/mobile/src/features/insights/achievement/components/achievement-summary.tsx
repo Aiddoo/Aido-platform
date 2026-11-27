@@ -5,7 +5,7 @@ import { formatDateKeyRange, formatIsoWeekLabel } from '@src/shared/date/format/
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import { CapturableView } from '@src/shared/infra/view-capture/capturable-view';
 import {
@@ -30,18 +30,23 @@ import {
   useSuspenseQuery,
 } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
-import { router, useIsFocused } from 'expo-router';
+import { useRouter, useIsFocused } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { useRef } from 'react';
 
-import { ACHIEVEMENT_BADGE_NAME_KEYS } from '../constants/achievement-labels';
-import { AchievementPolicy } from '../domains/achievement.model';
+import type { WeeklyAchievementPage } from '../domains/weekly-achievement-page.model';
+import {
+  type BadgeType,
+  type WeeklyAchievement,
+  WeeklyAchievementPolicy,
+} from '../domains/weekly-achievement.model';
 import { useAchievementYear } from '../hooks/use-achievement-params';
 import { useShareViewCapture } from '../hooks/use-share-view-capture';
 import {
   useGetAchievementYearsQueryOptions,
   useGetWeeklyAchievementsInfiniteQueryOptions,
 } from '../queries/achievement.queries';
+import { getBadgeNameKey } from '../utils/badge-label.view-model';
 import { BadgeIcon } from './badge-icon';
 import { Certificate } from './certificate';
 
@@ -49,7 +54,6 @@ const CERTIFICATE_LINE_COUNT = 4;
 const LOADING_STAT_COUNT = 3;
 
 export function AchievementSummary() {
-  const todayKey = useTodayKey();
   usePrefetchQuery(useGetMeQueryOptions());
   const { data: achievementYears } = useSuspenseQuery(useGetAchievementYearsQueryOptions());
   // 보이는 해는 기록 있는 연도를 받아야 정해진다
@@ -59,14 +63,8 @@ export function AchievementSummary() {
   );
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const isFocused = useIsFocused();
-  const fontScaledSize = useFontScaledSize();
-  const { t } = useTranslation('achievement');
-  const { trackEvent } = useTrack();
-  const dateFormatContext = useDateFormatContext();
-  const viewShotRef = useRef<ViewCaptureHandle>(null);
-  const { shareCapture, isSharing } = useShareViewCapture(viewShotRef);
   const latest = weeklyAchievements.items[0];
-  const latestBadgeType = latest == null ? null : AchievementPolicy.getBadgeType(latest);
+  const latestBadgeType = latest == null ? null : WeeklyAchievementPolicy.getBadgeType(latest);
   const latestWeekKey = latest == null ? null : (`${latest.year}-W${latest.week}` as const);
 
   // 탭 Stack에 남은 화면은 뒤 탭에서도 다시 조회한다. 보이는 동안 주마다 한 번 센다
@@ -88,25 +86,54 @@ export function AchievementSummary() {
     return <AchievementSummary.Empty />;
   }
 
-  const { summary } = weeklyAchievements;
+  return (
+    <AchievementSummary.Contents
+      latest={latest}
+      badgeType={latestBadgeType}
+      summary={weeklyAchievements.summary}
+      userName={user.name}
+    />
+  );
+}
 
-  const handleShare = async () => {
-    trackEvent('badge_share_attempted', {
-      badge_type: latestBadgeType,
-      year: latest.year,
-      week: latest.week,
-    });
-    await shareCapture();
-  };
+interface AchievementSummaryContentsProps {
+  latest: WeeklyAchievement;
+  badgeType: BadgeType;
+  summary: WeeklyAchievementPage['summary'];
+  userName: string;
+}
+
+/** 기록이 있는 해의 최근 주 상장과 공유. 빈 상태를 지나 받은 값만 그린다 */
+AchievementSummary.Contents = function Contents({
+  latest,
+  badgeType,
+  summary,
+  userName,
+}: AchievementSummaryContentsProps) {
+  const fontScaledSize = useFontScaledSize();
+  const { t } = useTranslation('achievement');
+  const { trackEvent } = useTrack();
+  const dateFormatContext = useDateFormatContext();
+  const todayKey = useTodayKey();
+  const viewShotRef = useRef<ViewCaptureHandle>(null);
+  const { shareCapture, isSharing } = useShareViewCapture({
+    viewShotRef,
+    onShare: () =>
+      trackEvent('badge_share_attempted', {
+        badge_type: badgeType,
+        year: latest.year,
+        week: latest.week,
+      }),
+  });
 
   return (
     <Box>
       <CapturableView ref={viewShotRef}>
         <Certificate
           subtitle={
-            <Certificate.Subtitle>
-              {t(ACHIEVEMENT_BADGE_NAME_KEYS[latestBadgeType])}
-            </Certificate.Subtitle>
+            <Text size="b4" shade={6} weight="medium">
+              {t(getBadgeNameKey(badgeType))}
+            </Text>
           }
         >
           <Spacing size={12} />
@@ -126,7 +153,7 @@ export function AchievementSummary() {
                 lineBreakStrategyIOS="hangul-word"
                 textBreakStrategy="highQuality"
               >
-                {user.name}
+                {userName}
               </H4>
             </Box>
           </VStack>
@@ -168,7 +195,7 @@ export function AchievementSummary() {
           <Spacing size={14} />
 
           <HStack align="center" gap={12}>
-            <BadgeIcon type={latestBadgeType} size="large" />
+            <BadgeIcon type={badgeType} size="large" />
             <Stat
               label={t('card.statPerfect')}
               value={t('card.perfectCount', { count: summary.perfectWeeks })}
@@ -188,7 +215,7 @@ export function AchievementSummary() {
       <Spacing size={8} />
 
       <PressableFeedback
-        onPress={handleShare}
+        onPress={shareCapture}
         isDisabled={isSharing}
         className="flex-row items-center gap-1.5 self-end py-1"
       >
@@ -203,12 +230,17 @@ export function AchievementSummary() {
       </PressableFeedback>
     </Box>
   );
-}
+};
 
 AchievementSummary.Empty = function Empty() {
   const { t } = useTranslation('achievement');
   const { trackEvent } = useTrack();
-  const push = useSingleTap(router.push);
+  const router = useRouter();
+  // 피드를 한 번 여는 누름은 지표도 한 번만 남긴다
+  const handleStartPress = useSingleTap(() => {
+    trackEvent('badge_empty_cta_tapped');
+    router.push('/feed');
+  });
 
   return (
     <Certificate>
@@ -245,15 +277,7 @@ AchievementSummary.Empty = function Empty() {
 
       <Spacing size={14} />
 
-      <Button
-        size="medium"
-        variant="weak"
-        display="block"
-        onPress={() => {
-          trackEvent('badge_empty_cta_tapped');
-          push('/feed');
-        }}
-      >
+      <Button size="medium" variant="weak" display="block" onPress={handleStartPress}>
         {t('list.startNow')}
       </Button>
     </Certificate>

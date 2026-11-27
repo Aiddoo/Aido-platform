@@ -1,41 +1,13 @@
+import type { SPEECH_ERROR_CODES, SPEECH_LOCALES, SpeechSegment } from '@aido/api/vocabulary';
+
 import type { OsPermission, OsPermissionStatus } from './os-permission';
 
-export const SPEECH_LOCALES = ['ko-KR', 'en-US'] as const;
 export type SpeechLocale = (typeof SPEECH_LOCALES)[number];
 
-/**
- * - `dictation`: 한 번 말하면 끝나는 받아쓰기(할 일·하위 할 일 입력)
- * - `quick`: 이어서 말하는 빠른 말하기
- * - `note`: 긴 녹음. 기기 안 인식·문장부호·녹음 파일 저장을 쓴다
- */
+/** `dictation`은 한 번 말하면 끝나고, `note`는 긴 녹음이라 기기 안 인식·문장부호·녹음 파일 저장을 쓴다 */
 export type SpeechMode = 'dictation' | 'quick' | 'note';
 
-export const SPEECH_ERROR_CODES = [
-  'aborted',
-  'audio-capture',
-  'interrupted',
-  'bad-grammar',
-  'language-not-supported',
-  'network',
-  'no-speech',
-  'not-allowed',
-  'service-not-allowed',
-  'busy',
-  'client',
-  'speech-timeout',
-  'too-many-requests',
-  'unknown',
-] as const;
-
 export type SpeechErrorCode = (typeof SPEECH_ERROR_CODES)[number];
-
-/** 인식기가 준 단어 구간. iOS·Android 14+ 기기 안 인식에서만 온다 */
-export interface SpeechSegment {
-  text: string;
-  startMs: number;
-  endMs: number;
-  confidence: number;
-}
 
 export type SpeechEvent =
   | { type: 'start' }

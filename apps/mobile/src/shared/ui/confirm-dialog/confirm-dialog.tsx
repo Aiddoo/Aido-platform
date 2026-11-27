@@ -1,4 +1,6 @@
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
+import { noop } from 'es-toolkit';
 import { Dialog } from 'heroui-native';
 import { type ReactNode, useState } from 'react';
 
@@ -43,6 +45,10 @@ export function ConfirmDialog({
       setIsConfirming(false);
     }
   };
+  // isConfirming은 다음 렌더에야 켜져 같은 프레임의 두 번째 탭이 onConfirm을 한 번 더 부른다. 실패는 handleConfirm이 받는다
+  const handleConfirmPress = useSingleTap(() => {
+    handleConfirm().catch(noop);
+  });
 
   return (
     <Dialog
@@ -91,7 +97,7 @@ export function ConfirmDialog({
                   display="inline"
                   isDisabled={isConfirmDisabled}
                   isLoading={isConfirming}
-                  onPress={handleConfirm}
+                  onPress={handleConfirmPress}
                 >
                   {confirmLabel}
                 </Button>

@@ -99,36 +99,31 @@ describe("SetPassword — 소셜 세션을 유지하는 Credential 계정 추가
     ]);
   });
 
-  it.each(["존재하지 않는", "탈퇴한", "이미 비밀번호가 있는"] as const)(
-    "%s 사용자는 코드 소비와 계정 추가 이전에 거부한다",
-    async (state) => {
-      // Given
-      const fixture = await given({
-        empty: state === "존재하지 않는",
-        socialOnly: state !== "이미 비밀번호가 있는",
-      });
-      if (state === "탈퇴한") {
-        await withdraw(fixture);
-      }
-      const errorCode =
-        state === "존재하지 않는"
-          ? ErrorCode.USER_0601
-          : state === "탈퇴한"
-            ? ErrorCode.USER_0606
-            : ErrorCode.USER_0614;
+  it.each([
+    ["존재하지 않는", ErrorCode.USER_0601],
+    ["탈퇴한", ErrorCode.USER_0606],
+    ["이미 비밀번호가 있는", ErrorCode.USER_0614],
+  ] as const)("%s 사용자는 코드 소비와 계정 추가 이전에 거부한다", async (state, errorCode) => {
+    // Given
+    const fixture = await given({
+      empty: state === "존재하지 않는",
+      socialOnly: state !== "이미 비밀번호가 있는",
+    });
+    if (state === "탈퇴한") {
+      await withdraw(fixture);
+    }
 
-      // When
-      const pending = fixture.useCase.execute({ userId: fixture.user.id, code, newPassword });
+    // When
+    const pending = fixture.useCase.execute({ userId: fixture.user.id, code, newPassword });
 
-      // Then
-      await expect(pending).rejects.toMatchObject({ errorCode });
-      expect(fixture.verificationRepository.all).toEqual([
-        expect.objectContaining({ attempts: 0, usedAt: null }),
-      ]);
-      expect(fixture.passwordService.hashes).toEqual([]);
-      expect(fixture.securityLogRepository.entries).toEqual([]);
-    },
-  );
+    // Then
+    await expect(pending).rejects.toMatchObject({ errorCode });
+    expect(fixture.verificationRepository.all).toEqual([
+      expect.objectContaining({ attempts: 0, usedAt: null }),
+    ]);
+    expect(fixture.passwordService.hashes).toEqual([]);
+    expect(fixture.securityLogRepository.entries).toEqual([]);
+  });
 
   it("다른 용도의 올바른 코드로는 Credential 계정을 추가하지 못한다", async () => {
     // Given

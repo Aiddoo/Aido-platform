@@ -4,4 +4,5 @@ export interface OverlayState {
   hasActiveOverlay: boolean;
 }
 
-export const OverlayStateContext = createContext<OverlayState | null>(null);
+// Provider 밖에는 overlay가 뜰 자리가 없어 열린 것도 없다
+export const OverlayStateContext = createContext<OverlayState>({ hasActiveOverlay: false });

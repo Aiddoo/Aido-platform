@@ -7,11 +7,11 @@ const SCRIM_COLORS = {
   night: ['rgba(0,0,0,0.12)', 'rgba(0,0,0,0)', 'rgba(0,0,0,0)', 'rgba(0,0,0,0.12)'],
 } as const;
 
-type ScrimLayerProps = {
+interface ScrimLayerProps {
   isDaylight: boolean;
   width: number;
   height: number;
-};
+}
 
 export function ScrimLayer({ isDaylight, width, height }: ScrimLayerProps) {
   return (

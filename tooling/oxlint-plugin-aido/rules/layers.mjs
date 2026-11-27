@@ -64,7 +64,7 @@ function collectLocalTypes(program) {
 const AGGREGATE_BASE = 'AggregateRoot';
 const STATE_QUESTION_NAME = /^(?:is|has|can)[A-Z]/u;
 
-// Aggregate는 같은 모양이어야 복원·생성 경로와 상태 질문을 이름만 보고 찾는다(apps/api/docs/domain-modeling.md)
+// Aggregate는 같은 모양이어야 복원·생성 경로와 상태 질문을 이름만 보고 찾는다(apps/api/docs/architecture/domain-modeling.md)
 const aggregateShape = {
   meta: {
     type: 'suggestion',
@@ -418,7 +418,7 @@ function isCollection(type, localTypes, visited = new Set()) {
   }
 }
 
-// find*는 "없으면 null" 한 모양이다. undefined와 섞이면 호출부가 == null과 ===를 오가며 판단이 갈린다(conventions.md#repository-메서드)
+// find*는 "없으면 null" 한 모양이다. undefined와 섞이면 호출부가 == null과 ===를 오가며 판단이 갈린다(architecture/conventions.md#repository-메서드)
 const portReturnShape = {
   meta: { type: 'suggestion' },
   create(context) {

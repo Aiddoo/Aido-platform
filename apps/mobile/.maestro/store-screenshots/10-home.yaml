@@ -1,4 +1,4 @@
-appId: com.aido.mobile
+appId: ${MAESTRO_APP_ID}
 name: 홈의 오늘 할 일과 어제 기록
 tags:
   - free

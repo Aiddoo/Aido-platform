@@ -10,12 +10,17 @@ interface UseFetchNextPageOptions {
 }
 
 /** isFetchingNextPage는 렌더 뒤에야 바뀌어 같은 프레임의 연속 호출은 ref로 막는다. 실패 뒤에는 자동으로 다시 부르지 않지만, 당겨서 새로고침으로 오류가 풀리면 FlashList가 끝 근처에 머물러 onEndReached를 다시 부르지 않으므로 한 번 부른다 */
+interface FetchNextPageActions {
+  fetchOnEndReached: () => void;
+  retry: () => void;
+}
+
 export function useFetchNextPage({
   hasNextPage,
   isFetchingNextPage,
   isFetchNextPageError,
   fetchNextPage,
-}: UseFetchNextPageOptions) {
+}: UseFetchNextPageOptions): FetchNextPageActions {
   const isRequestingRef = useRef(false);
   const previous = useRef({ isFetchingNextPage, isFetchNextPageError });
   const canFetchNextPage = hasNextPage && !isFetchingNextPage;
@@ -26,6 +31,7 @@ export function useFetchNextPage({
     }
     isRequestingRef.current = true;
     fetchNextPage({ cancelRefetch: false })
+      // 실패는 쿼리의 isFetchNextPageError가 화면에 알린다
       .catch(noop)
       .finally(() => {
         isRequestingRef.current = false;

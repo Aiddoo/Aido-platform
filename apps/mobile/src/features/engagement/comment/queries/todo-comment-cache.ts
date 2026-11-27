@@ -1,4 +1,5 @@
 import { invalidateTodoSummaries } from '@src/features/planning/todo/queries/todo-cache';
+import { isLastMutation } from '@src/shared/query/is-last-mutation';
 import type {
   DefaultError,
   InfiniteQueryExecuteOptions,
@@ -7,10 +8,11 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
-  TodoComment,
   TodoCommentReplyPage,
   TodoCommentThreadPage,
-} from '../domains/todo-comment.model';
+} from '../domains/todo-comment-thread.model';
+import type { TodoComment } from '../domains/todo-comment.model';
+import { TODO_COMMENT_MUTATION_KEYS } from './todo-comment-mutation-keys';
 import {
   addRepliesToThreadPages,
   appendRepliesToReplyPages,
@@ -150,6 +152,39 @@ export function patchTodoCommentCaches(
   queryClient.setQueriesData<TodoCommentReplyPages>(replyQueries(todoId), (data) =>
     patchCommentInReplyPages(data, commentId, transform),
   );
+}
+
+interface SettleTodoCommentEditInput extends TodoCommentCacheInput {
+  /** 이 고치기가 시작할 때 같은 할 일의 다른 고치기가 진행 중이었는지(`onMutate`에서 센다) */
+  startedWithOthers: boolean;
+  /** 혼자 끝난 마지막 고치기의 응답을 캐시에 쓴다 */
+  writeResponse: () => void;
+}
+
+/**
+ * 글 고치기 응답을 반영한다. 응답이 오는 순서는 서버가 처리한 순서와 다를 수 있어 앞서 끝난 응답은 낡음만 표시하고,
+ * 마지막 고치기가 겹쳤으면(시작할 때 다른 고치기가 있었거나 보이는 목록에 낡음 표시가 남음) 응답 대신 다시 받는다.
+ * 댓글 하나가 정렬·위치별 묶음 목록과 답글 목록에 걸쳐 있어, 조회 하나를 맞추는 `settleOverlappingWrite`와 같은 갈래를
+ * 이 할 일의 댓글 조회 전체에 건다. `onSuccess`에서 부른다
+ */
+export function settleTodoCommentEdit(
+  queryClient: QueryClient,
+  { todoId, startedWithOthers, writeResponse }: SettleTodoCommentEditInput,
+): Promise<void> {
+  const queryKey = TODO_COMMENT_QUERY_KEYS.todo({ todoId });
+  if (!isLastMutation(queryClient, TODO_COMMENT_MUTATION_KEYS.updateComment({ todoId }))) {
+    return queryClient.invalidateQueries({ queryKey, refetchType: 'none' });
+  }
+  // 보지 않는 목록(다른 정렬)은 새 댓글 뒤에도 낡음으로 남아 있어 겹침의 표시로 읽지 않는다
+  const hasStaleMark = queryClient
+    .getQueryCache()
+    .findAll({ queryKey, type: 'active' })
+    .some((query) => query.state.isInvalidated);
+  if (startedWithOthers || hasStaleMark) {
+    return queryClient.invalidateQueries({ queryKey });
+  }
+  writeResponse();
+  return Promise.resolve();
 }
 
 export function removeTodoCommentFromCaches(

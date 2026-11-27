@@ -1,27 +1,36 @@
 import { TODO_LIMITS } from '@aido/api/vocabulary';
+import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
 import { useFormatPlanValue } from '@src/features/billing/subscription/hooks/use-format-plan-value';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
-import { toPlanFeatureComparison } from '@src/features/billing/subscription/utils/plan-benefit.view-model';
+import {
+  selectTimeFormat,
+  useGetPreferenceQueryOptions,
+} from '@src/features/identity/preference/queries/preference.queries';
+import { CATEGORY_COLORS } from '@src/features/planning/category/constants/todo-category.constants';
 import { CalendarSourceList } from '@src/features/planning/todo-import/components/calendar-source-list';
-import { ImportDestinationButton } from '@src/features/planning/todo-import/components/import-destination-button';
+import { ImportDestinationInput } from '@src/features/planning/todo-import/components/import-destination-input';
 import { ImportSourceList } from '@src/features/planning/todo-import/components/import-source-list';
 import { TodoImportProgress } from '@src/features/planning/todo-import/components/todo-import-progress';
 import {
-  type ImportCollection,
+  type TodoImportCollection,
   TodoImportCollectionPolicy,
 } from '@src/features/planning/todo-import/domains/todo-import-collection.model';
-import {
-  findTargetPlacement,
-  placeImportTargets,
-} from '@src/features/planning/todo-import/domains/todo-import-target.model';
+import { createTodoImportPlacement } from '@src/features/planning/todo-import/domains/todo-import-placement.model';
+import { TodoRow } from '@src/features/planning/todo/components/todo-row';
+import { TodoResourceLimitPolicy } from '@src/features/planning/todo/domains/todo-resource-limit.model';
+import { isPrivateVisibility } from '@src/features/planning/todo/domains/todo-visibility.model';
+import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import { ANIMATION } from '@src/shared/constants/animation';
+import { formatTimeOfDay } from '@src/shared/date/format/date-format';
+import { toTimeOfDay } from '@src/shared/date/time-of-day';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowRightIcon,
   Box,
+  getTouchTargetInset,
   HStack,
   LabelChip,
-  Meter,
   QueryErrorFallback,
   type QueryErrorFallbackProps,
   SettingsListGroup,
@@ -29,25 +38,42 @@ import {
   TextSkeleton,
   VStack,
 } from '@src/shared/ui';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
-import { type ReactNode, useState } from 'react';
+import { type ComponentProps, type ReactNode, useState } from 'react';
 import Animated, { FadeIn, LinearTransition, ReduceMotion } from 'react-native-reanimated';
 
-import {
-  DEMO_CALENDARS,
-  DEMO_CATEGORIES,
-  DEMO_IMPORTED_TODOS,
-  DEMO_SCRIPT_MS,
-} from '../constants/release-1-17-0.constants';
+import { DEMO_SCRIPT_MS } from '../constants/release-1-17-0.constants';
 import { useDemoScript } from '../hooks/use-demo-script';
-import { DemoTodoRow } from './demo-todo-row';
 import { WhatsNewStep } from './whats-new-step';
+
+/** 이름은 카탈로그 `v1_17_0.demo.calendars`에 있다. 공휴일은 기본 선택에서 빠진다 */
+const DEMO_CALENDARS = [
+  { id: 'personal', color: CATEGORY_COLORS[6], accountKind: 'cloud', itemCount: 12 },
+  { id: 'school', color: CATEGORY_COLORS[9], accountKind: 'cloud', itemCount: 18 },
+  { id: 'holidays', color: CATEGORY_COLORS[14], accountKind: 'holidays', itemCount: 9 },
+] as const satisfies readonly (Pick<TodoImportCollection, 'color' | 'accountKind' | 'itemCount'> & {
+  id: string;
+})[];
+
+/** 이름은 카탈로그 `v1_17_0.demo.categories`에 있다. 첫 카테고리가 처음 넣을 곳이고 잠시 뒤 둘째로 바뀐다 */
+const DEMO_CATEGORIES = [
+  { id: 1, key: 'daily', color: CATEGORY_COLORS[0], activeCount: 48 },
+  { id: 2, key: 'study', color: CATEGORY_COLORS[9], activeCount: 12 },
+] as const;
+
+/** 제목은 카탈로그 `v1_17_0.demo.todos`에 있다 */
+const DEMO_IMPORTED_TODOS = [
+  { id: 'lecture', localTime: '09:30' },
+  { id: 'groupMeeting', localTime: '15:00' },
+  { id: 'clubDinner', localTime: '19:00' },
+] as const;
 
 type DemoImportedTodoId = (typeof DEMO_IMPORTED_TODOS)[number]['id'];
 
-/** 막대의 접근성 값이 백분율로 읽히는 실제 진행 화면과 같다 */
-const METER_MAX = 100;
+/** 목록 줄의 체크 칸(`Checkbox`의 size-5) */
+const CHECKBOX_SIZE_PT = 20;
+const CHECKBOX_HIT_SLOP = getTouchTargetInset(CHECKBOX_SIZE_PT);
 
 const ROW_ENTERING = FadeIn.duration(ANIMATION.durationMs.slow).reduceMotion(ReduceMotion.System);
 const ROW_LAYOUT = LinearTransition.duration(ANIMATION.durationMs.slow).reduceMotion(
@@ -60,7 +86,7 @@ export function CalendarChoiceDemo() {
   const [pressedSelection, setPressedSelection] = useState<Partial<Record<string, boolean>>>({});
 
   const defaultSelectedKeys = collections
-    .filter(TodoImportCollectionPolicy.isDefaultSelected)
+    .filter((collection) => TodoImportCollectionPolicy.isDefaultSelected(collection))
     .map((collection) => collection.collectionKey);
   const checkedCount = useDemoScript({
     frameCount: defaultSelectedKeys.length,
@@ -70,7 +96,7 @@ export function CalendarChoiceDemo() {
 
   return (
     <WhatsNewStep.Stage accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-      <CalendarSourceList.Group accountName={t('v1_17_0.demo.account')}>
+      <SettingsListGroup label={t('v1_17_0.demo.account')}>
         {collections.map((collection, index) => (
           <Box key={collection.collectionKey}>
             {index > 0 && <SettingsListGroup.Separator />}
@@ -89,18 +115,17 @@ export function CalendarChoiceDemo() {
             />
           </Box>
         ))}
-      </CalendarSourceList.Group>
+      </SettingsListGroup>
     </WhatsNewStep.Stage>
   );
 }
 
-/**
- * 실제 카테고리 단계와 같은 넣을 곳 카드다. 가져올 일정이 아이두 카테고리 한 곳으로 들어가고, 잠시 뒤 넣을 곳이 다른
- * 카테고리로 바뀐다. 넣을 곳을 눌러 직접 바꿔 볼 수도 있다
- */
+/** 실제 카테고리 단계와 같은 넣을 곳 카드다 */
 export function ImportDestinationDemo() {
   const { t } = useTranslation('whatsNew');
-  const collections = useDemoCollections().filter(TodoImportCollectionPolicy.isDefaultSelected);
+  const collections = useDemoCollections().filter((collection) =>
+    TodoImportCollectionPolicy.isDefaultSelected(collection),
+  );
   const [pressedIndex, setPressedIndex] = useState<number | null>(null);
 
   const switchedCount = useDemoScript({
@@ -110,27 +135,17 @@ export function ImportDestinationDemo() {
   });
   const destinationIndex = (pressedIndex ?? switchedCount) % DEMO_CATEGORIES.length;
   const destination = DEMO_CATEGORIES[destinationIndex];
-  const target =
+  // 남은 자리는 실제 화면처럼 서버 한도 모양의 값으로 센다
+  const placement =
     destination == null
       ? null
-      : ({ kind: 'EXISTING_CATEGORY', categoryId: destination.id } as const);
-  // 남은 자리는 실제 화면처럼 서버 한도 모양의 값으로 센다
-  const limits = new Map(
-    DEMO_CATEGORIES.map(({ id, activeCount }) => [
-      id,
-      { maxPerCategory: TODO_LIMITS.MAX_PER_CATEGORY, activeCount },
-    ]),
-  );
-  const placement =
-    target == null
-      ? null
-      : findTargetPlacement(
-          placeImportTargets(
-            collections,
-            Object.fromEntries(collections.map(({ collectionKey }) => [collectionKey, target])),
-            limits,
-          ),
-          target,
+      : createTodoImportPlacement(
+          { kind: 'EXISTING_CATEGORY', categoryId: destination.id },
+          TodoImportCollectionPolicy.calculateItemCount(collections),
+          TodoResourceLimitPolicy.calculateRoomLeft({
+            maxPerCategory: TODO_LIMITS.MAX_PER_CATEGORY,
+            activeCount: destination.activeCount,
+          }),
         );
 
   return (
@@ -143,7 +158,7 @@ export function ImportDestinationDemo() {
         {destination != null && (
           // 넣을 곳이 바뀌면 카드를 새로 그려 바뀐 이름이 스며들듯 나타난다
           <Animated.View key={destination.id} entering={ROW_ENTERING}>
-            <ImportDestinationButton.Card
+            <ImportDestinationInput.Card
               appearance={{
                 name: t(`v1_17_0.demo.categories.${destination.key}`),
                 color: destination.color,
@@ -181,11 +196,7 @@ export function ImportProgressDemo() {
           status={isCreated ? 'done' : 'active'}
           label={t('todoImport:progress.creating')}
         />
-        <Meter
-          value={Math.round((createdCount / DEMO_IMPORTED_TODOS.length) * METER_MAX)}
-          max={METER_MAX}
-          size="medium"
-        />
+        <TodoImportProgress.Meter ratio={createdCount / DEMO_IMPORTED_TODOS.length} />
       </VStack>
       {createdTodos.map(({ id, localTime }) => (
         <Animated.View key={id} entering={ROW_ENTERING} layout={ROW_LAYOUT}>
@@ -214,7 +225,7 @@ export function CalendarImportPlans() {
   const { data: snapshot } = useSuspenseQuery(useGetEntitlementsQueryOptions());
   const formatPlanValue = useFormatPlanValue();
 
-  const { free, premium } = toPlanFeatureComparison(snapshot, 'CALENDAR_IMPORT');
+  const { free, premium } = EntitlementPolicy.getPlanFeatureComparison(snapshot, 'CALENDAR_IMPORT');
 
   return (
     <CalendarImportPlans.Board>
@@ -299,7 +310,60 @@ function PlanSkeleton() {
   );
 }
 
-function useDemoCollections(): ImportCollection[] {
+type DemoTodo = Pick<Todo, 'title' | 'visibility' | 'localTime'>;
+
+interface DemoTodoRowProps extends Omit<
+  ComponentProps<typeof TodoRow>,
+  'left' | 'top' | 'middle' | 'bottom'
+> {
+  todo: DemoTodo;
+  /** 목록처럼 체크가 "끝냄"이라 줄을 긋는다 */
+  isSelected: boolean;
+  onSelectedChange: (isSelected: boolean) => void;
+}
+
+function DemoTodoRow({ todo, isSelected, onSelectedChange, ...rowProps }: DemoTodoRowProps) {
+  const dateFormatContext = useDateFormatContext();
+  // 예시라 설정을 받기까지 기다리지 않고 기본 표기로 먼저 보인다
+  const { data: preference } = useQuery(useGetPreferenceQueryOptions());
+
+  const timeFormat = selectTimeFormat(preference);
+  const timeLabel =
+    todo.localTime == null
+      ? null
+      : formatTimeOfDay(toTimeOfDay(todo.localTime), timeFormat, dateFormatContext);
+
+  return (
+    <TodoRow
+      {...rowProps}
+      left={
+        <TodoRow.Checkbox
+          accessibilityLabel={todo.title}
+          hitSlop={CHECKBOX_HIT_SLOP}
+          isSelected={isSelected}
+          onSelectedChange={onSelectedChange}
+        />
+      }
+      top={
+        <TodoRow.TitleLine
+          label={
+            <TodoRow.Label isCompleted={isSelected} className="flex-1">
+              {todo.title}
+            </TodoRow.Label>
+          }
+          isPrivate={isPrivateVisibility(todo.visibility)}
+        />
+      }
+      middle={
+        timeLabel == null ? undefined : (
+          <TodoRow.ScheduleLine repeat={null} isRepeating={false} timeLabel={timeLabel} />
+        )
+      }
+    />
+  );
+}
+
+function useDemoCollections(): TodoImportCollection[] {
   const { t } = useTranslation('whatsNew');
   const accountName = t('v1_17_0.demo.account');
 

@@ -48,7 +48,7 @@ export function QueryErrorFallback({
   );
 }
 
-type QueryErrorFallbackInlineProps = Pick<BoundaryFallbackProps, 'reset'> & {
+interface QueryErrorFallbackInlineProps extends Pick<BoundaryFallbackProps, 'reset'> {
   message: string;
   /** 줄의 여백·배경·높이. 줄을 감싸는 자리마다 다르다 */
   className?: string;
@@ -57,7 +57,7 @@ type QueryErrorFallbackInlineProps = Pick<BoundaryFallbackProps, 'reset'> & {
   /** 문의하기를 함께 보일 때. 시트·다이얼로그 안에서는 `onInquiry`로 먼저 닫고 받은 href로 간다 */
   hasInquiry?: boolean;
   onInquiry?: (href: Href) => void;
-};
+}
 
 QueryErrorFallback.Inline = function Inline({
   message,
@@ -83,4 +83,9 @@ QueryErrorFallback.Inline = function Inline({
       )}
     </HStack>
   );
+};
+
+/** 실패하면 아무것도 그리지 않는 값 조각(설정 줄 끝 값·개수 배지)의 fallback. 오류 보고는 경계가 한다 */
+QueryErrorFallback.Hidden = function Hidden() {
+  return null;
 };

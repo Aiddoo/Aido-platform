@@ -1,10 +1,9 @@
 import { toInstant } from '@src/shared/date/instant';
 import { defineFixture } from '@src/testing/fixture';
 
+import { voiceNoteDigestSchema, voiceNoteKeyPointSchema } from '../domains/voice-note-digest.model';
 import {
   type VoiceNote,
-  voiceNoteDigestSchema,
-  voiceNoteKeyPointSchema,
   voiceNoteSchema,
   voiceNoteSentenceSchema,
   createVoiceNote,

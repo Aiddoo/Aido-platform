@@ -1,6 +1,7 @@
 import type { AppLogger } from '@src/core/ports/app-logger';
 import type { EnumerableSyncStorage } from '@src/core/ports/sync-storage';
 import { getErrorMessage } from '@src/shared/errors/to-error';
+import { isNotNil } from 'es-toolkit';
 // maxWait(계속 쓰는 중에도 이 시간 안에 한 번은 저장)는 메인 패키지 debounce에 없다
 import { debounce } from 'es-toolkit/compat';
 
@@ -138,7 +139,7 @@ export function createVoiceNoteDraftRepository({
   const findAllOwned = (accountId: string) =>
     findKeys((key) => key.startsWith(createOwnerPrefix(accountId)))
       .map(read)
-      .filter((note): note is VoiceNote => note != null);
+      .filter(isNotNil);
 
   return {
     subscribe: (listener) => {

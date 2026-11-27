@@ -1,7 +1,7 @@
 import type { QueryClient } from '@tanstack/react-query';
 
-import { type FeatureQuota } from '../domains/entitlement.model';
 import { EntitlementPolicy } from '../domains/entitlement.model';
+import { type FeatureQuota } from '../domains/feature-quota.model';
 import { ENTITLEMENT_QUERY_KEYS } from './entitlement-query-keys';
 
 export function getCachedEntitlements(queryClient: QueryClient) {

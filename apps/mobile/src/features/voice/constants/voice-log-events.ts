@@ -6,6 +6,7 @@ export const VOICE_LOG_EVENT = {
   DRAFT_RESTORE_FAILED: 'voice.draft.restore-failed',
   DRAFT_SAVE_FAILED: 'voice.draft.save-failed',
   RECORDING_SAVE_FAILED: 'voice.recording.save-failed',
+  RECORDING_SHARED_SOURCE_SKIPPED: 'voice.recording.shared-source-skipped',
   RECORDING_READ_FAILED: 'voice.recording.read-failed',
   RECORDING_REMOVE_FAILED: 'voice.recording.remove-failed',
   RECORDING_CLEANUP_FAILED: 'voice.recording.cleanup-failed',

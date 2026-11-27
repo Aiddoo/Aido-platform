@@ -1,56 +1,38 @@
-import { TODO_IMPORT_LIMITS } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
-import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
 import { CoachmarkPopover } from '@src/features/device/coachmark/components/coachmark-popover';
 import { useMyAccountId } from '@src/features/identity/user/hooks/use-my-account-id';
-import { CATEGORY_COLORS } from '@src/features/planning/category/constants/todo-category.constants';
-import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
-import { toNewCategoryTarget } from '@src/features/planning/todo-import/apis/todo-import-target.mapper';
 import { toTodoImportSelection } from '@src/features/planning/todo-import/apis/todo-import.mapper';
 import { CalendarPermissionPrompt } from '@src/features/planning/todo-import/components/calendar-permission-prompt';
+import { CalendarSelectionSummary } from '@src/features/planning/todo-import/components/calendar-selection-summary';
 import { CalendarSourceList } from '@src/features/planning/todo-import/components/calendar-source-list';
 import { CategoryMappingList } from '@src/features/planning/todo-import/components/category-mapping-list';
-import { ImportDateSheet } from '@src/features/planning/todo-import/components/import-date-sheet';
-import { ImportDestinationButton } from '@src/features/planning/todo-import/components/import-destination-button';
+import { ConfirmCalendarSelectionButton } from '@src/features/planning/todo-import/components/confirm-calendar-selection-button';
+import { ConfirmImportPlanButton } from '@src/features/planning/todo-import/components/confirm-import-plan-button';
+import { ImportDestinationInput } from '@src/features/planning/todo-import/components/import-destination-input';
 import { ImportEndDateChips } from '@src/features/planning/todo-import/components/import-end-date-chips';
 import { ImportHintButton } from '@src/features/planning/todo-import/components/import-hint-button';
 import { ImportPlacementSummary } from '@src/features/planning/todo-import/components/import-placement-summary';
+import { ImportRangeInput } from '@src/features/planning/todo-import/components/import-range-input';
 import { ImportSourceList } from '@src/features/planning/todo-import/components/import-source-list';
 import { LastTodoImportRow } from '@src/features/planning/todo-import/components/last-todo-import-row';
 import { MissingCalendarHelp } from '@src/features/planning/todo-import/components/missing-calendar-help';
-import { IMPORT_RANGE_PRESETS } from '@src/features/planning/todo-import/constants/todo-import.constants';
 import type { TodoImportStep } from '@src/features/planning/todo-import/constants/todo-import.events';
+import type { TodoImportCollection } from '@src/features/planning/todo-import/domains/todo-import-collection.model';
 import {
-  type ImportCollection,
-  TodoImportCollectionPolicy,
-} from '@src/features/planning/todo-import/domains/todo-import-collection.model';
-import {
-  getDefaultTarget,
-  type ImportTarget,
-  resolveCategoryMode,
-  resolveImportTargets,
   type TodoImportCategoryMode,
-  TodoImportTargetPolicy,
-} from '@src/features/planning/todo-import/domains/todo-import-target.model';
+  type TodoImportPlan,
+  TodoImportPlanPolicy,
+} from '@src/features/planning/todo-import/domains/todo-import-plan.model';
+import { createDefaultTodoImportRange } from '@src/features/planning/todo-import/domains/todo-import-range.model';
+import type { TodoImportTarget } from '@src/features/planning/todo-import/domains/todo-import-target.model';
 import {
-  calculateRemainingCapacity,
-  findActiveTodoImportId,
-  findRejectedTargets,
-  type TodoImportTargetRejection,
+  getTodoImportStartFailure,
+  toRejectedTargetErrors,
 } from '@src/features/planning/todo-import/domains/todo-import.error';
-import {
-  findLastAllowedDate,
-  getRangeEndDate,
-} from '@src/features/planning/todo-import/domains/todo-import.model';
-import { useFormatImportTargetName } from '@src/features/planning/todo-import/hooks/use-format-import-target-name';
-import { useNewCategoryNames } from '@src/features/planning/todo-import/hooks/use-new-category-names';
-import { useOpenCategoryTargetSheet } from '@src/features/planning/todo-import/hooks/use-open-category-target-sheet';
-import {
-  useGetCalendarPermissionQueryOptions,
-  useGetImportCollectionsQueryOptions,
-} from '@src/features/planning/todo-import/queries/todo-import-source.queries';
+import { useFormatTargetRejection } from '@src/features/planning/todo-import/hooks/use-format-target-rejection';
+import { findCachedActiveTodoImport } from '@src/features/planning/todo-import/queries/todo-import-cache';
+import { useGetCalendarPermissionQueryOptions } from '@src/features/planning/todo-import/queries/todo-import-source.queries';
 import {
   useRequestCalendarPermissionMutationOptions,
   useStartTodoImportMutationOptions,
@@ -59,22 +41,15 @@ import {
   todoImportFormSchema,
   type TodoImportFormValues,
 } from '@src/features/planning/todo-import/schemas/todo-import-form.schema';
-import {
-  findTargetAppearance,
-  getCalendarPermissionView,
-} from '@src/features/planning/todo-import/utils/todo-import.view-model';
+import { getCalendarPermissionView } from '@src/features/planning/todo-import/utils/todo-import.view-model';
 import { useTrack } from '@src/shared/analytics';
 import { ANIMATION } from '@src/shared/constants/animation';
-import type { DateKey } from '@src/shared/date/date-key';
-import { formatYearAwareDateKeyLabel } from '@src/shared/date/format/date-format';
-import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useOpenAppSettings } from '@src/shared/hooks/use-open-app-settings';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useStepper } from '@src/shared/hooks/use-stepper';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { type Stepper, useStepper } from '@src/shared/hooks/use-stepper';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
-import { IS_IOS_APP_ON_MAC } from '@src/shared/infra/device/device-info';
 import {
   ArrowRightIcon,
   Box,
@@ -85,7 +60,6 @@ import {
   KeyboardAdaptiveButton,
   QueryErrorBoundary,
   QueryErrorFallback,
-  type QueryErrorFallbackProps,
   ReadableContent,
   SettingsListGroup,
   Spacing,
@@ -95,21 +69,36 @@ import {
   Text,
   TextButton,
   useAppToast,
-  useOpenSheet,
   usePaneSizeClass,
   VStack,
   WordWrapText,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { useMutation, usePrefetchQuery, useQuery, useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
-import { type NavigationAction, router, Stack, useNavigation, usePreventRemove } from 'expo-router';
+import {
+  type NavigationAction,
+  Redirect,
+  Stack,
+  useNavigation,
+  usePreventRemove,
+  useRouter,
+} from 'expo-router';
 import { type ReactNode, Suspense, useDeferredValue, useState } from 'react';
-import { type UseFormReturn, useForm, useFormState, useWatch } from 'react-hook-form';
+import {
+  Controller,
+  FormState,
+  type UseFormReturn,
+  useController,
+  useForm,
+  useFormState,
+  useWatch,
+} from 'react-hook-form';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
-import { isMatching, match } from 'ts-pattern';
+import { isMatching, match, P } from 'ts-pattern';
 
 type TodoImportStepContexts = Record<TodoImportStep, Record<string, never>>;
+type TodoImportForm = UseFormReturn<TodoImportFormValues>;
 
 const TODO_IMPORT_STEPS = [
   'permission',
@@ -118,19 +107,24 @@ const TODO_IMPORT_STEPS = [
   'options',
 ] as const satisfies readonly TodoImportStep[];
 
-type TodoImportForm = UseFormReturn<TodoImportFormValues>;
-
-const MODE_ENTERING = FadeIn.duration(ANIMATION.durationMs.slow).reduceMotion(ReduceMotion.System);
-const DOWN_ARROW_SIZE = 20;
-
-interface StepProps {
-  form: TodoImportForm;
-  /** 단계 제목 위 진행 점 */
-  progress: ReactNode;
-}
+const CATEGORY_MODE_ENTERING = FadeIn.duration(ANIMATION.durationMs.slow).reduceMotion(
+  ReduceMotion.System,
+);
+const DOWN_ARROW_SIZE_PT = 20;
 
 export default function TodoImportSetupScreen() {
   const { t } = useTranslation('todoImport');
+  const queryClient = useQueryClient();
+  // 들어올 때 이미 아는 진행 중인 가져오기가 있으면 그 화면을 보인다. 모르면 시작할 때 서버가 알려 준다
+  const [activeImport] = useState(() => findCachedActiveTodoImport(queryClient));
+
+  if (activeImport != null) {
+    return (
+      <Redirect
+        href={{ pathname: '/todo-import/[importId]', params: { importId: activeImport.id } }}
+      />
+    );
+  }
 
   return (
     <Box className="flex-1 bg-white">
@@ -152,74 +146,35 @@ function TodoImportSetup() {
   const { t } = useTranslation('common');
   const { trackEvent } = useTrack();
   const todayKey = useTodayKey();
-  const navigation = useNavigation();
-  const isCompact = usePaneSizeClass() === 'compact';
+
   const { data: permission } = useSuspenseQuery(useGetCalendarPermissionQueryOptions());
+
   // 이미 허용한 기기는 안내를 건너뛴다. 단계는 URL로 복원하지 않는다
-  const [initialStep] = useState<TodoImportStep>(() =>
+  const [firstStep] = useState<TodoImportStep>(() =>
     permission.status === 'granted' ? 'calendars' : 'permission',
   );
   const stepper = useStepper<TodoImportStepContexts>({
     id: 'todo-import',
-    initial: { step: initialStep },
+    initial: { step: firstStep },
     onStepChange: ({ step }) => trackEvent('todo_import_step_viewed', { step }),
   });
-  const [isLeaving, setIsLeaving] = useState(false);
+  // 칸은 단계 컴포넌트가 구독해, 값이 바뀌어도 단계 조립은 다시 그려지지 않는다
   const form = useForm({
     resolver: zodResolver(todoImportFormSchema),
     defaultValues: {
-      startDate: todayKey,
-      endDate: getRangeEndDate(todayKey, IMPORT_RANGE_PRESETS.month),
+      range: createDefaultTodoImportRange(todayKey),
       collectionKeys: null,
       collections: [],
-      targets: {},
       categoryMode: 'single',
       singleTarget: null,
+      targets: {},
       timeMode: 'TIME',
       visibility: 'PRIVATE',
     },
     mode: 'onChange',
   });
-
-  const isPastFirstStep = stepper.index > 0;
-  const firstStepOrder = TODO_IMPORT_STEPS.indexOf(initialStep);
-  // 휴대폰의 헤더 뒤로 가기·iOS 밀어서 뒤로 가기는 화면을 닫지 않고 앞 단계로 돌아가 고른 값을 지킨다.
-  // 넓은 화면은 메뉴가 상세를 걷어 내며 바꾸므로 막지 않고, 밀어서 닫기만 끈다
-  const disablePrevention = usePreventRemove(
-    isCompact && isPastFirstStep && !isLeaving,
-    ({ data, repeat }) => {
-      if (isSingleStepBack(data.action)) {
-        stepper.history.back();
-        return;
-      }
-      setIsLeaving(true);
-      repeat();
-    },
-  );
-  const handleStepBack = useSingleTap(() => stepper.history.back());
-
-  // 시작을 기다리는 사이 떠났으면 보던 화면 위로 끌고 가지 않는다. 진행 중인 가져오기는 메뉴 행이 알린다
-  const leaveToImport = (importId: string) => {
-    if (!navigation.isFocused()) {
-      return;
-    }
-    setIsLeaving(true);
-    disablePrevention();
-    router.replace({ pathname: '/todo-import/[importId]', params: { importId } });
-  };
-  // 점은 단계 제목 위 같은 흐름에 둬 넓은 화면·큰 글자에서도 제목과 겹치지 않는다
-  const progress = (
-    <Steps.Dots
-      index={TODO_IMPORT_STEPS.indexOf(stepper.step) - firstStepOrder}
-      count={TODO_IMPORT_STEPS.length - firstStepOrder}
-    />
-  );
-  const goBackToCategories = () => {
-    const index = stepper.historySteps.findIndex((entry) => entry.step === 'categories');
-    if (0 <= index && index < stepper.index) {
-      stepper.history.go(index - stepper.index);
-    }
-  };
+  const { isPastFirstStep, isSwipeBackEnabled, leaveToImport } = useStepBackNavigation(stepper);
+  const handleStepBackPress = useSingleTap(() => stepper.history.back());
 
   return (
     <VStack flex={1}>
@@ -229,46 +184,45 @@ function TodoImportSetup() {
           <Stack.Toolbar.Button
             icon={STACK_BACK_ICON}
             accessibilityLabel={t('actions.back')}
-            onPress={handleStepBack}
+            onPress={handleStepBackPress}
           />
         </Stack.Toolbar>
       )}
       {/* Stack.Screen은 내려갈 때 옵션을 되돌리지 않아, 첫 단계로 돌아오면 다시 켜도록 늘 그린다 */}
-      <Stack.Screen options={{ gestureEnabled: isCompact || !isPastFirstStep }} />
+      <Stack.Screen options={{ gestureEnabled: isSwipeBackEnabled }} />
 
       <stepper.Render
-        permission={() => (
+        permission={({ step, history }) => (
           <PermissionStep
-            progress={progress}
-            onGranted={() => stepper.history.replace('calendars')}
+            progress={<StepDots step={step} firstStep={firstStep} />}
+            onGranted={() => history.replace('calendars')}
           />
         )}
-        calendars={() => (
+        calendars={({ step, history }) => (
           <CalendarsStep
             form={form}
-            progress={progress}
-            onNext={() => stepper.history.push('categories')}
+            progress={<StepDots step={step} firstStep={firstStep} />}
+            onNext={() => history.push('categories')}
           />
         )}
-        categories={() => (
-          <QueryErrorBoundary
-            fallback={(props) => <CategoriesStep.Error {...props} progress={progress} />}
-          >
-            <Suspense fallback={<CategoriesStep.Loading progress={progress} />}>
-              <CategoriesStep
-                form={form}
-                progress={progress}
-                onNext={() => stepper.history.push('options')}
-              />
-            </Suspense>
-          </QueryErrorBoundary>
+        categories={({ step, history }) => (
+          <CategoriesStep
+            form={form}
+            progress={<StepDots step={step} firstStep={firstStep} />}
+            onNext={() => history.push('options')}
+          />
         )}
-        options={() => (
+        options={({ step, history }) => (
           <OptionsStep
             form={form}
-            progress={progress}
-            onStarted={leaveToImport}
-            onTargetsRejected={goBackToCategories}
+            progress={<StepDots step={step} firstStep={firstStep} />}
+            onStarted={(importId) => {
+              // 시작을 기다리는 사이 떠났으면 돌아와 다시 누를 수 있게 고른 값은 두고 제출 상태만 푼다
+              if (!leaveToImport(importId)) {
+                form.reset(form.getValues(), { keepDefaultValues: true });
+              }
+            }}
+            onTargetsRejected={() => history.backTo('categories')}
           />
         )}
       />
@@ -276,45 +230,56 @@ function TodoImportSetup() {
   );
 }
 
-function PermissionStep({ progress, onGranted }: { progress: ReactNode; onGranted: () => void }) {
-  const { t } = useTranslation(['todoImport', 'common']);
-  const { data: permission } = useSuspenseQuery(useGetCalendarPermissionQueryOptions());
-  const request = useMutation(useRequestCalendarPermissionMutationOptions());
-  const openSettings = useOpenAppSettings();
+interface PermissionStepProps {
+  progress: ReactNode;
+  onGranted: () => void;
+}
 
-  const view = getCalendarPermissionView(permission, request.data ?? null);
+function PermissionStep({ progress, onGranted }: PermissionStepProps) {
+  const { t } = useTranslation('todoImport');
+  const appSettings = useOpenAppSettings();
+
+  const { data: permission } = useSuspenseQuery(useGetCalendarPermissionQueryOptions());
+
+  const permissionRequest = useMutation(useRequestCalendarPermissionMutationOptions());
+
+  const view = getCalendarPermissionView(permission, permissionRequest.data ?? null);
 
   // 열 때는 상태만 읽고 "계속"을 눌러야 시스템 창을 띄운다
-  const handleContinue = () => {
-    request
+  const handleContinuePress = () => {
+    permissionRequest
       .mutateAsync()
-      .then((answered) => {
-        if (answered.status === 'granted') {
+      .then((answeredPermission) => {
+        if (answeredPermission.status === 'granted') {
           onGranted();
         }
       })
+      // 실패 안내는 mutation의 meta.errorFeedback이 맡는다
       .catch(noop);
   };
 
   return (
     <FormStepLayout
+      testID="todo-import-step-permission"
       title={t('permission.title')}
       progress={progress}
-      footer={match(view)
-        .with('ask', () => (
-          <KeyboardAdaptiveButton isLoading={request.isPending} onPress={handleContinue}>
+      footer={match({ view, canOpenSettings: appSettings.canOpen })
+        .with({ view: 'ask' }, () => (
+          <KeyboardAdaptiveButton
+            isLoading={permissionRequest.isPending}
+            onPress={handleContinuePress}
+          >
             {t('permission.continue')}
           </KeyboardAdaptiveButton>
         ))
-        // 거절한 뒤에는 다시 조르지 않고 설정 열기만 둔다. Mac(Designed for iPad)은 앱 설정 화면이 열리지 않아
-        // 글로 가는 길만 보인다
-        .with('denied', 'blocked', () =>
-          IS_IOS_APP_ON_MAC ? null : (
-            <KeyboardAdaptiveButton onPress={openSettings}>
-              {t('permission.openSettings')}
-            </KeyboardAdaptiveButton>
-          ),
-        )
+        // 거절한 뒤에는 다시 조르지 않고 설정 열기만 둔다
+        .with({ view: P.union('denied', 'blocked'), canOpenSettings: true }, () => (
+          <KeyboardAdaptiveButton onPress={appSettings.open}>
+            {t('permission.openSettings')}
+          </KeyboardAdaptiveButton>
+        ))
+        // 설정 화면이 없는 기기는 글로 가는 길만 보인다
+        .with({ view: P.union('denied', 'blocked'), canOpenSettings: false }, () => null)
         .exhaustive()}
     >
       <CalendarPermissionPrompt view={view} />
@@ -322,81 +287,36 @@ function PermissionStep({ progress, onGranted }: { progress: ReactNode; onGrante
   );
 }
 
-function CalendarsStep({ form, progress, onNext }: StepProps & { onNext: () => void }) {
+interface CalendarsAndCategoriesStepProps {
+  form: TodoImportForm;
+  progress: ReactNode;
+  onNext: () => void;
+}
+
+function CalendarsStep({ form, progress, onNext }: CalendarsAndCategoriesStepProps) {
   const { t } = useTranslation(['todoImport', 'common']);
-  const openSheet = useOpenSheet();
-  const todayKey = useTodayKey();
-  const dateFormatContext = useDateFormatContext();
-  const [range, setRange] = useImportRange(form);
-  const [collectionKeys, setCollectionKeys] = useSelectedCollectionKeys(form);
+
+  const { field: range } = useController({ control: form.control, name: 'range' });
+  const { field: collectionKeys } = useController({
+    control: form.control,
+    name: 'collectionKeys',
+  });
   // 기간을 바꿔 다시 읽는 동안 앞 목록을 흐리게 두고 스켈레톤으로 바꾸지 않는다
-  const listStartDate = useDeferredValue(range.startDate);
-  const listEndDate = useDeferredValue(range.endDate);
-  const { data: collections } = useQuery(
-    useGetImportCollectionsQueryOptions({ startDate: listStartDate, endDate: listEndDate }),
-  );
-  const { data: snapshot } = useQuery(useGetEntitlementsQueryOptions());
+  const listedStartDate = useDeferredValue(range.value.startDate);
+  const listedEndDate = useDeferredValue(range.value.endDate);
 
-  const horizonDays =
-    snapshot == null ? null : EntitlementPolicy.findLimit(snapshot, 'CALENDAR_IMPORT');
-  const lastAllowedDate = findLastAllowedDate(todayKey, horizonDays);
-  const isListStale = listStartDate !== range.startDate || listEndDate !== range.endDate;
-  const selected = TodoImportCollectionPolicy.getSelectedCollections(
-    collections ?? [],
-    collectionKeys,
-  );
-  const isOverLimit = TodoImportCollectionPolicy.isOverImportLimit(selected);
-  const formatDate = (dateKey: DateKey) =>
-    formatYearAwareDateKeyLabel(dateKey, todayKey, dateFormatContext);
+  const isListStale =
+    listedStartDate !== range.value.startDate || listedEndDate !== range.value.endDate;
 
-  const openDateSheet = ({
-    title,
-    value,
-    minimum,
-  }: {
-    title: string;
-    value: DateKey;
-    minimum: DateKey;
-  }) =>
-    openSheet<DateKey>((close) => (
-      <ImportDateSheet
-        title={title}
-        value={value}
-        onChange={close}
-        minimum={minimum}
-        maximum={lastAllowedDate}
-      />
-    ));
-
-  const handleStartPress = async () => {
-    const startDate = await openDateSheet({
-      title: t('range.start'),
-      value: range.startDate,
-      minimum: todayKey,
-    });
-    if (startDate != null) {
-      setRange({ startDate, endDate: range.endDate < startDate ? startDate : range.endDate });
-    }
-  };
-
-  const handleEndPress = async () => {
-    const endDate = await openDateSheet({
-      title: t('range.end'),
-      value: range.endDate,
-      minimum: range.startDate,
-    });
-    if (endDate != null) {
-      setRange({ ...range, endDate });
-    }
-  };
-
-  const handleNext = () => {
+  // 고른 캘린더(일정 수 포함)를 고정해 다음 단계와 시작 요청이 화면에 보인 수 그대로 쓴다
+  const confirmSelection = (selected: TodoImportCollection[]) => {
     form.setValue('collections', selected, { shouldDirty: true });
     onNext();
   };
 
   return (
     <FormStepLayout
+      testID="todo-import-step-calendars"
       title={t('calendars.title')}
       progress={progress}
       footer={
@@ -404,36 +324,27 @@ function CalendarsStep({ form, progress, onNext }: StepProps & { onNext: () => v
         <VStack className="gap-2 pt-3">
           {/* 버튼이 왜 꺼졌는지 목록 끝까지 내리지 않아도 버튼 바로 위에서 보인다 */}
           <StyledSafeAreaView edges={['left', 'right']} className="px-4">
-            {isOverLimit ? (
-              <InlineAlert
-                status="danger"
-                title={t('calendars.tooMany', { limit: TODO_IMPORT_LIMITS.MAX_ITEMS_PER_IMPORT })}
-              />
-            ) : (
-              <VStack gap={2}>
-                <Text size="b4" shade={6} align="center" className="tabular-nums">
-                  {t('calendars.selectedCount', {
-                    count: TodoImportCollectionPolicy.calculateItemCount(selected),
-                  })}
-                </Text>
-                {/* 더 고를 수 없어 막힌 캘린더 줄의 이유 */}
-                {TodoImportCollectionPolicy.isAtCollectionLimit(selected) && (
-                  <Text size="b4" shade={6} align="center">
-                    {t('calendars.collectionLimit', { limit: TODO_IMPORT_LIMITS.MAX_COLLECTIONS })}
-                  </Text>
-                )}
-              </VStack>
-            )}
+            <CalendarSelectionSummary
+              startDate={listedStartDate}
+              endDate={listedEndDate}
+              value={collectionKeys.value}
+            />
           </StyledSafeAreaView>
-          <KeyboardAdaptiveButton
-            isDisabled={selected.length === 0 || isOverLimit || isListStale}
-            onPress={handleNext}
+          <ConfirmCalendarSelectionButton
+            testID="todo-import-next"
+            startDate={listedStartDate}
+            endDate={listedEndDate}
+            value={collectionKeys.value}
+            // 기간을 바꿔 다시 읽는 동안에는 앞 목록의 수로 넘기지 않는다
+            isDisabled={isListStale}
+            onConfirm={confirmSelection}
           >
             {t('common:actions.continue')}
-          </KeyboardAdaptiveButton>
+          </ConfirmCalendarSelectionButton>
         </VStack>
       }
     >
+      {/* 지난 가져오기가 없으면 줄도 간격도 없다 */}
       <LastTodoImportRow className="mb-5" />
 
       <WordWrapText size="b3" shade={6}>
@@ -442,32 +353,16 @@ function CalendarsStep({ form, progress, onNext }: StepProps & { onNext: () => v
 
       <Spacing size={20} />
 
-      <Text size="b2" weight="semibold" shade={9} accessibilityRole="header">
-        {t('range.title')}
-      </Text>
+      <FieldTitle>{t('range.title')}</FieldTitle>
       <Spacing size={8} />
-      <SettingsListGroup>
-        <SettingsListGroup.Item
-          label={t('range.start')}
-          value={<SettingsListGroup.Value>{formatDate(range.startDate)}</SettingsListGroup.Value>}
-          accessibilityLabel={`${t('range.start')}, ${formatDate(range.startDate)}`}
-          onPress={handleStartPress}
-        />
-        <SettingsListGroup.Separator />
-        <SettingsListGroup.Item
-          label={t('range.end')}
-          value={<SettingsListGroup.Value>{formatDate(range.endDate)}</SettingsListGroup.Value>}
-          accessibilityLabel={`${t('range.end')}, ${formatDate(range.endDate)}`}
-          onPress={handleEndPress}
-        />
-      </SettingsListGroup>
+      <ImportRangeInput value={range.value} onChange={range.onChange} />
       <Spacing size={12} />
-      <QueryErrorBoundary fallback={ImportEndDateChips.Error}>
+      {/* 기간 안내를 읽지 못해도 서버가 시작할 때 기간을 다시 확인해 칩만 숨긴다 */}
+      <QueryErrorBoundary fallback={QueryErrorFallback.Hidden}>
         <Suspense fallback={<ImportEndDateChips.Loading />}>
           <ImportEndDateChips
-            startDate={range.startDate}
-            value={range.endDate}
-            onValueChange={(endDate) => setRange({ ...range, endDate })}
+            value={range.value}
+            onChange={range.onChange}
             accessibilityLabel={t('range.title')}
           />
         </Suspense>
@@ -475,21 +370,19 @@ function CalendarsStep({ form, progress, onNext }: StepProps & { onNext: () => v
 
       <Spacing size={24} />
 
-      <Text size="b2" weight="semibold" shade={9} accessibilityRole="header">
-        {t('calendars.listTitle')}
-      </Text>
+      <FieldTitle>{t('calendars.listTitle')}</FieldTitle>
       <Spacing size={8} />
       <Box className={cn(isListStale && 'opacity-50')}>
         <QueryErrorBoundary
           fallback={CalendarSourceList.Error}
-          resetKeys={[listStartDate, listEndDate]}
+          resetKeys={[listedStartDate, listedEndDate]}
         >
           <Suspense fallback={<CalendarSourceList.Loading />}>
             <CalendarSourceList
-              startDate={listStartDate}
-              endDate={listEndDate}
-              value={collectionKeys}
-              onValueChange={setCollectionKeys}
+              startDate={listedStartDate}
+              endDate={listedEndDate}
+              value={collectionKeys.value}
+              onChange={collectionKeys.onChange}
             />
           </Suspense>
         </QueryErrorBoundary>
@@ -502,108 +395,69 @@ function CalendarsStep({ form, progress, onNext }: StepProps & { onNext: () => v
   );
 }
 
-function CategoriesStep({ form, progress, onNext }: StepProps & { onNext: () => void }) {
+function CategoriesStep({ form, progress, onNext }: CalendarsAndCategoriesStepProps) {
   const { t } = useTranslation(['todoImport', 'common']);
   const fontScaledSize = useFontScaledSize();
-  const [collections] = useWatch({ control: form.control, name: ['collections'] });
-  const [{ categoryMode, singleTarget, targets }, setTargetChoice] = useTargetChoice(form);
+
+  const [collections, categoryMode, singleTarget, targets] = useWatch({
+    control: form.control,
+    name: ['collections', 'categoryMode', 'singleTarget', 'targets'],
+  });
   const errorMessages = useTargetErrorMessages(form, collections);
-  const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
-  // 넣을 곳 시트가 기다리지 않고 바로 올라오도록 요금제(새 카테고리 자리)를 미리 받아 둔다
-  usePrefetchQuery(useGetEntitlementsQueryOptions());
-  const names = useNewCategoryNames();
-  const formatTargetName = useFormatImportTargetName();
-  const openTargetSheet = useOpenCategoryTargetSheet();
-  const [isModeSwitched, setIsModeSwitched] = useState(false);
 
-  const { categories } = categoriesResult;
-  const defaultTarget = getDefaultTarget(
-    categories,
-    toNewCategoryTarget(null, { palette: CATEGORY_COLORS, names }),
-  );
-  const destination = singleTarget ?? defaultTarget;
-  const mode = resolveCategoryMode(collections, categoryMode);
-  const assignedTargets = resolveImportTargets(
-    collections,
-    { categoryMode, singleTarget, targets },
-    defaultTarget,
-  );
-  // 고른 카테고리를 그사이 삭제했으면 다시 고를 때까지 넘기지 않는다
-  const hasMissingTarget = Object.values(assignedTargets).some((target) =>
-    TodoImportTargetPolicy.isMissingCategory(target, categories),
-  );
-  const hasRejectedTargets = Object.keys(errorMessages).length > 0;
-  const canSplit = 1 < collections.length;
-  const [firstCollection] = collections;
+  const [isCategoryModeSwitched, setIsCategoryModeSwitched] = useState(false);
+
+  const plan: TodoImportPlan = { collections, categoryMode, singleTarget, targets };
+  const hasRejectedTargets = 0 < Object.keys(errorMessages).length;
   // 처음 그릴 때(앞 단계에서 돌아올 때 포함)는 그대로 두고, 넣는 방법을 바꿀 때만 스며들듯 바뀐다
-  const modeEntering = isModeSwitched ? MODE_ENTERING : undefined;
-  const downArrowSize = fontScaledSize(DOWN_ARROW_SIZE);
+  const categoryModeEntering = isCategoryModeSwitched ? CATEGORY_MODE_ENTERING : undefined;
+  const downArrowSize = fontScaledSize(DOWN_ARROW_SIZE_PT);
 
-  const switchMode = (nextMode: TodoImportCategoryMode) => {
-    setIsModeSwitched(true);
-    setTargetChoice({ categoryMode: nextMode });
+  // 캘린더마다 고른 값은 한 곳에 넣는 동안에도 폼에 남아 다시 나누면 돌아온다
+  const switchCategoryMode = (nextMode: TodoImportCategoryMode) => {
+    setIsCategoryModeSwitched(true);
+    form.setValue('categoryMode', nextMode, { shouldDirty: true });
   };
 
-  const openDestinationSheet = () => {
-    if (firstCollection == null) {
-      return;
+  // 서버가 거절한 표시는 그곳을 바꾸면 지운다
+  const chooseDestination = (target: TodoImportTarget) => {
+    form.clearErrors('targets');
+    form.setValue('singleTarget', target, { shouldDirty: true });
+  };
+
+  // 다른 캘린더의 표시는 그 캘린더를 바꿀 때까지 남기고, 같은 곳을 다시 고른 캘린더의 표시도 남긴다
+  const chooseCollectionTarget = (collectionKey: string, target: TodoImportTarget) => {
+    const chosenTargets = form.getValues('targets');
+    if (chosenTargets[collectionKey] !== target) {
+      form.clearErrors(`targets.${collectionKey}`);
     }
-    openTargetSheet({
-      subject: canSplit
-        ? { kind: 'allCalendars', collections }
-        : { kind: 'calendar', collection: firstCollection },
-      current: destination,
-      otherTargets: [],
-      onChoose: (target) => setTargetChoice({ singleTarget: target }),
-    });
+    form.setValue('targets', { ...chosenTargets, [collectionKey]: target }, { shouldDirty: true });
   };
 
-  const openCalendarSheet = (collection: ImportCollection) => {
-    const current = assignedTargets[collection.collectionKey];
-    if (current == null) {
-      return;
-    }
-    openTargetSheet({
-      subject: { kind: 'calendar', collection },
-      current,
-      otherTargets: collections.flatMap(({ collectionKey }) => {
-        const target = assignedTargets[collectionKey];
-        return collectionKey === collection.collectionKey || target == null ? [] : [target];
-      }),
-      onChoose: (target) =>
-        setTargetChoice({
-          targets: { ...form.getValues('targets'), [collection.collectionKey]: target },
-        }),
-    });
-  };
-
-  const handleNext = () => {
-    // 처음 넣을 곳을 고른 값으로 고정해 옵션 단계와 시작 요청이 화면에 보인 곳 그대로 보낸다
+  // 처음 넣을 곳을 고른 값으로 고정해 옵션 단계와 시작 요청이 화면에 보인 곳 그대로 보낸다
+  const confirmPlan = (destination: TodoImportTarget) => {
     form.setValue('singleTarget', destination, { shouldDirty: true });
     onNext();
   };
 
   return (
     <FormStepLayout
+      testID="todo-import-step-categories"
       title={t('categories.title')}
       progress={progress}
       footer={
         <VStack className="gap-2 pt-3">
           <StyledSafeAreaView edges={['left', 'right']} className="px-4">
-            <QueryErrorBoundary fallback={ImportPlacementSummary.Error}>
-              <Suspense fallback={<ImportPlacementSummary.Loading />}>
-                <ImportPlacementSummary
-                  collections={collections}
-                  targets={assignedTargets}
-                  destination={destination}
-                  mode={mode}
-                />
+            {/* 넣을 곳 카드·캘린더 줄이 같은 조회의 오류와 다시 시도를 보여 요약 자리는 비운다 */}
+            <QueryErrorBoundary fallback={QueryErrorFallback.Hidden}>
+              <Suspense fallback={<ImportPlacementSummary.Loading className="self-center" />}>
+                <ImportPlacementSummary plan={plan} />
               </Suspense>
             </QueryErrorBoundary>
           </StyledSafeAreaView>
-          <KeyboardAdaptiveButton isDisabled={hasMissingTarget} onPress={handleNext}>
+          <ConfirmImportPlanButton testID="todo-import-next" plan={plan} onConfirm={confirmPlan}>
             {t('common:actions.continue')}
-          </KeyboardAdaptiveButton>
+          </ConfirmImportPlanButton>
         </VStack>
       }
     >
@@ -617,16 +471,13 @@ function CategoriesStep({ form, progress, onNext }: StepProps & { onNext: () => 
         </>
       )}
 
-      {/* 고른 값은 폼에 남아 넣는 방법을 다시 바꾸면 돌아온다 */}
-      {match(mode)
+      {match(TodoImportPlanPolicy.getCategoryMode(plan))
         .with('single', () => (
-          <Animated.View key="single" entering={modeEntering}>
+          <Animated.View key="single" entering={categoryModeEntering}>
             <Spacing size={24} />
 
             <HStack align="center" gap={6}>
-              <Text size="b2" weight="semibold" shade={9} accessibilityRole="header">
-                {t('categories.sourceLabel')}
-              </Text>
+              <FieldTitle>{t('categories.sourceLabel')}</FieldTitle>
               <ImportHintButton
                 label={t('categories.sourceHintLabel')}
                 description={t('categories.sourceHint', {
@@ -635,7 +486,7 @@ function CategoriesStep({ form, progress, onNext }: StepProps & { onNext: () => 
               />
             </HStack>
             <Spacing size={8} />
-            <ImportSourceList collections={collections} />
+            <ImportSourceList collections={plan.collections} />
 
             <Spacing size={8} />
             <Box
@@ -652,17 +503,15 @@ function CategoriesStep({ form, progress, onNext }: StepProps & { onNext: () => 
             <Spacing size={8} />
 
             <HStack align="center" gap={6}>
-              <Text size="b2" weight="semibold" shade={9} accessibilityRole="header">
-                {t('categories.destinationLabel')}
-              </Text>
+              <FieldTitle>{t('categories.destinationLabel')}</FieldTitle>
               <ImportHintButton
                 label={t('categories.destinationHintLabel')}
                 description={t('categories.destinationHint')}
               />
             </HStack>
             <Spacing size={8} />
-            <QueryErrorBoundary fallback={ImportDestinationButton.Error}>
-              <Suspense fallback={<ImportDestinationButton.Loading />}>
+            <QueryErrorBoundary fallback={ImportDestinationInput.Error}>
+              <Suspense fallback={<ImportDestinationInput.Loading />}>
                 {/* 처음 한 번 넣을 곳을 짚는다. 누름은 아래 카드로 넘겨 첫 탭이 안내만 닫지 않는다 */}
                 <CoachmarkPopover
                   kind="todo-import-destination"
@@ -673,23 +522,22 @@ function CategoriesStep({ form, progress, onNext }: StepProps & { onNext: () => 
                   avoidCollisions
                   isPassThrough
                 >
-                  <ImportDestinationButton
-                    target={destination}
-                    collections={collections}
+                  <ImportDestinationInput
+                    plan={plan}
                     errorMessage={Object.values(errorMessages)[0] ?? null}
-                    onPress={openDestinationSheet}
+                    onChange={chooseDestination}
                   />
                 </CoachmarkPopover>
               </Suspense>
             </QueryErrorBoundary>
 
-            {canSplit && (
+            {TodoImportPlanPolicy.canSplit(plan) && (
               <>
                 <Spacing size={12} />
                 <TextButton
                   variant="arrow"
                   className="self-start"
-                  onPress={() => switchMode('separate')}
+                  onPress={() => switchCategoryMode('separate')}
                 >
                   {t('categories.splitLink')}
                 </TextButton>
@@ -698,35 +546,29 @@ function CategoriesStep({ form, progress, onNext }: StepProps & { onNext: () => 
           </Animated.View>
         ))
         .with('separate', () => (
-          <Animated.View key="separate" entering={modeEntering}>
+          <Animated.View key="separate" entering={categoryModeEntering}>
             <Spacing size={24} />
 
             <HStack align="center" justify="between" gap={12} className="flex-wrap">
-              <Text size="b2" weight="semibold" shade={9} accessibilityRole="header">
-                {t('categories.separate.title')}
-              </Text>
-              <TextButton onPress={() => switchMode('single')}>
+              <FieldTitle>{t('categories.separate.title')}</FieldTitle>
+              <TextButton onPress={() => switchCategoryMode('single')}>
                 {t('categories.separate.joinAll')}
               </TextButton>
             </HStack>
             <Spacing size={8} />
             <QueryErrorBoundary fallback={CategoryMappingList.Error}>
-              <Suspense fallback={<CategoryMappingList.Loading rowCount={collections.length} />}>
+              <Suspense
+                fallback={<CategoryMappingList.Loading rowCount={plan.collections.length} />}
+              >
                 <CategoryMappingList
-                  collections={collections}
-                  targets={assignedTargets}
+                  plan={plan}
                   errorMessages={errorMessages}
-                  onItemPress={openCalendarSheet}
+                  onItemChange={chooseCollectionTarget}
                 />
+                <Spacing size={8} />
+                <CategoryMappingList.Note plan={plan} />
               </Suspense>
             </QueryErrorBoundary>
-            <Spacing size={8} />
-            <WordWrapText size="b4" shade={6}>
-              {t('categories.separate.note', {
-                // 문장 안에서는 "새 · " 표시 없이 이름만 쓴다
-                name: findTargetAppearance(destination, categories)?.name ?? formatTargetName(null),
-              })}
-            </WordWrapText>
           </Animated.View>
         ))
         .exhaustive()}
@@ -734,69 +576,24 @@ function CategoriesStep({ form, progress, onNext }: StepProps & { onNext: () => 
   );
 }
 
-/** 받은 뒤와 같은 제목·설명·넣을 곳 카드 자리 */
-CategoriesStep.Loading = function Loading({ progress }: Pick<StepProps, 'progress'>) {
-  const { t } = useTranslation(['todoImport', 'common']);
-
-  return (
-    <FormStepLayout
-      title={t('categories.title')}
-      progress={progress}
-      footer={
-        <KeyboardAdaptiveButton isDisabled>{t('common:actions.continue')}</KeyboardAdaptiveButton>
-      }
-    >
-      <WordWrapText size="b3" shade={6}>
-        {t('categories.description')}
-      </WordWrapText>
-      <Spacing size={24} />
-      <ImportDestinationButton.Loading />
-    </FormStepLayout>
-  );
-};
-
-/** 아이두 카테고리를 읽지 못하면 넣을 곳을 고를 수 없어 이 단계 안에서 다시 시도한다 */
-CategoriesStep.Error = function ErrorFallback({
-  progress,
-  reset,
-}: Pick<StepProps, 'progress'> & QueryErrorFallbackProps) {
-  const { t } = useTranslation(['todoImport', 'common']);
-
-  return (
-    <FormStepLayout
-      title={t('categories.title')}
-      progress={progress}
-      footer={
-        <KeyboardAdaptiveButton isDisabled>{t('common:actions.continue')}</KeyboardAdaptiveButton>
-      }
-    >
-      <QueryErrorFallback.Inline
-        message={t('categories.loadFailed')}
-        reset={reset}
-        className="rounded-2xl bg-gray-1 px-4 py-3"
-      />
-    </FormStepLayout>
-  );
-};
-
-function OptionsStep({
-  form,
-  progress,
-  onStarted,
-  onTargetsRejected,
-}: StepProps & {
+interface OptionsStepProps {
+  form: TodoImportForm;
+  progress: ReactNode;
   onStarted: (importId: string) => void;
   onTargetsRejected: () => void;
-}) {
+}
+
+function OptionsStep({ form, progress, onStarted, onTargetsRejected }: OptionsStepProps) {
   const { t } = useTranslation('todoImport');
   const toast = useAppToast();
   const accountId = useMyAccountId();
   const calendarImportGate = useEntitlementGate('CALENDAR_IMPORT', { surface: 'todo_import' });
-  const [{ timeMode, visibility }, setImportOptions] = useImportOptions(form);
+  const formatTargetRejection = useFormatTargetRejection();
+
   const startImport = useMutation(useStartTodoImportMutationOptions());
 
   // 실패는 RHF가 실패로 알아 다시 누를 수 있게 handleSubmit 밖 호출부에서 받는다
-  const saveImport = form.handleSubmit(async (values) => {
+  const submitImport = form.handleSubmit(async (values) => {
     if (accountId == null) {
       return;
     }
@@ -812,39 +609,36 @@ function OptionsStep({
   });
 
   const handleStartError = (error: unknown) => {
-    const activeImportId = findActiveTodoImportId(error);
-    if (activeImportId != null) {
-      onStarted(activeImportId);
-      return;
-    }
-    if (calendarImportGate.promptIfBlockedError(error)) {
-      return;
-    }
-    const rejections = findRejectedTargets(error);
-    if (rejections.length > 0) {
-      showRejectedTargets(form, rejections, toRejectionMessage);
-      onTargetsRejected();
-    }
+    match(getTodoImportStartFailure(error))
+      .with({ kind: 'alreadyActive' }, ({ importId }) => onStarted(importId))
+      .with({ kind: 'planLimit' }, () => {
+        calendarImportGate.promptIfBlockedError(error);
+      })
+      .with({ kind: 'targetsRejected' }, ({ rejections }) => {
+        const rejectedTargets = toRejectedTargetErrors(
+          toTodoImportSelection(form.getValues()),
+          rejections,
+        );
+        for (const { collectionKey, rejection } of rejectedTargets) {
+          form.setError(`targets.${collectionKey}`, {
+            type: 'server',
+            message: formatTargetRejection(rejection),
+          });
+        }
+        onTargetsRejected();
+      })
+      // 그 밖의 실패는 mutation이 알린다
+      .with({ kind: 'other' }, noop)
+      .exhaustive();
   };
 
-  const toRejectionMessage = (rejection: TodoImportTargetRejection) =>
-    match(rejection.reason)
-      .with('CAPACITY', () =>
-        t('categories.rejected.capacity', {
-          expected: rejection.expected ?? 0,
-          count: calculateRemainingCapacity(rejection),
-        }),
-      )
-      .with('CATEGORY_NAME_TAKEN', () => t('categories.rejected.nameTaken'))
-      .with('CATEGORY_NOT_FOUND', () => t('categories.rejected.notFound'))
-      .exhaustive();
-
   const handleImportPress = useSingleTap(() => {
-    saveImport().catch(handleStartError);
+    submitImport().catch(handleStartError);
   });
 
   return (
     <FormStepLayout
+      testID="todo-import-step-options"
       title={t('options.title')}
       progress={progress}
       footer={
@@ -854,113 +648,128 @@ function OptionsStep({
               {t('options.disclosure')}
             </WordWrapText>
           </StyledSafeAreaView>
-          <KeyboardAdaptiveButton
-            isLoading={startImport.isPending}
-            isDisabled={accountId == null}
-            onPress={handleImportPress}
-          >
-            {t('options.import')}
-          </KeyboardAdaptiveButton>
+          <FormState
+            control={form.control}
+            render={({ isSubmitSuccessful }) => (
+              <KeyboardAdaptiveButton
+                testID="todo-import-start"
+                // 시작하면 진행 화면으로 바뀌는 동안에도 같은 값이 남는다. 그동안 다시 시작하지 않는다
+                isLoading={startImport.isPending || isSubmitSuccessful}
+                isDisabled={accountId == null}
+                onPress={handleImportPress}
+              >
+                {t('options.import')}
+              </KeyboardAdaptiveButton>
+            )}
+          />
         </VStack>
       }
     >
       <SettingsListGroup>
-        <SettingsListGroup.Toggle
-          label={t('options.includeTime')}
-          description={t('options.includeTimeDescription')}
-          isSelected={timeMode === 'TIME'}
-          onSelectedChange={(isSelected) =>
-            setImportOptions({ timeMode: isSelected ? 'TIME' : 'DATE_ONLY' })
-          }
+        <Controller
+          control={form.control}
+          name="timeMode"
+          render={({ field }) => (
+            <SettingsListGroup.Toggle
+              label={t('options.includeTime')}
+              description={t('options.includeTimeDescription')}
+              isSelected={field.value === 'TIME'}
+              onSelectedChange={(isSelected) => field.onChange(isSelected ? 'TIME' : 'DATE_ONLY')}
+            />
+          )}
         />
         <SettingsListGroup.Separator />
-        <SettingsListGroup.Toggle
-          label={t('options.shareWithFriends')}
-          description={t('options.shareWithFriendsDescription')}
-          isSelected={visibility === 'PUBLIC'}
-          onSelectedChange={(isSelected) =>
-            setImportOptions({ visibility: isSelected ? 'PUBLIC' : 'PRIVATE' })
-          }
+        <Controller
+          control={form.control}
+          name="visibility"
+          render={({ field }) => (
+            <SettingsListGroup.Toggle
+              label={t('options.shareWithFriends')}
+              description={t('options.shareWithFriendsDescription')}
+              isSelected={field.value === 'PUBLIC'}
+              onSelectedChange={(isSelected) => field.onChange(isSelected ? 'PUBLIC' : 'PRIVATE')}
+            />
+          )}
         />
       </SettingsListGroup>
     </FormStepLayout>
   );
 }
 
-function useImportRange(form: TodoImportForm) {
-  const [startDate, endDate] = useWatch({ control: form.control, name: ['startDate', 'endDate'] });
-  const setRange = (range: { startDate: DateKey; endDate: DateKey }) => {
-    form.setValue('startDate', range.startDate, { shouldDirty: true, shouldValidate: true });
-    form.setValue('endDate', range.endDate, { shouldDirty: true, shouldValidate: true });
-  };
-
-  return [{ startDate, endDate }, setRange] as const;
+interface StepDotsProps {
+  step: TodoImportStep;
+  firstStep: TodoImportStep;
 }
 
-function useSelectedCollectionKeys(form: TodoImportForm) {
-  const [collectionKeys] = useWatch({ control: form.control, name: ['collectionKeys'] });
-  const setCollectionKeys = (keys: string[]) =>
-    form.setValue('collectionKeys', keys, { shouldDirty: true });
+// 점은 단계 제목 위 같은 흐름에 둬 넓은 화면·큰 글자에서도 제목과 겹치지 않는다
+function StepDots({ step, firstStep }: StepDotsProps) {
+  const firstStepOrder = TODO_IMPORT_STEPS.indexOf(firstStep);
 
-  return [collectionKeys, setCollectionKeys] as const;
+  return (
+    <Steps.Dots
+      index={TODO_IMPORT_STEPS.indexOf(step) - firstStepOrder}
+      count={TODO_IMPORT_STEPS.length - firstStepOrder}
+    />
+  );
 }
 
-function useTargetChoice(form: TodoImportForm) {
-  const [categoryMode, singleTarget, targets] = useWatch({
-    control: form.control,
-    name: ['categoryMode', 'singleTarget', 'targets'],
-  });
-  // 서버가 거절한 표시는 그곳을 바꾸면 지운다. 다른 캘린더의 표시는 그 캘린더를 바꿀 때까지 남긴다.
-  // 캘린더마다 고른 값은 한 곳에 넣는 동안에도 남겨 다시 나누면 돌아온다
-  const setTargetChoice = (choice: {
-    categoryMode?: TodoImportCategoryMode;
-    singleTarget?: ImportTarget;
-    targets?: Record<string, ImportTarget>;
-  }) => {
-    if (choice.categoryMode != null) {
-      form.setValue('categoryMode', choice.categoryMode, { shouldDirty: true });
-    }
-    if (choice.singleTarget != null) {
-      form.clearErrors('targets');
-      form.setValue('singleTarget', choice.singleTarget, { shouldDirty: true });
-    }
-    if (choice.targets != null) {
-      const previous = form.getValues('targets');
-      for (const [collectionKey, target] of Object.entries(choice.targets)) {
-        if (previous[collectionKey] !== target) {
-          form.clearErrors(`targets.${collectionKey}`);
-        }
+interface FieldTitleProps {
+  children: string;
+}
+
+function FieldTitle({ children }: FieldTitleProps) {
+  return (
+    <Text size="b2" weight="semibold" shade={9} accessibilityRole="header">
+      {children}
+    </Text>
+  );
+}
+
+interface StepBackNavigation {
+  isPastFirstStep: boolean;
+  isSwipeBackEnabled: boolean;
+  /** 진행 화면으로 바꿨으면 true, 기다리는 사이 떠나 바꾸지 않았으면 false다 */
+  leaveToImport: (importId: string) => boolean;
+}
+
+function useStepBackNavigation(stepper: Stepper<TodoImportStepContexts>): StepBackNavigation {
+  const router = useRouter();
+  const navigation = useNavigation();
+  const isCompact = usePaneSizeClass() === 'compact';
+  const [isLeaving, setIsLeaving] = useState(false);
+
+  const isPastFirstStep = 0 < stepper.index;
+  // 휴대폰의 뒤로 가기는 화면을 닫지 않고 앞 단계로 돌아가 고른 값을 지킨다. 넓은 화면은 밀어서 닫기만 끈다
+  const allowRemove = usePreventRemove(
+    isCompact && isPastFirstStep && !isLeaving,
+    ({ data, repeat }) => {
+      if (isSingleStepBack(data.action)) {
+        stepper.history.back();
+        return;
       }
-      form.setValue('targets', choice.targets, { shouldDirty: true });
+      setIsLeaving(true);
+      repeat();
+    },
+  );
+
+  // 시작을 기다리는 사이 떠났으면 보던 화면 위로 끌고 가지 않는다. 진행 중인 가져오기는 메뉴 행이 알린다
+  const leaveToImport = (importId: string) => {
+    if (!navigation.isFocused()) {
+      return false;
     }
+    setIsLeaving(true);
+    allowRemove();
+    router.replace({ pathname: '/todo-import/[importId]', params: { importId } });
+    return true;
   };
 
-  return [{ categoryMode, singleTarget, targets }, setTargetChoice] as const;
-}
-
-function useImportOptions(form: TodoImportForm) {
-  const [timeMode, visibility] = useWatch({
-    control: form.control,
-    name: ['timeMode', 'visibility'],
-  });
-  const setImportOptions = (
-    options: Partial<Pick<TodoImportFormValues, 'timeMode' | 'visibility'>>,
-  ) => {
-    if (options.timeMode != null) {
-      form.setValue('timeMode', options.timeMode, { shouldDirty: true });
-    }
-    if (options.visibility != null) {
-      form.setValue('visibility', options.visibility, { shouldDirty: true });
-    }
-  };
-
-  return [{ timeMode, visibility }, setImportOptions] as const;
+  return { isPastFirstStep, isSwipeBackEnabled: isCompact || !isPastFirstStep, leaveToImport };
 }
 
 function useTargetErrorMessages(
   form: TodoImportForm,
-  collections: TodoImportFormValues['collections'],
-) {
+  collections: readonly TodoImportCollection[],
+): Record<string, string> {
   const { errors } = useFormState({ control: form.control, name: 'targets' });
 
   return Object.fromEntries(
@@ -971,24 +780,7 @@ function useTargetErrorMessages(
   );
 }
 
-function showRejectedTargets(
-  form: TodoImportForm,
-  rejections: readonly TodoImportTargetRejection[],
-  toMessage: (rejection: TodoImportTargetRejection) => string,
-) {
-  const values = form.getValues();
-  const selection = toTodoImportSelection(values);
-  for (const rejection of rejections) {
-    const message = toMessage(rejection);
-    for (const collection of selection.collections) {
-      if (collection.targetKey === rejection.targetKey) {
-        form.setError(`targets.${collection.collectionKey}`, { type: 'server', message });
-      }
-    }
-  }
-}
-
-/** 헤더 뒤로 가기와 iOS 밀어서 뒤로 가기는 한 칸 pop이다. 탭 다시 누르기·메뉴 이동은 그대로 보낸다 */
+// 헤더 뒤로 가기와 iOS 밀어서 뒤로 가기는 한 칸 pop이다. 탭 다시 누르기·메뉴 이동은 그대로 보낸다
 function isSingleStepBack(action: NavigationAction) {
   return (
     isMatching({ type: 'GO_BACK' }, action) ||

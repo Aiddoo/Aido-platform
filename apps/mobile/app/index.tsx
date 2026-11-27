@@ -7,7 +7,7 @@ import { Redirect } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { match } from 'ts-pattern';
 
-function Index() {
+export default function IndexScreen() {
   const status = useAuthStatus();
   const isRestoring = useIsRestoring();
   const entry = usePushNotificationEntry();
@@ -33,5 +33,3 @@ function Index() {
     .with('unauthenticated', () => <Redirect href="/login" />)
     .exhaustive();
 }
-
-export default Index;

@@ -3,12 +3,12 @@ import { useKeepScreenAwake } from '@src/shared/infra/keep-awake/use-keep-screen
 import { QueryErrorBoundary, StyledSafeAreaView } from '@src/shared/ui';
 import { Suspense } from 'react';
 
-export default function VoiceNoteRecordRoute() {
+export default function VoiceNoteRecordScreen() {
   useKeepScreenAwake();
 
   return (
     <StyledSafeAreaView edges={['left', 'right', 'bottom']} className="flex-1 bg-white">
-      <QueryErrorBoundary>
+      <QueryErrorBoundary fallback={VoiceNoteRecorder.Error}>
         <Suspense fallback={<VoiceNoteRecorder.Loading />}>
           <VoiceNoteRecorder />
         </Suspense>

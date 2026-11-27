@@ -5,24 +5,28 @@ import { instantSchema } from '@src/shared/date/instant';
 import { match } from 'ts-pattern';
 
 import {
-  getAllDayEndDate,
+  findAllDayEndDate,
   getTimedDates,
-  type ImportItem,
-  type ImportItemPreview,
   normalizeImportTitle,
+  type TodoImportItem,
+  type TodoImportItemPreview,
 } from '../domains/todo-import-item.model';
 
-interface ImportItemContext {
-  /** 서버가 정한 가져오기 시간대(`todoImport.timezone`). 기기 시간대를 다시 읽지 않는다 */
+interface TodoImportItemContext {
+  // 서버가 정한 가져오기 시간대(todoImport.timezone). 기기 시간대를 다시 읽지 않는다
   timezone: string;
   timeMode: TodoImportTimeMode;
 }
 
-/** 일정 수를 셀 때 쓴다. 취소된 회차와 날짜를 읽을 수 없는 값은 null이다 */
-export function toImportItemPreview(
+interface TitledTodoImportItemContext extends TodoImportItemContext {
+  untitledTitle: string;
+}
+
+// 일정 수를 셀 때 쓴다. 취소된 회차와 날짜를 읽을 수 없는 값은 null이다
+export function toTodoImportItemPreview(
   preview: ImportEventPreview,
-  { timezone, timeMode }: ImportItemContext,
-): ImportItemPreview | null {
+  { timezone, timeMode }: TodoImportItemContext,
+): TodoImportItemPreview | null {
   if (preview.isCanceled) {
     return null;
   }
@@ -35,7 +39,7 @@ export function toImportItemPreview(
       }
       return {
         startDate: start.data,
-        endDate: getAllDayEndDate(start.data, endExclusive.data),
+        endDate: findAllDayEndDate(start.data, endExclusive.data),
         localTime: null,
       };
     })
@@ -50,12 +54,12 @@ export function toImportItemPreview(
   return dates == null ? null : { collectionKey: preview.collectionKey, ...dates };
 }
 
-/** 취소된 회차와 날짜를 읽을 수 없는 값은 null이다 */
-export function toImportItem(
+// 취소된 회차와 날짜를 읽을 수 없는 값은 null이다
+export function toTodoImportItem(
   record: ImportEventRecord,
-  { untitledTitle, ...context }: ImportItemContext & { untitledTitle: string },
-): ImportItem | null {
-  const preview = toImportItemPreview(record, context);
+  { untitledTitle, ...context }: TitledTodoImportItemContext,
+): TodoImportItem | null {
+  const preview = toTodoImportItemPreview(record, context);
   if (preview == null) {
     return null;
   }

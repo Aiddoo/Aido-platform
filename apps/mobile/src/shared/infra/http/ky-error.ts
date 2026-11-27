@@ -1,5 +1,6 @@
 import { ErrorCode, HttpStatus } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
+import { SECOND_MS } from '@src/shared/constants/time-units';
 import { findErrorCodeMessage } from '@src/shared/errors/error-code-message';
 import {
   NetworkError,
@@ -9,6 +10,7 @@ import {
 } from '@src/shared/errors/infra-error';
 import { t } from '@src/shared/i18n';
 import { HTTPError, isNetworkError, TimeoutError as KyTimeoutError } from 'ky';
+import { isMatching, P } from 'ts-pattern';
 
 import { readErrorEnvelope, toKnownErrorCode } from './error-envelope';
 import { REQUEST_ID_HEADER } from './request-headers';
@@ -22,15 +24,8 @@ function isExpoFetchFailure(error: unknown) {
 }
 
 /** 본문 파서가 다른 실행 환경에서 던진 SyntaxError도 `instanceof` 없이 알아본다 */
-function isSyntaxError(error: unknown): error is { message: string } {
-  return (
-    typeof error === 'object' &&
-    error != null &&
-    'name' in error &&
-    error.name === 'SyntaxError' &&
-    'message' in error &&
-    typeof error.message === 'string'
-  );
+function isSyntaxError(error: unknown) {
+  return isMatching({ name: 'SyntaxError', message: P.string }, error);
 }
 
 /** 접속 인증 Wi-Fi의 HTML처럼 JSON이 아닌 본문은 봉투 검증 실패와 같은 `ParseError`로 바꾼다 */
@@ -53,11 +48,10 @@ export function resolveMessage(code: string | null, serverMessage: string | null
 }
 
 const RETRY_AFTER_HEADER = 'Retry-After';
-const SECOND_MS = 1000;
 const DELTA_SECONDS_PATTERN = /^\d+$/u;
 
 /** `Retry-After`는 초(정수)나 HTTP 날짜다. 날짜는 응답의 `Date`를 기준으로 재 기기 시계 오차를 피한다. 읽지 못하면 null */
-export function parseRetryAfterMs(response: Response): number | null {
+function parseRetryAfterMs(response: Response): number | null {
   const value = response.headers.get(RETRY_AFTER_HEADER)?.trim();
   if (value == null || value === '') {
     return null;
@@ -99,10 +93,7 @@ function toServerError(error: HTTPError): ServerError {
   });
 }
 
-/**
- * ky가 던진 실패 중 재시도 대상인 전송 실패(시간 초과, 5xx, 네트워크)를 앱 오류로 바꾼다.
- * 4xx와 그 밖의 오류(요청 경로의 코드 버그인 TypeError 포함)는 호출자가 정하도록 null이다.
- */
+/** 4xx와 그 밖의 오류(요청 경로의 코드 버그인 TypeError 포함)는 호출자가 정하도록 null이다 */
 export function toTransportError(error: unknown): TimeoutError | ServerError | NetworkError | null {
   if (error instanceof KyTimeoutError) {
     return new TimeoutError();

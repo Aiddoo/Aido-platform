@@ -1,4 +1,5 @@
 import { useIdGenerator } from '@src/bootstrap/providers/di-context';
+import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { isAiDataSharingConsentRequiredError } from '@src/features/identity/consent/domains/consent.error';
 import { useAiDataSharingConsentGate } from '@src/features/identity/consent/hooks/use-ai-data-sharing-consent-gate';
 import { useMutation } from '@tanstack/react-query';
@@ -14,11 +15,22 @@ interface UseQuickPlanRequestOptions {
   onSubscribe: () => void;
 }
 
+interface QuickPlanRequestActions {
+  send: (text: string) => Promise<CapturedPlan>;
+  isConsentRequired: boolean;
+  rememberConsentAsked: (wasAsked: boolean) => void;
+  abort: () => void;
+  forget: () => void;
+}
+
 /** 들은 글자로 계획을 요청한다. 같은 글자의 재시도는 같은 키로 보내고, 동의가 막으면 한 번 묻고 이어서 보낸다 */
-export function useQuickPlanRequest({ onSubscribe }: UseQuickPlanRequestOptions) {
+export function useQuickPlanRequest({
+  onSubscribe,
+}: UseQuickPlanRequestOptions): QuickPlanRequestActions {
   const idGenerator = useIdGenerator();
   const aiConsent = useAiDataSharingConsentGate();
-  const planMutation = useMutation(useCreateQuickPlanMutationOptions({ onSubscribe }));
+  const gate = useEntitlementGate('AI_PARSE', { surface: 'add_todo_sheet' });
+  const createQuickPlan = useMutation(useCreateQuickPlanMutationOptions());
   const hasAskedConsentRef = useRef(false);
   const [isConsentRequired, setIsConsentRequired] = useState(false);
   const planRequestRef = useRef<PreparedPlanRequest<CreateQuickPlanInput> | null>(null);
@@ -38,7 +50,7 @@ export function useQuickPlanRequest({ onSubscribe }: UseQuickPlanRequestOptions)
     planAbortRef.current = abortController;
 
     try {
-      const { plan, isCharged } = await planMutation.mutateAsync({
+      const { plan, isCharged } = await createQuickPlan.mutateAsync({
         ...request,
         signal: abortController.signal,
       });
@@ -46,6 +58,10 @@ export function useQuickPlanRequest({ onSubscribe }: UseQuickPlanRequestOptions)
       return { plan, isCharged };
     } catch (error) {
       planRequestRef.current = PlanRequestPolicy.findRequestToRetry(request, error);
+      // 서버가 한도로 막았으면 안내 시트를 띄운다. 끊은 요청은 알리지 않는다
+      if (!abortController.signal.aborted) {
+        gate.promptIfBlockedError(error, { onSubscribe });
+      }
       if (isAiDataSharingConsentRequiredError(error) && !hasAskedConsentRef.current) {
         hasAskedConsentRef.current = true;
         if (await aiConsent.requestAgreement()) {

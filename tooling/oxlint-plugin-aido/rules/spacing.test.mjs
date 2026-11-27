@@ -110,3 +110,34 @@ tester.run('one-spacing-notation', rules['one-spacing-notation'], {
     },
   ],
 });
+
+tester.run('component-outer-spacing', rules['component-outer-spacing'], {
+  valid: [
+    'export function PlanBadge({ className }) { return <View className={cn("flex-row gap-2 px-3", className)} />; }',
+    'export function PlanBadge() { return <View className="flex-1 p-4" />; }',
+    'function LocalPill() { return <View className="mt-4 self-start" />; }',
+    'export function TodoList() { return <View className="gap-2"><Text className="mt-2" /></View>; }',
+    'export function TodoList() { const renderItem = () => <View className="mt-2" />; return <List renderItem={renderItem} />; }',
+    'export function TodoList() { return <><View className="mt-2" /></>; }',
+    'export function TodoList() { return <View className="max-w-96 min-h-0" />; }',
+  ],
+  invalid: [
+    { code: 'export function SubTodoIndent() { return <View className="ml-8" />; }', errors: 1 },
+    {
+      code: 'export function PlanPill({ className }) { return <View className={cn("self-start px-3", className)} />; }',
+      errors: 1,
+    },
+    {
+      code: 'export default function Notice({ isWide }) { if (isWide) { return <View className="md:-mt-2" />; } return <Box mt={4} />; }',
+      errors: 2,
+    },
+    {
+      code: 'export function Screen() { return <SafeAreaView edges={["top"]} className="flex-1" />; }',
+      errors: 1,
+    },
+    {
+      code: 'export function Banner({ isShown }) { return isShown ? <View className="mx-4" /> : null; }',
+      errors: 1,
+    },
+  ],
+});

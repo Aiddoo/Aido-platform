@@ -1,7 +1,7 @@
+import { TodoDetailsPolicy } from '@src/features/planning/todo/domains/todo-details.model';
 import { useFeedDateKey } from '@src/features/planning/todo/hooks/use-feed-params';
 import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
 import { useGetTodoDetailsQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
-import { useTodoModerationActions } from '@src/features/social/moderation/hooks/use-todo-moderation-actions';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -20,7 +20,8 @@ import {
   MenuContent,
 } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
-import { Stack, router } from 'expo-router';
+import { noop } from 'es-toolkit';
+import { Stack, useRouter } from 'expo-router';
 import { Menu } from 'heroui-native';
 import { useState } from 'react';
 
@@ -44,7 +45,6 @@ export function TodoCommentTitleBar() {
   );
 }
 
-/** `/todo/[todoId]` 전체 화면의 네이티브 헤더 */
 TodoCommentTitleBar.StackHeader = function StackHeader() {
   const screenOptions = useStackScreenOptions();
   const { t } = useTranslation(['common', 'moderation', 'todo', 'todoComment']);
@@ -52,6 +52,7 @@ TodoCommentTitleBar.StackHeader = function StackHeader() {
   const moderation = useTodoModerationActions({ todoId });
   const { backAction, interceptBack } = useTodoCommentBack();
 
+  const router = useRouter();
   const handleBackPress = useSingleTap(() => {
     if (interceptBack()) {
       return;
@@ -109,6 +110,7 @@ function TodoActionsButton() {
   const fontScaledSize = useFontScaledSize();
   const [todoId] = useTodoId();
   const [date] = useFeedDateKey();
+  const router = useRouter();
   const push = useSingleTap(router.push);
   const { data: detail } = useQuery(useGetTodoDetailsQueryOptions({ todoId }));
 
@@ -120,8 +122,8 @@ function TodoActionsButton() {
     <IconButton
       icon={
         <MoreIcon
-          width={fontScaledSize(22)}
-          height={fontScaledSize(22)}
+          width={fontScaledSize(20)}
+          height={fontScaledSize(20)}
           colorClassName="text-gray-9"
         />
       }
@@ -132,7 +134,6 @@ function TodoActionsButton() {
   );
 }
 
-/** 펼친 피드 pane의 ⋯. 친구 할 일에서만 신고·차단을 보인다 */
 function TodoModerationMenu() {
   const { t } = useTranslation('moderation');
   const fontScaledSize = useFontScaledSize();
@@ -171,4 +172,27 @@ function TodoModerationMenu() {
       </MenuContent>
     </Menu>
   );
+}
+
+/** 할 일 상세 캐시를 함께 읽어 주인 이름을 차단 확인 문구에 넣는다 */
+function useTodoModerationActions({ todoId }: { todoId: number }) {
+  const { t } = useTranslation('moderation');
+  const router = useRouter();
+  const push = useSingleTap(router.push);
+  const { data: detail } = useQuery(useGetTodoDetailsQueryOptions({ todoId }));
+
+  if (detail == null || !TodoDetailsPolicy.canReport(detail)) {
+    return { isAvailable: false, report: noop, block: noop } as const;
+  }
+
+  const owner = { userId: detail.owner.id, displayName: detail.owner.name ?? t('fallbackName') };
+  return {
+    isAvailable: true,
+    report: () => push({ pathname: '/todo/[todoId]/report', params: { todoId } }),
+    block: () =>
+      push({
+        pathname: '/users/[userId]/block',
+        params: { userId: owner.userId, name: owner.displayName },
+      }),
+  } as const;
 }

@@ -5,6 +5,7 @@ import {
   NotificationRecipientTimezoneReaderPort,
 } from "#api/modules/notification/push-dispatches/notification-push-dispatches.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { resolveDeliveryTimezone } from "#api/shared/domain/time/timezone-name";
 import { Timezone } from "#api/shared/domain/time/timezone.vo";
 
 import { BroadcastRecipientReaderPort } from "../../application/ports/broadcast-recipient.reader.port.js";
@@ -40,7 +41,7 @@ export class NotificationBroadcastRecipientAdapter extends BroadcastRecipientRea
         id,
         {
           locale: localeOf(id),
-          timezone: Timezone.reconstitute(timezones.get(id) ?? Timezone.SEOUL.value),
+          timezone: Timezone.reconstitute(resolveDeliveryTimezone(timezones.get(id))),
         },
       ]),
     );

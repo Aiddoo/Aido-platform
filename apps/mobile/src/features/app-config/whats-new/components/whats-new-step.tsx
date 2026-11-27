@@ -27,6 +27,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 /** 큰 글꼴에서도 예시 화면이 알아볼 만큼 남는 높이. 더 줄면 글이 아니라 스크롤로 넘긴다 */
 const MEDIA_MIN_HEIGHT = 240;
 const FEATURE_ICON_CIRCLE_SIZE = 40;
+// 원(FEATURE_ICON_CIRCLE_SIZE 40) 안 글리프라 원의 약 55%에 맞추고 아이콘 단계를 따르지 않는다
 const FEATURE_ICON_SIZE = 22;
 
 interface WhatsNewStepProps {

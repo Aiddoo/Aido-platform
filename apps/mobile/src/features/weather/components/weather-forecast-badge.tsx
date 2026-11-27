@@ -5,51 +5,49 @@ import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, Text, TextSkeleton } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { useIsFocused, useRouter } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import { match } from 'ts-pattern';
 
-import { WeatherLocationPolicy } from '../domains/weather-location.model';
-import type { CurrentWeather, WeatherReport } from '../domains/weather-report.model';
+import type { CurrentWeather } from '../domains/current-weather.model';
+import { shouldFetchReport } from '../domains/location-reading.model';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import { useWeatherLocation } from '../hooks/use-weather-location';
-import { useGetWeatherReportQueryOptions } from '../queries/weather.queries';
-import { toWeatherHref } from '../utils/weather-link.view-model';
-import { formatDegrees, toDisplayTemperature } from '../utils/weather-temperature.view-model';
+import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
+import { toWeatherHref } from '../schemas/weather-entry-params.schema';
+import { formatDegrees, getDisplayTemperature } from '../utils/weather-temperature.view-model';
 import { WeatherIcon } from './weather-icon';
 
 // 날씨 카드가 아니라 피드 머리 도구 막대에 있어 앱 기본 비율(useFontScaledSize)로 키운다
 const BADGE_ICON_SIZE = 18;
 
-function selectBadge(report: WeatherReport) {
-  return {
-    current: report.current,
-    serviceName: report.attribution.serviceName,
-  };
-}
-
 /** 헤더라 경계 대신 상태별로 그리고, 위치·리포트가 없어도 날씨 화면(권한 안내·다시 시도)으로 갈 배지를 남긴다 */
 export function WeatherForecastBadge() {
   const location = useWeatherLocation();
+  // 리포트 만료마다 다시 받는 폴링이 다른 탭·화면에 가려진 동안 돌지 않게 구독을 끊는다. 다시 보이면 낡은 리포트를 바로 받는다
+  const isFocused = useIsFocused();
   const { data: badge, isPending } = useQuery({
     ...useGetWeatherReportQueryOptions(),
-    select: selectBadge,
-    enabled: WeatherLocationPolicy.shouldFetchReport(location),
+    select: WeatherReportSelect.badge,
+    enabled: shouldFetchReport(location.status),
+    subscribed: isFocused,
   });
 
   return match(location)
-    .with({ status: 'needsPermission' }, { status: 'denied' }, () => <WeatherForecastBadge.Entry />)
+    .with({ status: 'needsPermission' }, { status: 'denied' }, () => <WeatherForecastBadge.Empty />)
     .with({ status: 'checking' }, { status: 'unavailable' }, { status: 'ready' }, () => {
       if (badge == null) {
-        return isPending ? <WeatherForecastBadge.Loading /> : <WeatherForecastBadge.Entry />;
+        return isPending ? <WeatherForecastBadge.Loading /> : <WeatherForecastBadge.Empty />;
       }
-      return <WeatherForecastBadge.Item current={badge.current} serviceName={badge.serviceName} />;
+      return (
+        <WeatherForecastBadge.Contents current={badge.current} serviceName={badge.serviceName} />
+      );
     })
     .exhaustive();
 }
 
 /** 헤더 폭에는 로고(1x 38pt)를 줄이지 않고 넣을 수 없어 날씨 화면으로 보내고 접근성 이름에 공급자를 밝힌다 */
-WeatherForecastBadge.Item = function Item({
+WeatherForecastBadge.Contents = function Contents({
   current,
   serviceName,
 }: {
@@ -60,7 +58,7 @@ WeatherForecastBadge.Item = function Item({
   const fontScaledSize = useFontScaledSize();
   const openWeather = useOpenBadgeWeather();
   const unit = useTemperatureUnit();
-  const temperature = toDisplayTemperature(current.temperature, unit);
+  const temperature = getDisplayTemperature(current.temperature, unit);
 
   return (
     <PressableFeedback
@@ -87,7 +85,16 @@ WeatherForecastBadge.Item = function Item({
   );
 };
 
-WeatherForecastBadge.Entry = function Entry() {
+WeatherForecastBadge.Loading = function Loading() {
+  return (
+    <HStack align="center" className="min-h-11 min-w-16 px-1">
+      <TextSkeleton size="b4" className="w-8" />
+    </HStack>
+  );
+};
+
+/** 받은 리포트가 없을 때(권한 안내 중·조회 실패) 기온 없이 날씨 화면으로 가는 길만 남긴다 */
+WeatherForecastBadge.Empty = function Empty() {
   const { t } = useTranslation('weather');
   const fontScaledSize = useFontScaledSize();
   const openWeather = useOpenBadgeWeather();
@@ -117,15 +124,8 @@ WeatherForecastBadge.Entry = function Entry() {
   );
 };
 
-WeatherForecastBadge.Loading = function Loading() {
-  return (
-    <HStack align="center" className="min-h-11 min-w-16 px-1">
-      <TextSkeleton size="b4" className="w-8" />
-    </HStack>
-  );
-};
-
 function useOpenBadgeWeather() {
+  const router = useRouter();
   const push = useSingleTap(router.push);
 
   return () => push(toWeatherHref({ entry: 'feed_badge', openedAt: toEpochMs(getNowInstant()) }));

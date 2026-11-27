@@ -46,9 +46,9 @@ describe('SubTodoActionsBottomSheet', () => {
     fireEvent.press(screen.getByText('삭제하기')).catch(() => undefined);
 
     await waitFor(() => {
-      expect(screen.getByText('삭제 중...')).toBeOnTheScreen();
+      expect(screen.getByText('삭제 중…')).toBeOnTheScreen();
     });
-    fireEvent.press(screen.getByText('삭제 중...')).catch(() => undefined);
+    fireEvent.press(screen.getByText('삭제 중…')).catch(() => undefined);
 
     // Then
     expect(httpClient.delete).toHaveBeenCalledTimes(1);

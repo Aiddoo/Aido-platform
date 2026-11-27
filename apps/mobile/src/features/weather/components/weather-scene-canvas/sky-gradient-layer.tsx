@@ -16,12 +16,12 @@ import type { WeatherSceneSky } from '../../utils/weather-scene.view-model';
 
 const SKY_TRANSITION = { duration: 1200, easing: Easing.inOut(Easing.quad) };
 
-type SkyGradientLayerProps = {
+interface SkyGradientLayerProps {
   sky: WeatherSceneSky;
   isDark: boolean;
   width: number;
   height: number;
-};
+}
 
 export function SkyGradientLayer({ sky, isDark, width, height }: SkyGradientLayerProps) {
   const [top, upper, lower, bottom] = WEATHER_SCENE_PALETTES[sky].sky[isDark ? 'dark' : 'light'];

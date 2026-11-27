@@ -7,10 +7,12 @@ import {
   createAppLoggerStub,
   createSpeechRecognizerStub,
   createTestDi,
+  getTrackedEvents,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, screen, userEvent, waitFor } from '@testing-library/react-native';
+import { Activity } from 'react';
 import { Pressable } from 'react-native';
 
 import { VOICE_LOG_EVENT } from '../constants/voice-log-events';
@@ -38,7 +40,7 @@ function SessionProbe({
   maxSeconds?: number | null;
   onLimitReached?: () => void;
 }) {
-  const session = useVoiceCaptureSession({
+  const [capture, session] = useVoiceCaptureSession({
     entry: 'add_todo_sheet',
     mode,
     maxSeconds,
@@ -85,7 +87,7 @@ function SessionProbe({
         accessibilityLabel="hand-off"
         onPress={session.handOff}
       />
-      <Text testID="status">{session.state.status}</Text>
+      <Text testID="status">{capture.state.status}</Text>
     </>
   );
 }
@@ -1169,6 +1171,552 @@ describe('useVoiceCaptureSession', () => {
 
       // Then
       await waitFor(() => expect(speechRecognizer.start).toHaveBeenCalledTimes(1));
+    });
+  });
+
+  describe('타이머와 인식기 정리', () => {
+    const QUIET = 0;
+
+    setupFakeTimersPerTest();
+
+    const flushPromises = () => act(async () => jest.advanceTimersByTimeAsync(0));
+
+    const beginListening = async (options?: Parameters<typeof renderSession>[0]) => {
+      const session = await renderSession(options);
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+      await user.press(screen.getByRole('button', { name: 'begin' }));
+      await flushPromises();
+      await act(async () => session.speechRecognizer.emit({ type: 'start' }));
+      return { ...session, user };
+    };
+
+    const say = (speechRecognizer: ReturnType<typeof createSpeechRecognizerStub>) =>
+      act(async () =>
+        speechRecognizer.emit({ type: 'result', transcript: '한 말', isFinal: true, segments: [] }),
+      );
+
+    describe('끝내기', () => {
+      it('끝내기를 눌렀는데 인식기가 end를 주지 않아도 잠시 뒤 모은 글자를 한 번만 넘긴다', async () => {
+        // Given
+        const { speechRecognizer, analytics, onCaptured, user } = await beginListening();
+        await say(speechRecognizer);
+        await user.press(screen.getByRole('button', { name: 'finish' }));
+
+        // When
+        await act(async () => jest.advanceTimersByTimeAsync(1_400));
+
+        // Then
+        expect(onCaptured).not.toHaveBeenCalled();
+
+        // When
+        await act(async () => jest.advanceTimersByTimeAsync(200));
+
+        // Then
+        expect(onCaptured).toHaveBeenCalledTimes(1);
+        expect(onCaptured).toHaveBeenCalledWith('한 말');
+
+        // When
+        await act(async () => speechRecognizer.emit({ type: 'end' }));
+
+        // Then
+        expect(onCaptured).toHaveBeenCalledTimes(1);
+        expect(getTrackedEvents(analytics, 'voice_capture_finished')).toHaveLength(1);
+      });
+
+      it('침묵으로 곧 끝내려던 참에 일시정지하면 알아서 끝내지 않는다', async () => {
+        // Given
+        const { speechRecognizer, onCaptured, user } = await beginListening();
+        await say(speechRecognizer);
+        await act(async () => speechRecognizer.emit({ type: 'volume', level: QUIET }));
+        await act(async () => jest.advanceTimersByTimeAsync(1_000));
+
+        // When
+        await user.press(screen.getByRole('button', { name: 'pause' }));
+        await act(async () => jest.advanceTimersByTimeAsync(5_000));
+
+        // Then
+        expect(screen.getByTestId('status')).toHaveTextContent('paused');
+        expect(onCaptured).not.toHaveBeenCalled();
+        expect(speechRecognizer.stop).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    describe('취소', () => {
+      it('듣는 중에 취소하면 인식기를 끊고 처음으로 돌아가며 결과를 취소로 한 번 남긴다', async () => {
+        // Given
+        const { speechRecognizer, analytics, onCaptured, user } = await beginListening();
+        await say(speechRecognizer);
+
+        // When
+        await user.press(screen.getByRole('button', { name: 'cancel' }));
+
+        // Then
+        expect(screen.getByTestId('status')).toHaveTextContent('idle');
+        expect(speechRecognizer.abort).toHaveBeenCalledTimes(1);
+        expect(onCaptured).not.toHaveBeenCalled();
+        expect(getTrackedEvents(analytics, 'voice_capture_finished')).toHaveLength(1);
+        expect(analytics.trackEvent).toHaveBeenCalledWith('voice_capture_finished', {
+          mode: 'quick',
+          outcome: 'cancelled',
+          duration_bucket: 'lt_30s',
+          pause_count: 0,
+        });
+      });
+
+      it('들은 글자 없이 취소하면 결과를 빈 세션으로 남긴다', async () => {
+        // Given
+        const { analytics, user } = await beginListening();
+
+        // When
+        await user.press(screen.getByRole('button', { name: 'cancel' }));
+
+        // Then
+        expect(analytics.trackEvent).toHaveBeenCalledWith(
+          'voice_capture_finished',
+          expect.objectContaining({ outcome: 'empty' }),
+        );
+      });
+
+      it('듣기 전에 취소하면 인식기를 끊지 않고 결과도 남기지 않는다', async () => {
+        // Given
+        const { speechRecognizer, analytics } = await renderSession();
+        const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+
+        // When
+        await user.press(screen.getByRole('button', { name: 'cancel' }));
+
+        // Then
+        expect(speechRecognizer.abort).not.toHaveBeenCalled();
+        expect(getTrackedEvents(analytics, 'voice_capture_finished')).toHaveLength(0);
+      });
+
+      it('끝내는 중에 취소하면 남은 끝내기 타이머가 글자를 넘기거나 결과를 또 남기지 않는다', async () => {
+        // Given
+        const { speechRecognizer, analytics, onCaptured, user } = await beginListening();
+        await say(speechRecognizer);
+        await user.press(screen.getByRole('button', { name: 'finish' }));
+
+        // When
+        await user.press(screen.getByRole('button', { name: 'cancel' }));
+        await act(async () => jest.advanceTimersByTimeAsync(2_000));
+
+        // Then
+        expect(onCaptured).not.toHaveBeenCalled();
+        expect(getTrackedEvents(analytics, 'voice_capture_finished')).toHaveLength(1);
+      });
+
+      it('취소한 뒤 다시 시작하면 앞 구간의 end를 기다리지 않고 인식기를 바로 연다', async () => {
+        // Given
+        const { speechRecognizer, user } = await beginListening();
+        await user.press(screen.getByRole('button', { name: 'cancel' }));
+
+        // When
+        await user.press(screen.getByRole('button', { name: 'begin' }));
+        await flushPromises();
+
+        // Then
+        expect(speechRecognizer.start).toHaveBeenCalledTimes(2);
+      });
+    });
+
+    it('시작을 두 번 눌러도 인식기를 한 번만 열고 시작 이벤트도 한 번만 남긴다', async () => {
+      // Given
+      const { speechRecognizer, analytics } = await renderSession();
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+
+      // When
+      await user.press(screen.getByRole('button', { name: 'begin-without-waiting' }));
+      await user.press(screen.getByRole('button', { name: 'begin-without-waiting' }));
+      await act(async () => jest.advanceTimersByTimeAsync(2_000));
+
+      // Then
+      expect(speechRecognizer.start).toHaveBeenCalledTimes(1);
+      expect(getTrackedEvents(analytics, 'voice_capture_started')).toHaveLength(1);
+    });
+
+    describe('화면이 내려갈 때', () => {
+      it('끝내는 중에 내려가면 인식기를 끊고 남은 끝내기 타이머가 글자를 넘기거나 결과를 남기지 않는다', async () => {
+        // Given
+        const { speechRecognizer, analytics, onCaptured, unmount, user } = await beginListening();
+        await say(speechRecognizer);
+        await user.press(screen.getByRole('button', { name: 'finish' }));
+
+        // When
+        await act(async () => unmount());
+        await act(async () => jest.advanceTimersByTimeAsync(2_000));
+
+        // Then
+        expect(speechRecognizer.abort).toHaveBeenCalledTimes(1);
+        expect(onCaptured).not.toHaveBeenCalled();
+        expect(getTrackedEvents(analytics, 'voice_capture_finished')).toHaveLength(0);
+      });
+
+      it('이어 듣기를 기다리는 중에 내려가면 인식기를 다시 열지 않는다', async () => {
+        // Given
+        const { speechRecognizer, unmount, user } = await beginListening();
+        await user.press(screen.getByRole('button', { name: 'pause' }));
+        await user.press(screen.getByRole('button', { name: 'resume' }));
+
+        // When
+        await act(async () => unmount());
+        await act(async () => jest.advanceTimersByTimeAsync(2_000));
+
+        // Then
+        expect(speechRecognizer.start).toHaveBeenCalledTimes(1);
+      });
+
+      it('듣기 전에 내려가면 다른 세션이 쓰는 인식기를 끊지 않는다', async () => {
+        // Given
+        const { speechRecognizer, unmount } = await renderSession();
+
+        // When
+        await act(async () => unmount());
+
+        // Then
+        expect(speechRecognizer.abort).not.toHaveBeenCalled();
+      });
+
+      it('정리를 기다리는 중에 내려가면 인식기를 끊지 않는다', async () => {
+        // Given
+        const { speechRecognizer, onCaptured, unmount, user } = await beginListening();
+        const planning = Promise.withResolvers<CapturedPlan | null>();
+        onCaptured.mockReturnValue(planning.promise);
+        await say(speechRecognizer);
+        await user.press(screen.getByRole('button', { name: 'finish' }));
+        await act(async () => speechRecognizer.emit({ type: 'end' }));
+
+        // When
+        await act(async () => unmount());
+        await act(async () => planning.resolve(null));
+
+        // Then
+        expect(onCaptured).toHaveBeenCalledTimes(1);
+        expect(speechRecognizer.abort).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('언어 바꾸기', () => {
+      it('언어 확인이 실패하면 인식기를 건드리지 않고 듣던 언어로 이어 듣는다', async () => {
+        // Given
+        const { speechRecognizer, analytics, user } = await beginListening({ mode: 'note' });
+        speechRecognizer.getCapabilities.mockRejectedValueOnce(new Error('native'));
+
+        // When
+        await user.press(screen.getByRole('button', { name: 'change-locale-without-waiting' }));
+        await flushPromises();
+
+        // Then
+        expect(speechRecognizer.stop).not.toHaveBeenCalled();
+        expect(screen.getByTestId('status')).toHaveTextContent('listening');
+        expect(getTrackedEvents(analytics, 'voice_capture_locale_changed')).toHaveLength(0);
+
+        // When
+        await act(async () => speechRecognizer.emit({ type: 'end' }));
+
+        // Then
+        expect(speechRecognizer.start).toHaveBeenLastCalledWith(
+          expect.objectContaining({ locale: 'ko-KR' }),
+        );
+      });
+
+      it('멈춘 동안 언어를 바꾸면 인식기를 건드리지 않고 이어 들을 때 새 언어로 연다', async () => {
+        // Given
+        const { speechRecognizer, analytics, user } = await beginListening();
+        await user.press(screen.getByRole('button', { name: 'pause' }));
+        await act(async () => speechRecognizer.emit({ type: 'end' }));
+
+        // When
+        await user.press(screen.getByRole('button', { name: 'change-locale-without-waiting' }));
+        await flushPromises();
+
+        // Then
+        expect(speechRecognizer.stop).toHaveBeenCalledTimes(1);
+        expect(getTrackedEvents(analytics, 'voice_capture_locale_changed')).toHaveLength(1);
+
+        // When
+        await user.press(screen.getByRole('button', { name: 'resume' }));
+
+        // Then
+        expect(speechRecognizer.start).toHaveBeenCalledTimes(2);
+        expect(speechRecognizer.start).toHaveBeenLastCalledWith(
+          expect.objectContaining({ locale: 'en-US' }),
+        );
+      });
+    });
+  });
+
+  it('StrictMode·Fast Refresh처럼 상태는 남고 effect만 다시 돌아도 인식기를 한 번만 듣고 시작·일시정지·이어 듣기·내려가기가 그대로다', async () => {
+    // Given
+    const user = userEvent.setup();
+    const speechRecognizer = createSpeechRecognizerStub();
+    const probe = <SessionProbe onCaptured={jest.fn()} />;
+    // 이 테스트 렌더러는 StrictMode의 effect 재실행을 하지 않아, 같은 일을 하는 Activity로 effect를 정리했다 다시 건다
+    const { rerender, unmount } = await renderScreen(<Activity mode="visible">{probe}</Activity>, {
+      di: createTestDi({
+        ports: {
+          speechRecognizer,
+          analytics: createAnalyticsStub(),
+          logger,
+          errorReporter: createErrorReporterStub(),
+        },
+      }),
+    });
+    await rerender(<Activity mode="hidden">{probe}</Activity>);
+    await rerender(<Activity mode="visible">{probe}</Activity>);
+
+    // When
+    await user.press(screen.getByRole('button', { name: 'begin' }));
+    await act(async () => speechRecognizer.emit({ type: 'start' }));
+
+    // Then
+    expect(speechRecognizer.getListenerCount()).toBe(1);
+    expect(speechRecognizer.start).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId('status')).toHaveTextContent('listening');
+
+    // When
+    await user.press(screen.getByRole('button', { name: 'pause' }));
+    await act(async () => speechRecognizer.emit({ type: 'end' }));
+    await user.press(screen.getByRole('button', { name: 'resume' }));
+    await act(async () => speechRecognizer.emit({ type: 'start' }));
+
+    // Then
+    expect(speechRecognizer.stop).toHaveBeenCalledTimes(1);
+    expect(speechRecognizer.start).toHaveBeenCalledTimes(2);
+    expect(screen.getByTestId('status')).toHaveTextContent('listening');
+
+    // When
+    await act(async () => unmount());
+
+    // Then
+    expect(speechRecognizer.abort).toHaveBeenCalledTimes(1);
+    expect(speechRecognizer.getListenerCount()).toBe(0);
+  });
+
+  describe('기능 확인이 늦거나 실패할 때', () => {
+    const FULL = {
+      isAvailable: true,
+      canRecognizeOnDevice: true,
+      canDownloadOnDeviceModel: false,
+      canSaveRecording: true,
+      canContinue: true,
+    };
+
+    setupFakeTimersPerTest();
+
+    const flushPromises = () => act(async () => jest.advanceTimersByTimeAsync(0));
+
+    it('같은 언어로 바꾸기를 확인이 끝나기 전에 두 번 눌러도 구간을 한 번만 닫고 바뀐 언어도 한 번만 남긴다', async () => {
+      // Given
+      const { speechRecognizer, analytics } = await renderSession({ mode: 'note' });
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+      await user.press(screen.getByRole('button', { name: 'begin' }));
+      await flushPromises();
+      await act(async () => speechRecognizer.emit({ type: 'start' }));
+      const capabilities = Promise.withResolvers<typeof FULL>();
+      speechRecognizer.getCapabilities.mockReturnValue(capabilities.promise);
+
+      // When
+      await user.press(screen.getByRole('button', { name: 'change-locale-without-waiting' }));
+      await user.press(screen.getByRole('button', { name: 'change-locale-without-waiting' }));
+      await act(async () => capabilities.resolve(FULL));
+      await flushPromises();
+
+      // Then
+      expect(speechRecognizer.stop).toHaveBeenCalledTimes(1);
+      expect(getTrackedEvents(analytics, 'voice_capture_locale_changed')).toHaveLength(1);
+
+      // When
+      await act(async () => speechRecognizer.emit({ type: 'end' }));
+
+      // Then
+      expect(speechRecognizer.start).toHaveBeenCalledTimes(2);
+      expect(speechRecognizer.start).toHaveBeenLastCalledWith(
+        expect.objectContaining({ locale: 'en-US' }),
+      );
+    });
+
+    it('기능 확인이 실패해 멈춘 뒤 이어 듣기를 누르면 다시 확인하고 인식기를 연다', async () => {
+      // Given
+      const { speechRecognizer, analytics } = await renderSession({ mode: 'note' });
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+      speechRecognizer.getCapabilities.mockRejectedValueOnce(new Error('native'));
+      await user.press(screen.getByRole('button', { name: 'begin' }));
+      await flushPromises();
+      expect(screen.getByTestId('status')).toHaveTextContent('failed');
+
+      // When
+      await user.press(screen.getByRole('button', { name: 'resume' }));
+      await flushPromises();
+
+      // Then
+      expect(speechRecognizer.start).toHaveBeenCalledTimes(1);
+      expect(speechRecognizer.start).toHaveBeenLastCalledWith(
+        expect.objectContaining({ mode: 'note', locale: 'ko-KR', isOnDevice: true }),
+      );
+
+      // When
+      await act(async () => speechRecognizer.emit({ type: 'start' }));
+
+      // Then
+      expect(screen.getByTestId('status')).toHaveTextContent('listening');
+      expect(getTrackedEvents(analytics, 'voice_capture_started')).toHaveLength(1);
+    });
+
+    it('다시 시작한 듣기의 기능 확인이 실패하면 앞 듣기의 옵션으로 이어 듣지 않고 다시 확인한다', async () => {
+      // Given
+      const { speechRecognizer } = await renderSession({ mode: 'note' });
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+      await user.press(screen.getByRole('button', { name: 'begin' }));
+      await flushPromises();
+      await act(async () => speechRecognizer.emit({ type: 'start' }));
+      await user.press(screen.getByRole('button', { name: 'cancel' }));
+      speechRecognizer.getCapabilities.mockRejectedValueOnce(new Error('native'));
+      await user.press(screen.getByRole('button', { name: 'begin-without-waiting' }));
+      await flushPromises();
+      expect(screen.getByTestId('status')).toHaveTextContent('failed');
+
+      // When
+      await user.press(screen.getByRole('button', { name: 'resume' }));
+      await flushPromises();
+
+      // Then
+      expect(speechRecognizer.getCapabilities).toHaveBeenCalledTimes(3);
+      expect(speechRecognizer.start).toHaveBeenCalledTimes(2);
+      expect(speechRecognizer.start).toHaveBeenLastCalledWith(
+        expect.objectContaining({ hintWords: expect.not.arrayContaining(['기획팀']) }),
+      );
+    });
+
+    it('언어 확인을 기다리는 사이 새로 시작한 듣기가 실패해도 앞 듣기의 옵션을 되살리지 않는다', async () => {
+      // Given
+      const { speechRecognizer } = await renderSession({ mode: 'note' });
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+      await user.press(screen.getByRole('button', { name: 'begin' }));
+      await flushPromises();
+      await act(async () => speechRecognizer.emit({ type: 'start' }));
+      const localeCheck = Promise.withResolvers<typeof FULL>();
+      speechRecognizer.getCapabilities.mockReturnValueOnce(localeCheck.promise);
+      await user.press(screen.getByRole('button', { name: 'change-locale-without-waiting' }));
+      await user.press(screen.getByRole('button', { name: 'cancel' }));
+      speechRecognizer.getCapabilities.mockRejectedValueOnce(new Error('native'));
+      await user.press(screen.getByRole('button', { name: 'begin-without-waiting' }));
+      await flushPromises();
+      expect(screen.getByTestId('status')).toHaveTextContent('failed');
+
+      // When
+      await act(async () => localeCheck.resolve(FULL));
+      await flushPromises();
+      await user.press(screen.getByRole('button', { name: 'resume' }));
+      await flushPromises();
+
+      // Then
+      expect(speechRecognizer.getCapabilities).toHaveBeenCalledTimes(4);
+      expect(speechRecognizer.start).toHaveBeenCalledTimes(2);
+      expect(speechRecognizer.start).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          locale: 'ko-KR',
+          hintWords: expect.not.arrayContaining(['기획팀']),
+        }),
+      );
+    });
+
+    it('다시 시작한 뒤 앞 요청의 기능 확인이 늦게 끝나도 새 요청의 옵션으로만 연다', async () => {
+      // Given
+      const { speechRecognizer } = await renderSession({ mode: 'note' });
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+      const firstCheck = Promise.withResolvers<typeof FULL>();
+      const secondCheck = Promise.withResolvers<typeof FULL>();
+      speechRecognizer.getCapabilities
+        .mockReturnValueOnce(firstCheck.promise)
+        .mockReturnValueOnce(secondCheck.promise);
+      await user.press(screen.getByRole('button', { name: 'begin' }));
+      await user.press(screen.getByRole('button', { name: 'cancel' }));
+      await user.press(screen.getByRole('button', { name: 'begin-without-waiting' }));
+
+      // When
+      await act(async () => firstCheck.resolve(FULL));
+      await flushPromises();
+
+      // Then
+      expect(speechRecognizer.start).not.toHaveBeenCalled();
+
+      // When
+      await act(async () => secondCheck.resolve(FULL));
+      await flushPromises();
+
+      // Then
+      expect(speechRecognizer.start).toHaveBeenCalledTimes(1);
+      expect(speechRecognizer.start).toHaveBeenLastCalledWith(
+        expect.objectContaining({ hintWords: expect.not.arrayContaining(['기획팀']) }),
+      );
+    });
+
+    it('앞 요청의 기능 확인이 늦게 실패해도 새로 시작한 듣기를 실패로 만들지 않는다', async () => {
+      // Given
+      const { speechRecognizer, analytics } = await renderSession({ mode: 'note' });
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+      const firstCheck = Promise.withResolvers<typeof FULL>();
+      speechRecognizer.getCapabilities.mockReturnValueOnce(firstCheck.promise);
+      await user.press(screen.getByRole('button', { name: 'begin' }));
+      await user.press(screen.getByRole('button', { name: 'cancel' }));
+      await user.press(screen.getByRole('button', { name: 'begin-without-waiting' }));
+      await flushPromises();
+      expect(speechRecognizer.start).toHaveBeenCalledTimes(1);
+
+      // When
+      await act(async () => firstCheck.reject(new Error('native')));
+      await flushPromises();
+
+      // Then
+      expect(screen.getByTestId('status')).toHaveTextContent('preparing');
+      expect(getTrackedEvents(analytics, 'voice_capture_failed')).toHaveLength(0);
+    });
+
+    it('취소 직후 다시 시작해 기능을 확인하는 사이 앞 구간의 늦은 시작 신호가 와도 옵션 없이 듣는 중이 되지 않는다', async () => {
+      // Given
+      const { speechRecognizer } = await renderSession({ mode: 'note' });
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+      await user.press(screen.getByRole('button', { name: 'begin' }));
+      await flushPromises();
+      await act(async () => speechRecognizer.emit({ type: 'start' }));
+      await user.press(screen.getByRole('button', { name: 'cancel' }));
+      const check = Promise.withResolvers<typeof FULL>();
+      speechRecognizer.getCapabilities.mockReturnValueOnce(check.promise);
+      await user.press(screen.getByRole('button', { name: 'begin-without-waiting' }));
+
+      // When
+      await act(async () => speechRecognizer.emit({ type: 'start' }));
+      await act(async () => speechRecognizer.emit({ type: 'end' }));
+
+      // Then
+      expect(screen.getByTestId('status')).toHaveTextContent('preparing');
+
+      // When
+      await act(async () => check.resolve(FULL));
+      await flushPromises();
+      await act(async () => speechRecognizer.emit({ type: 'start' }));
+
+      // Then
+      expect(speechRecognizer.start).toHaveBeenCalledTimes(2);
+      expect(screen.getByTestId('status')).toHaveTextContent('listening');
+    });
+
+    it('시작 신호 없이 실패한 뒤 기능 확인이 늦게 실패해도 실패를 한 번만 남긴다', async () => {
+      // Given
+      const { speechRecognizer, analytics } = await renderSession();
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+      const capabilities = Promise.withResolvers<typeof FULL>();
+      speechRecognizer.getCapabilities.mockReturnValue(capabilities.promise);
+      await user.press(screen.getByRole('button', { name: 'begin-without-waiting' }));
+      await act(async () => jest.advanceTimersByTimeAsync(VOICE_PREPARING_TIMEOUT_MS));
+      expect(screen.getByTestId('status')).toHaveTextContent('failed');
+
+      // When
+      await act(async () => capabilities.reject(new Error('native')));
+      await flushPromises();
+
+      // Then
+      expect(getTrackedEvents(analytics, 'voice_capture_failed')).toHaveLength(1);
     });
   });
 });

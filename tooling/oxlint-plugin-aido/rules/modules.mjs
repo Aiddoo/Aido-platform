@@ -226,7 +226,7 @@ function readTableOwners(sourceRoot) {
 const foreignTableMessage = (table, owner) =>
   `${table}: ${owner} Context의 테이블이다. 그 Context의 *.public.ts가 연 조회 조각(<noun>.query-fragment.ts)·포트를 쓴다.`;
 
-// 다른 Context의 테이블을 import하거나 db.query.<table>로 읽지 않는다. 소유 Context가 연 조각·포트만 붙인다(architecture.md#의존-규칙과-강제)
+// 다른 Context의 테이블을 import하거나 db.query.<table>로 읽지 않는다. 소유 Context가 연 조각·포트만 붙인다(architecture/structure.md#의존-규칙과-강제)
 const noForeignContextTable = {
   meta: { type: 'problem', schema: [] },
   create(context) {

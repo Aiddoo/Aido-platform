@@ -29,6 +29,18 @@ describe("할 일 쓰기의 시간대", () => {
       stored: "Europe/London",
       resolved: "Europe/London",
     },
+    {
+      name: "UTC 헤더(기기 시간대를 못 읽은 출시 앱)는 보고하지 않은 것이라 저장값이다",
+      requested: "UTC",
+      stored: "Asia/Seoul",
+      resolved: "Asia/Seoul",
+    },
+    {
+      name: "UTC 헤더에 저장값이 없으면 기본값이다",
+      requested: "Etc/UTC",
+      stored: null,
+      resolved: "Asia/Seoul",
+    },
     { name: "저장된 UTC는 진짜 UTC로 본다", requested: undefined, stored: "UTC", resolved: "UTC" },
     {
       name: "저장값이 없으면 기본값이다",

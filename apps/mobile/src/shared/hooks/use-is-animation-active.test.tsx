@@ -8,7 +8,7 @@ import { useIsAnimationActive } from './use-is-animation-active';
 
 let mockIsReducedMotion = false;
 
-describe('공용 애니메이션 멈춤 조건', () => {
+describe('useIsAnimationActive', () => {
   let appLifecycle = createAppLifecycleGatewayStub();
 
   function renderActiveHook() {

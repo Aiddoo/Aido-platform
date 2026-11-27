@@ -1,0 +1,75 @@
+appId: ${MAESTRO_APP_ID}
+name: 오프라인에서 체크박스를 누르면 실패 안내와 함께 누르기 전으로 돌아오고 연결 뒤 다시 누르면 완료된다
+# 에뮬레이터가 adb reverse로 로컬 API에 닿으면 비행기 모드에서도 요청이 성공해 이 흐름은 실패한다(2026-11-27 Pixel 6 에뮬레이터)
+tags:
+  - regression
+  - todo
+  - android-only
+onFlowStart:
+  - runFlow: ../../subflows/app/load-helpers.yaml
+  - evalScript: ${output.main = output.api.signIn('main')}
+  - evalScript: ${output.main.removeE2eCategories()}
+  - evalScript: ${output.category = output.main.createCategory('offline ' + output.config.runId)}
+  - evalScript: ${output.todoTitle = 'E2E offline ' + output.config.runId}
+  - evalScript: ${output.todo = output.main.createTodo(output.category.id, output.todoTitle)}
+  - runFlow: ../../subflows/app/launch-fresh.yaml
+onFlowComplete:
+  - setAirplaneMode: disabled
+  - evalScript: ${output.main && output.main.removeE2eCategories()}
+---
+# 지키는 것: 완료 mutation은 networkMode 'always'라 오프라인에서 멈춰 기다리지 않고 바로 실패해 되돌리고 알린다
+# (src/features/planning/todo/queries/todo.mutations.ts useToggleTodoMutationOptions의 networkMode 주석·onError,
+#  알림은 meta.errorFeedback → NetworkError 문구 common.json infraErrors.network)
+# setAirplaneMode는 Android 전용이다. iOS는 README의 수동 확인 목록으로 본다
+- runFlow:
+    label: Android에서만 비행기 모드로 확인한다
+    when:
+      platform: Android
+    commands:
+      # Given: 완료하지 않은 할 일이 보이는 피드에서 연결을 끊었다
+      - runFlow:
+          file: ../../subflows/auth/sign-in.yaml
+          env:
+            EMAIL: ${output.main.email}
+            PASSWORD: ${output.main.password}
+      - scrollUntilVisible:
+          element:
+            id: ${output.ids.todo.checkbox(output.todo.id)}
+      - setAirplaneMode: enabled
+      - extendedWaitUntil:
+          visible:
+            id: ${output.ids.app.offlineBanner}
+          timeout: 15000
+
+      # When: 체크박스를 누른다
+      - tapOn:
+          id: ${output.ids.todo.checkbox(output.todo.id)}
+      # Then: 연결 확인 안내가 뜨고 체크박스가 미완료로 돌아오며 서버는 그대로다
+      - extendedWaitUntil:
+          visible: ${output.labels.app.networkError}
+          timeout: 10000
+      - extendedWaitUntil:
+          visible:
+            id: ${output.ids.todo.checkbox(output.todo.id)}
+            checked: false
+            enabled: true
+          timeout: 10000
+      - assertNotVisible:
+          id: ${output.ids.app.rootError}
+      - assertTrue:
+          condition: ${!output.main.isTodoCompleted(output.todo.id)}
+          label: 서버의 할 일은 미완료 그대로다
+
+      # When: 연결을 되살리고 다시 누른다
+      - setAirplaneMode: disabled
+      - extendedWaitUntil:
+          notVisible:
+            id: ${output.ids.app.offlineBanner}
+          timeout: 30000
+      - tapOn:
+          id: ${output.ids.todo.checkbox(output.todo.id)}
+      # Then: 화면과 서버가 완료다
+      - assertVisible:
+          id: ${output.ids.todo.checkbox(output.todo.id)}
+          checked: true
+      - evalScript: ${output.main.waitForTodo(output.category.id, output.todoTitle, true)}

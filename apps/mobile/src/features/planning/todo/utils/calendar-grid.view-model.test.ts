@@ -1,56 +1,6 @@
 import { createDateKey } from '@src/testing/date-key';
 
-import {
-  diffCalendarWeeks,
-  getCalendarMonthRanges,
-  getMonthWeekStartKeys,
-  getWeekStartKey,
-  shiftCalendarDateKey,
-} from './calendar-grid.view-model';
-
-describe('getWeekStartKey', () => {
-  it.each([
-    ['2026-10-03', '2026-09-27'],
-    ['2026-10-04', '2026-10-04'],
-    ['2027-01-01', '2026-12-27'],
-    ['2028-02-29', '2028-02-27'],
-  ])('%s의 주는 일요일 %s부터 시작한다', (dateKey, expected) => {
-    // When
-    const weekStartKey = getWeekStartKey(createDateKey(dateKey));
-
-    // Then
-    expect(weekStartKey).toBe(expected);
-  });
-});
-
-describe('getMonthWeekStartKeys', () => {
-  it.each([
-    ['2026-07-01', 5],
-    ['2026-08-01', 6],
-    ['2026-02-15', 4],
-  ])('%s의 달은 걸친 주가 %i개다', (dateKey, expected) => {
-    // When
-    const weeks = getMonthWeekStartKeys(createDateKey(dateKey));
-
-    // Then
-    expect(weeks).toHaveLength(expected);
-  });
-
-  it('최소 주 수보다 적으면 뒤로 주를 붙여 쪽 높이를 맞춘다', () => {
-    // When
-    const weeks = getMonthWeekStartKeys(createDateKey('2026-02-15'), 6);
-
-    // Then
-    expect(weeks).toEqual([
-      '2026-02-01',
-      '2026-02-08',
-      '2026-02-15',
-      '2026-02-22',
-      '2026-03-01',
-      '2026-03-08',
-    ]);
-  });
-});
+import { getCalendarMonthRanges, shiftCalendarDateKey } from './calendar-grid.view-model';
 
 describe('getCalendarMonthRanges', () => {
   it('고른 날의 달·앞 달·다음 달을 일요일 시작 주까지 채운 범위로 준다', () => {
@@ -72,21 +22,6 @@ describe('getCalendarMonthRanges', () => {
 
     // Then
     expect(first).toEqual(last);
-  });
-});
-
-describe('diffCalendarWeeks', () => {
-  it.each([
-    ['같은 주', '2026-04-13', '2026-04-16', 0],
-    ['다음 주', '2026-04-13', '2026-04-20', 1],
-    ['이전 주', '2026-04-13', '2026-04-06', -1],
-    ['요일이 달라도 주로 센다', '2026-04-13', '2026-04-30', 2],
-  ])('%s', (_title, from, to, expected) => {
-    // When
-    const weeks = diffCalendarWeeks(createDateKey(from), createDateKey(to));
-
-    // Then
-    expect(weeks).toBe(expected);
   });
 });
 

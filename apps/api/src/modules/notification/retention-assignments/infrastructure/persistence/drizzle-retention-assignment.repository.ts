@@ -14,7 +14,7 @@ import {
   retentionExperimentStage,
 } from "#api/platform/database/schema/index";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { normalizeIanaTimezone } from "#api/shared/domain/time/timezone-name";
+import { parseTimezoneName } from "#api/shared/domain/time/timezone-name";
 
 import { resolveRecipientLocale } from "../../../shared/domain/recipient-locale.domain-service.js";
 import type { RetentionAssignmentRepositoryPort } from "../../application/ports/retention-assignment.repository.port.js";
@@ -221,8 +221,8 @@ export class DrizzleRetentionAssignmentRepository implements RetentionAssignment
     return true;
   }
 
-  // AT TIME ZONE에 넘길 수 있는 저장값만 고른다. PG가 아는 이름(하루 캐시)이면서 앱 규칙(resolveTimezone과 같은
-  // Intl 판정)도 받는 값이다. 고르지 못한 값은 SQL에서 UTC가 되어 PG가 모르는 이름으로 묶음이 실패하지 않는다
+  // AT TIME ZONE에 넘길 수 있는 저장값만 고른다. PG가 아는 이름(하루 캐시)이면서 앱 규칙(parseTimezoneName)도
+  // 받는 값이다. 고르지 못한 값은 SQL에서 UTC가 되어 PG가 모르는 이름으로 묶음이 실패하지 않는다
   async #scheduledStageTimezones(): Promise<string[]> {
     const postgresNames = new Set(await this.#postgresTimezoneNames());
     const preference = userDeliveryPreference();
@@ -242,7 +242,7 @@ export class DrizzleRetentionAssignmentRepository implements RetentionAssignment
         ),
       );
     return rows.flatMap(({ timezone }) =>
-      postgresNames.has(timezone) && normalizeIanaTimezone(timezone) != null ? [timezone] : [],
+      postgresNames.has(timezone) && parseTimezoneName(timezone) != null ? [timezone] : [],
     );
   }
 

@@ -16,7 +16,7 @@ import {
   PARTICLE_SEED_STRIDE,
   placeSprite,
   wrap,
-} from '../../utils/weather-scene-particles.view-model';
+} from '../../utils/weather-scene-particles.geometry';
 import { PARTICLE_SAMPLING, PARTICLE_SPRITES, useParticleTexture } from './weather-scene-textures';
 
 const DUST_SEED = 0xd057;
@@ -30,12 +30,12 @@ const DUST_SPRITE_RADIUS_RATIO = 4;
 const DUST_ALPHA = 0.7;
 const EDGE_MARGIN = 5;
 
-type HazeLayerProps = {
+interface HazeLayerProps {
   width: number;
   height: number;
   isLowEndDevice: boolean;
   time: SharedValue<number>;
-};
+}
 
 /** 누런 막이 하늘을 덮고, 공기 중의 미세한 먼지가 반짝이며 옆으로 떠다닌다. */
 export function HazeLayer({ width, height, isLowEndDevice, time }: HazeLayerProps) {

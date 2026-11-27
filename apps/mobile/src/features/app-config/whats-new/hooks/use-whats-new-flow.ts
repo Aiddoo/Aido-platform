@@ -24,8 +24,15 @@ interface WhatsNewFlowInput {
   source: WhatsNewSource;
 }
 
-/** 소개 화면의 본 기록과 이동(닫기·완료·기능으로 떠나기). 추적은 `useWhatsNewTracking`이 한다 */
-export function useWhatsNewFlow({ release, source }: WhatsNewFlowInput) {
+interface WhatsNewFlowActions {
+  close: () => void;
+  complete: () => void;
+  leaveTo: (href: Href) => void;
+  trackCta: (cta: { step: WhatsNewStep; feature: FeatureKey }) => void;
+  trackStepViewed: (view: { step: WhatsNewStep; index: number }) => void;
+}
+
+export function useWhatsNewFlow({ release, source }: WhatsNewFlowInput): WhatsNewFlowActions {
   const { campaignId } = release;
   const repository = useWhatsNewRepository();
   const accountId = useMyAccountId();
@@ -63,7 +70,7 @@ interface WhatsNewTrackingInput extends WhatsNewFlowInput {
   accountId: string | null;
 }
 
-/** 열림·닫힘·단계·CTA·완료 추적. 닫기·iOS 스와이프·Android 뒤로 가기는 화면이 사라질 때 닫은 것으로 남기고, `markFinished` 한 경우만 뺀다 */
+/** 닫기·iOS 스와이프·Android 뒤로 가기는 화면이 사라질 때 닫은 것으로 남기고, `markFinished` 한 경우만 뺀다 */
 function useWhatsNewTracking({ release, source, accountId }: WhatsNewTrackingInput) {
   const { id: releaseId, campaignId } = release;
   const { trackEvent } = useTrack();
@@ -82,6 +89,7 @@ function useWhatsNewTracking({ release, source, accountId }: WhatsNewTrackingInp
 
     return () => {
       if (!isFinishedRef.current) {
+        // oxlint-disable-next-line aido/no-tracking-in-effect -- 위 노출과 한 수명의 짝인 닫힘이다
         trackEvent('feature_hub_dismissed', { campaign_id: campaignId, source });
       }
     };

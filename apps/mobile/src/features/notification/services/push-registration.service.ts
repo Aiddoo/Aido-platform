@@ -4,6 +4,7 @@ import type { AppLogger } from '@src/core/ports/app-logger';
 import type { RequestConfig } from '@src/core/ports/http-client';
 import type { PushNotificationGateway } from '@src/core/ports/push-notification-gateway';
 import type { SessionEpoch } from '@src/core/session/session-epoch';
+import { SECOND_MS } from '@src/shared/constants/time-units';
 import type { Instant } from '@src/shared/date/instant';
 import { getErrorMessage } from '@src/shared/errors';
 import { isEqual, noop, withTimeout } from 'es-toolkit';
@@ -12,8 +13,9 @@ import type { PushDeviceApi } from '../apis/push-device.api';
 import { toPushPermission } from '../apis/push-permission.mapper';
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { isPushRequestThrottledError } from '../domains/notification.error';
+import type { PushDevice } from '../domains/push-device.model';
 import { PushPermissionPolicy } from '../domains/push-permission.model';
-import type { PushDevice, PushPermission } from '../domains/push-permission.model';
+import type { PushPermission } from '../domains/push-permission.model';
 import {
   createEmptyPushRegistration,
   type PushRegistration,
@@ -22,7 +24,7 @@ import {
 import type { PushRegistrationRepository } from '../repositories/push-registration.repository';
 import type { DeviceIdService } from './device-id.service';
 
-const REPORT_WAIT_TIMEOUT_MS = 3_000;
+const REPORT_WAIT_TIMEOUT_MS = 3 * SECOND_MS;
 
 interface PushDeviceReport {
   deviceId: string;
@@ -206,7 +208,7 @@ export class PushRegistrationService {
   unregister = async (config?: Pick<RequestConfig, 'timeout'>): Promise<Result<void, ApiError>> => {
     const epoch = this.#sessionEpoch.current();
     this.#unregisterCount += 1;
-    // 보고가 해제보다 늦으면 로그아웃한 기기로 푸시가 가므로 먼저 끝내되, 요청 제한만큼만 기다린다
+    // 보고가 해제보다 늦으면 로그아웃한 기기로 푸시가 가므로 먼저 끝내되, 요청 제한만큼만 기다리고 시간이 지나도 해제를 이어 간다
     await withTimeout(
       () => Promise.allSettled(this.#reportsInFlight),
       config?.timeout ?? REPORT_WAIT_TIMEOUT_MS,
@@ -223,7 +225,9 @@ export class PushRegistrationService {
       return result;
     }
 
-    await this.#updateRegistration(PushRegistrationPolicy.recordReleased).catch((error: unknown) =>
+    await this.#updateRegistration((registration) =>
+      PushRegistrationPolicy.recordReleased(registration),
+    ).catch((error: unknown) =>
       this.#logger.warn(NOTIFICATION_LOG_EVENT.PUSH_REGISTRATION_SAVE_FAILED, {
         error: getErrorMessage(error),
       }),
@@ -231,10 +235,7 @@ export class PushRegistrationService {
     return ok(undefined);
   };
 
-  /**
-   * 온라인 로그아웃 없이 세션이 끝났다. 서버는 끝난 세션의 토큰을 지우지 않아 이 기기로 이전 계정의 푸시가 계속 가므로
-   * 기기 id와 토큰으로 푼다. 던지지 않고 화면을 기다리게 하지 않는다
-   */
+  /** 서버는 끝난 세션의 토큰을 지우지 않아 이전 계정의 푸시가 계속 가므로 기기 id와 토큰으로 푼다. 화면을 기다리게 하지 않는다 */
   requestRelease = (): Promise<void> => {
     this.#lastReported = null;
     return this.#updateRegistration((registration) =>
@@ -298,7 +299,9 @@ export class PushRegistrationService {
       return 'throttled';
     }
     if (this.#releaseCancelCount === cancelCount) {
-      await this.#updateRegistration(PushRegistrationPolicy.recordReleased);
+      await this.#updateRegistration((registration) =>
+        PushRegistrationPolicy.recordReleased(registration),
+      );
     }
     return 'done';
   };

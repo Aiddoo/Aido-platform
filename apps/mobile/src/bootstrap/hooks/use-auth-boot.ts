@@ -1,12 +1,15 @@
 import { subscribeSessionConfirmed } from '@src/core/events/session-confirmed';
 import { subscribeSessionExpired } from '@src/core/events/session-expired';
-import { SESSION_EXPIRED_SEVERITY } from '@src/core/observability/telemetry-event';
+import {
+  SESSION_EXPIRED_SEVERITY,
+  type SessionExpiredDetails,
+} from '@src/core/observability/telemetry-event';
 import { ERROR_REPORT_MESSAGES } from '@src/core/observability/telemetry-keys';
 import { AuthSessionPolicy } from '@src/features/identity/auth/domains/auth-session.model';
 import { track } from '@src/shared/analytics';
-import { toError } from '@src/shared/errors';
+import { reportUnexpectedError } from '@src/shared/errors';
 import { useOnAppForeground } from '@src/shared/hooks/use-on-app-foreground';
-import { useCallback, useEffect, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useEffectEvent, useSyncExternalStore } from 'react';
 import { match } from 'ts-pattern';
 
 import { resolveInitialAuthStatus } from '../auth/resolve-initial-auth-status';
@@ -32,6 +35,7 @@ export function useAuthBoot(): void {
   );
 
   /** `locked`는 잠금 해제를 기다리는 상태다. 잠금이 아닌 영구 오류까지 `locked`로 두면 재판정도 계속 실패해 조용히 무한 로딩에 갇힌다 */
+  // 아래 effect의 의존성이자 포그라운드 재판정이 함께 불러 effect 밖에 둔다. exhaustive-deps는 컴파일러 메모를 몰라 손으로 고정한다
   const resolveBoot = useCallback(
     async (isCancelled: () => boolean) => {
       const isStale = () =>
@@ -43,7 +47,7 @@ export function useAuthBoot(): void {
         }
       } catch (error) {
         if (!isStale()) {
-          errorReporter.captureException(toError(error), { feature: 'auth' });
+          reportUnexpectedError(errorReporter, error, 'auth');
           authSessionStore.failBoot();
         }
       }
@@ -68,8 +72,8 @@ export function useAuthBoot(): void {
     }
   });
 
-  useEffect(() => {
-    return subscribeSessionExpired(({ reason, serverErrorCode }) => {
+  const handleSessionExpired = useEffectEvent(
+    ({ reason, serverErrorCode }: SessionExpiredDetails) => {
       // 로그아웃된 앱이 낸 401은 세션 만료가 아니다. 가드가 없으면 로그인한 적 없는 유저의 session_expired가 대량 발생해 진짜 세션 유실이 묻힌다
       if (authSessionStore.getSnapshot().status !== 'authenticated') {
         return;
@@ -85,8 +89,10 @@ export function useAuthBoot(): void {
         serverErrorCode,
       });
       track(analytics, 'session_expired', { reason });
-    });
-  }, [authSessionStore, errorReporter, analytics]);
+    },
+  );
+
+  useEffect(() => subscribeSessionExpired(handleSessionExpired), []);
 
   useEffect(
     () => subscribeSessionConfirmed(() => sessionCleanupService.afterSessionConfirmed()),

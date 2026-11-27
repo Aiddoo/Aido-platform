@@ -1,12 +1,11 @@
 import { useFriendApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
-import { getNextCursor, selectPageItems } from '@src/shared/domains/cursor-page.model';
+import { getNextCursor, selectPageItems } from '@src/shared/query/cursor-page';
 import { type InfiniteData, infiniteQueryOptions } from '@tanstack/react-query';
-import { useCallback } from 'react';
 
-import { type FriendUserPage, isValidSearchQuery } from '../domains/friend.model';
-import { findFriendById } from '../utils/friend-lookup.view-model';
+import type { FriendUser, FriendUserPage } from '../domains/friend.model';
+import { isValidSearchQuery } from '../schemas/friend-request.schema';
 import { FRIEND_QUERY_KEYS } from './friend-query-keys';
 
 const FIRST_PAGE_CURSOR: string | undefined = undefined;
@@ -18,6 +17,19 @@ function selectItemsWithTotal<TItem>(data: {
 }
 
 type FriendPages = InfiniteData<FriendUserPage, string | undefined>;
+
+export function selectFriendById(
+  data: { pages: ReadonlyArray<Pick<FriendUserPage, 'items'>> },
+  friendId: string,
+): FriendUser | null {
+  for (const page of data.pages) {
+    const friend = page.items.find((item) => item.id === friendId);
+    if (friend) {
+      return friend;
+    }
+  }
+  return null;
+}
 
 export function useGetFriendsInfiniteQueryOptions() {
   const friendApi = useFriendApi();
@@ -36,10 +48,7 @@ export function useGetFriendsInfiniteQueryOptions() {
 
 /** 친구 목록 캐시에서 한 사람을 읽는다. 아직 불러오지 않은 페이지에 있으면 null이다 */
 export function useGetFriendInfiniteQueryOptions({ friendId }: { friendId: string }) {
-  const select = useCallback(
-    (friendPages: FriendPages) => findFriendById(friendPages.pages, friendId),
-    [friendId],
-  );
+  const select = (friendPages: FriendPages) => selectFriendById(friendPages, friendId);
 
   return infiniteQueryOptions({ ...useGetFriendsInfiniteQueryOptions(), select });
 }

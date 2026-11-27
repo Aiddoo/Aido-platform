@@ -1,0 +1,73 @@
+appId: ${MAESTRO_APP_ID}
+name: 기기 알림이 꺼진 채 푸시 알림 설정을 열면 안내 문구와 켜는 버튼이 보이고 거절한 뒤에는 설정 열기가 보인다
+tags:
+  - regression
+  - notification
+onFlowStart:
+  - runFlow: ../../subflows/app/load-helpers.yaml
+  - runFlow: ../../subflows/app/launch-fresh.yaml
+---
+# 지키는 것: 기기 알림이 꺼져 있으면 아래 토글이 소용없다는 안내와 켜는 한 단계를 먼저 보인다
+# (src/features/notification/components/push-permission-settings.tsx, PushPermissionPolicy.getDeviceStep)
+# 단계: 아직 묻지 않음·다시 물을 수 있음 → "계속"(시스템 창), 다시 물을 수 없음 → "설정 열기".
+# iOS 시뮬레이터는 알림 권한을 미리 정할 수 없어 처음엔 "아직 묻지 않음"이고, 시스템 창에서 거절해 "설정 열기"를 만든다.
+# Android는 pm revoke로 거절해도 다시 물을 수 있어 "계속"까지 본다
+
+# Given: 로그인했다
+- runFlow:
+    file: ../../subflows/auth/sign-in.yaml
+    env:
+      EMAIL: ${output.config.accounts.main.email}
+      PASSWORD: ${output.config.accounts.main.password}
+- runFlow:
+    label: Android는 알림 권한을 거두고 다시 연다(거두면 프로세스가 끝나 데이터를 지우지 않고 다시 연다)
+    when:
+      platform: Android
+    commands:
+      - launchApp:
+          stopApp: true
+          permissions:
+            notifications: deny
+            all: deny
+      - runFlow:
+          when:
+            true: ${output.config.devClientLink}
+          commands:
+            - openLink: ${output.config.devClientLink}
+      - extendedWaitUntil:
+          visible:
+            id: ${output.ids.feed.screen}
+          timeout: 60000
+
+# When: 푸시 알림 설정을 연다
+- openLink: ${output.config.appScheme}://settings/notifications/push
+
+# Then: 꺼짐 안내와 켜는 버튼이 보이고 허용됨이 아니다
+- extendedWaitUntil:
+    visible: ${output.labels.notification.deviceOffTitle}
+    timeout: 15000
+- assertVisible:
+    id: ${output.ids.notification.permissionStatus}
+- assertNotVisible: ${output.labels.notification.granted}
+
+- runFlow:
+    label: iOS는 시스템 창에서 거절하면 설정 열기로 바뀐다
+    when:
+      platform: iOS
+    commands:
+      # When: 계속을 눌러 시스템 창에서 거절한다
+      - tapOn:
+          id: ${output.ids.notification.permissionStatus}
+      - extendedWaitUntil:
+          visible: ${output.labels.system.denyNotifications}
+          timeout: 10000
+      - tapOn: ${output.labels.system.denyNotifications}
+      # Then: 안내는 그대로이고 버튼이 설정 열기다
+      - extendedWaitUntil:
+          visible:
+            id: ${output.ids.notification.permissionStatus}
+            text: ${output.labels.notification.openSettings}
+          timeout: 10000
+      - assertVisible: ${output.labels.notification.deviceOffTitle}
+- assertNotVisible:
+    id: ${output.ids.app.rootError}

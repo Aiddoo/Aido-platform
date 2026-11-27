@@ -1,0 +1,41 @@
+appId: ${MAESTRO_APP_ID}
+name: 캘린더 권한을 거절한 채 가져오기를 열면 설정 열기만 보이고 계속 버튼은 없다
+tags:
+  - regression
+  - todo-import
+  - ios-only
+onFlowStart:
+  - runFlow: ../../subflows/app/load-helpers.yaml
+  # launch-fresh가 알림 말고 모든 권한(캘린더 포함)을 거절한다
+  - runFlow: ../../subflows/app/launch-fresh.yaml
+---
+# 지키는 것: 거절한 뒤에는 다시 조르지 않고 설정 열기만 둔다
+# (app/(app)/(tabs)/(me,memos,todos)/todo-import/index.tsx PermissionStep, getCalendarPermissionView의 'blocked')
+# iOS는 거절하면 canAskAgain이 false라 'blocked'다. Android는 pm revoke 뒤에도 canAskAgain이 true라 'ask'(계속 버튼)여서
+# 거절 상태를 만들려면 시스템 창을 두 번 거절해야 한다. 그래서 iOS에서만 본다
+- runFlow:
+    label: iOS에서만 확인한다
+    when:
+      platform: iOS
+    commands:
+      # Given: 캘린더 권한이 거절된 계정으로 로그인했다
+      - runFlow:
+          file: ../../subflows/auth/sign-in.yaml
+          env:
+            EMAIL: ${output.config.accounts.main.email}
+            PASSWORD: ${output.config.accounts.main.password}
+
+      # When: 가져오기를 연다
+      - openLink: ${output.config.appScheme}://todo-import
+
+      # Then: 권한 안내와 설정 열기가 보이고 계속 버튼은 없다
+      - extendedWaitUntil:
+          visible:
+            id: ${output.ids.todoImport.permissionStep}
+          timeout: 20000
+      # 묻기 전과 거절한 뒤는 같은 단계라 안내 글자로 가른다
+      - assertVisible: ${output.labels.todoImport.permissionDeniedTitle}
+      - assertVisible: ${output.labels.todoImport.openSettings}
+      - assertNotVisible: ${output.labels.todoImport.permissionContinue}
+      - assertNotVisible:
+          id: ${output.ids.app.rootError}

@@ -13,12 +13,10 @@ import { pick } from 'es-toolkit';
 import type {
   FriendRequest,
   FriendRequestPage,
-  FriendUser,
-  FriendUserPage,
-  SearchedUser,
-  SearchedUserPage,
   SendFriendRequestResult,
-} from '../domains/friend.model';
+} from '../domains/friend-request.model';
+import type { FriendUser, FriendUserPage } from '../domains/friend.model';
+import type { SearchedUser, SearchedUserPage } from '../domains/searched-user.model';
 
 export function toFriendUser(dto: FriendUserDto): FriendUser {
   return {

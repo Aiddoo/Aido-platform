@@ -9,6 +9,7 @@ import {
 import { z } from "zod";
 
 import { defineQueue, JOB_POLLING_SECONDS } from "#api/shared/application/ports/job-queue.port";
+import { OPERATOR_TIMEZONE } from "#api/shared/domain/time/operator-timezone";
 import { DAY_SECONDS } from "#api/shared/domain/time/time-units";
 
 import {
@@ -153,7 +154,7 @@ export const ADMIN_NOTIFICATION_QUEUE = defineQueue({
     {
       key: "daily-signup-summary-scheduler",
       cron: "10 0 * * *",
-      timezone: "Asia/Seoul",
+      timezone: OPERATOR_TIMEZONE,
       missed: "once",
       payload: { name: AdminNotificationJobName.DISPATCH_SUMMARY, data: {} },
     },

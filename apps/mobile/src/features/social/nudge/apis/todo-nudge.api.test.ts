@@ -1,5 +1,5 @@
-import { ApiError, ParseError, unwrap } from '@src/shared/errors';
-import { createHttpClientStub } from '@src/testing/core';
+import { ParseError, unwrap } from '@src/shared/errors';
+import { createHttpClientStub, createApiError } from '@src/testing/core';
 
 import { createNudgeInteractionDto } from '../__tests__/nudge-interaction.fixtures';
 import { createSendNudgeResponseDto } from '../__tests__/todo-nudge.fixtures';
@@ -15,22 +15,6 @@ describe('TodoNudgeApi', () => {
   });
 
   describe('sendNudge', () => {
-    it('메시지가 200자를 넘으면 MESSAGE_TOO_LONG 오류를 반환한다', async () => {
-      // Given
-      const longMessage = 'a'.repeat(201);
-
-      // When
-      const result = await service.sendNudge({
-        receiverId: 'user-1',
-        todoId: 1,
-        message: longMessage,
-      });
-
-      // Then
-      expect(result).toMatchObject({ ok: false, error: { code: 'TODO_NUDGE_MESSAGE_TOO_LONG' } });
-      expect(httpClient.post).not.toHaveBeenCalled();
-    });
-
     it('메시지를 보내면 콕 결과를 반환한다', async () => {
       // Given
       const dto = createSendNudgeResponseDto();
@@ -158,7 +142,7 @@ describe('TodoNudgeApi의 콕 주고받기 계약', () => {
   it('현재 권한이 사라진 서버 오류는 번역하거나 다른 오류로 바꾸지 않는다', async () => {
     // Given
     const { httpClient, service } = setup();
-    const error = new ApiError('NUDGE_1109', '사용할 수 없는 콕이에요', 409);
+    const error = createApiError('NUDGE_1109', { message: '사용할 수 없는 콕이에요' });
     httpClient.put.mockResolvedValue({ ok: false, error });
     // When
     const result = await service.replyToNudge(1, { replyKind: 'STARTING' });

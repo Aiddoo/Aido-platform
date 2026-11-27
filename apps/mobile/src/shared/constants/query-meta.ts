@@ -1,5 +1,5 @@
 import type { ErrorReportFeature } from '@src/core/observability/telemetry-keys';
-import type { MutationMeta, QueryMeta } from '@tanstack/react-query';
+import type { DefaultError, MutationMeta, QueryMeta } from '@tanstack/react-query';
 import type { DefaultNamespace, FlatNamespace, ParseKeysWithoutVariables } from 'i18next';
 
 /** 전역 `t`가 받는 키 모양(기본 네임스페이스는 접두사 없이, 나머지는 `ns:key`) */
@@ -24,10 +24,7 @@ export type MutationErrorFeedbackMeta = {
   feature: ErrorReportFeature;
   /** 사용자 문구가 없는 오류(파싱·SDK 실패)에 보일 토스트 문구. 없으면 `errors:fallback` */
   fallbackKey?: ParseKeysWithoutVariables<AppNamespaces>;
-  /**
-   * 기능이 직접 보이는 오류면 true. 옵션 `onError`의 코드별 안내·이동·한도 시트, 호출부 `onError`의 `form.setError`가 그 예다.
-   * 캐시 단계 전역 처리가 기능 콜백보다 먼저 돌아 미리 알아야 한다. 이 오류에는 햅틱·토스트·보고를 하지 않는다
-   */
+  /** 기능이 직접 보이는 오류면 true. 캐시 단계 전역 처리가 기능 콜백보다 먼저 돌아 미리 알아야 한다 */
   isHandledByFeature?: (error: unknown) => boolean;
   /** 토스트 둘째 줄에 붙일 기능만의 설명(AI가 차감하지 않았다는 안내 등). 붙일 것이 없으면 undefined */
   describe?: (error: unknown) => string | undefined;
@@ -42,6 +39,8 @@ declare module '@tanstack/react-query' {
   interface Register {
     queryMeta: AppQueryMeta;
     mutationMeta: AppMutationMeta;
+    // queryFn·mutationFn은 Error가 아닌 값도 던질 수 있어 경계·재시도 판정처럼 좁혀 읽게 한다
+    defaultError: unknown;
   }
 }
 
@@ -52,3 +51,9 @@ export type AppQueryMetaGuard = AssertClosedQueryMeta<keyof QueryMeta>;
 type AssertClosedMutationMeta<Key extends keyof AppMutationMeta> = Key;
 /** MutationMeta가 Record<string, unknown>으로 돌아가면 컴파일 오류가 난다 */
 export type AppMutationMetaGuard = AssertClosedMutationMeta<keyof MutationMeta>;
+
+type AssertUnknownDefaultError<IsUnknown extends true> = IsUnknown;
+/** DefaultError가 Error로 돌아가면(Register 보강이 풀리면) 컴파일 오류가 난다 */
+export type AppDefaultErrorGuard = AssertUnknownDefaultError<
+  unknown extends DefaultError ? true : false
+>;

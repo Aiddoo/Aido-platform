@@ -1,4 +1,4 @@
-import type { SupportedLocale } from "@aido/api/vocabulary";
+import { USER_PROFILE_LIMITS, type SupportedLocale } from "@aido/api/vocabulary";
 
 import type { AccountProvider } from "#api/modules/identity/linked-accounts/domain/linked-accounts.constants";
 import type { ProviderAccountId } from "#api/modules/identity/linked-accounts/domain/provider-account-id.vo";
@@ -11,8 +11,6 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { SecurityLogRepositoryPort } from "../../../users/application/ports/security-log.repository.port.js";
 import type { ProvisionUserUseCase } from "../../../users/application/use-cases/provision-user.use-case.js";
-
-const MAXIMUM_NAME_LENGTH = 20;
 
 export interface RegisterSocialUserCommand {
   readonly email: string;
@@ -42,7 +40,7 @@ export class RegisterSocialUserUseCase {
     const { unitOfWork, provisionUserUseCase, securityLogRepository, clock } = this.#dependencies;
     return unitOfWork.run(async () => {
       const effectiveName = command.userName
-        ? command.userName.slice(0, MAXIMUM_NAME_LENGTH)
+        ? command.userName.slice(0, USER_PROFILE_LIMITS.NAME_MAX_LENGTH)
         : generateRandomName();
       const currentTime = clock.now();
 

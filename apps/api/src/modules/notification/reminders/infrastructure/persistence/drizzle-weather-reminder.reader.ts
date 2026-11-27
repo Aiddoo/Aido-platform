@@ -83,6 +83,7 @@ export class DrizzleWeatherReminderReader implements WeatherReminderReaderPort {
       .select({
         id: recipients.userId,
         locale: preference.locale,
+        timeFormat: preference.timeFormat,
         timezone: preference.timezone,
         latitude: coordinates.latitude,
         longitude: coordinates.longitude,
@@ -91,9 +92,9 @@ export class DrizzleWeatherReminderReader implements WeatherReminderReaderPort {
       .innerJoin(preference, eq(preference.userId, recipients.userId))
       .innerJoin(coordinates, eq(coordinates.userId, recipients.userId))
       .where(this.#recipientCondition(params, slot, preference));
-    return rows.map(({ id, locale, timezone, latitude, longitude }) => ({
+    return rows.map(({ id, locale, timeFormat, timezone, latitude, longitude }) => ({
       id,
-      preference: { locale, timezone },
+      preference: { locale, timeFormat },
       location: { latitude, longitude },
       timezone,
     }));

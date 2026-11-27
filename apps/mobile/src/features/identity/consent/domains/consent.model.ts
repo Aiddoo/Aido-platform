@@ -3,7 +3,7 @@ import {
   AI_DATA_SHARING_DECISION,
   AI_DATA_SHARING_DECISIONS,
 } from '@aido/api/vocabulary';
-import { type Instant, instantSchema } from '@src/shared/date/instant';
+import { instantSchema } from '@src/shared/date/instant';
 import { z } from 'zod';
 
 export const consentSchema = z.object({
@@ -43,43 +43,18 @@ export type UpdateAiDataSharingConsentResult = z.infer<
   typeof updateAiDataSharingConsentResultSchema
 >;
 
-/** 이전 안내 버전 동의도 AGREED다. 서버가 그 버전의 처리 업체만 쓰므로 기능은 그대로 동작한다 */
-function hasAgreedToAiDataSharing(consent: Consent) {
-  return consent.aiDataSharingDecision === AI_DATA_SHARING_DECISION.AGREED;
-}
-
-/** 이전 안내에 동의한 사람에게 바뀐 안내를 보여 줘야 하는지. 버전을 모르면 묻지 않는다 */
-function shouldShowAiConsentRenewal(consent: Consent) {
-  return (
-    hasAgreedToAiDataSharing(consent) &&
-    consent.aiDataSharingConsentVersion != null &&
-    consent.aiDataSharingConsentVersion !== AI_DATA_SHARING_CONSENT.VERSION
-  );
-}
-
-export interface ConsentResult {
-  type: 'agreed' | 'withdrawn';
-  at: Instant;
-}
-
-/** 동의 시각이 있으면 동의, 철회 시각이 있으면 철회 결과다 */
-export function findConsentResult({
-  agreedAt,
-  withdrawnAt,
-}: {
-  agreedAt: Instant | null;
-  withdrawnAt: Instant | null;
-}): ConsentResult | null {
-  if (agreedAt != null) {
-    return { type: 'agreed', at: agreedAt };
-  }
-  if (withdrawnAt != null) {
-    return { type: 'withdrawn', at: withdrawnAt };
-  }
-  return null;
-}
-
 export const ConsentPolicy = {
-  hasAgreedToAiDataSharing,
-  shouldShowAiConsentRenewal,
-} as const;
+  /** 이전 안내 버전 동의도 AGREED다. 서버가 그 버전의 처리 업체만 쓰므로 기능은 그대로 동작한다 */
+  hasAgreedToAiDataSharing(consent: Consent): boolean {
+    return consent.aiDataSharingDecision === AI_DATA_SHARING_DECISION.AGREED;
+  },
+
+  /** 이전 안내에 동의한 사람에게 바뀐 안내를 보여 줘야 하는지. 버전을 모르면 묻지 않는다 */
+  shouldShowAiConsentRenewal(consent: Consent): boolean {
+    return (
+      this.hasAgreedToAiDataSharing(consent) &&
+      consent.aiDataSharingConsentVersion != null &&
+      consent.aiDataSharingConsentVersion !== AI_DATA_SHARING_CONSENT.VERSION
+    );
+  },
+};

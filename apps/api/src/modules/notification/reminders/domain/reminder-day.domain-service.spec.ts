@@ -50,6 +50,13 @@ describe("리마인더 날짜 경계", () => {
       timezone: "UTC",
       expected: 3,
     },
+    {
+      label: "저장된 UTC는 발송 시간대 규칙대로 서울 날짜로 0일(UTC 날짜로는 1일)",
+      since: "2026-11-10T16:00:00.000Z",
+      today: "2026-11-11",
+      timezone: "UTC",
+      expected: 0,
+    },
   ])("localDaysSince: $label", ({ since, today, timezone, expected }) => {
     // When
     const days = localDaysSince(
@@ -65,13 +72,17 @@ describe("리마인더 날짜 경계", () => {
   it.each([
     { timezone: "Asia/Seoul", expected: "2026-12-31T15:00:00Z" },
     { timezone: "America/Los_Angeles", expected: "2027-01-01T08:00:00Z" },
-  ])("localStartOf는 $timezone의 2027-01-01 현지 자정 순간이다", ({ timezone, expected }) => {
-    // When
-    const start = localStartOf(Temporal.PlainDate.from("2027-01-01"), timezone);
+    { timezone: "UTC", expected: "2026-12-31T15:00:00Z" },
+  ])(
+    "localStartOf는 $timezone의 2027-01-01 발송 시간대 자정 순간이다",
+    ({ timezone, expected }) => {
+      // When
+      const start = localStartOf(Temporal.PlainDate.from("2027-01-01"), timezone);
 
-    // Then
-    expect(start).toEqual(Temporal.Instant.from(expected));
-  });
+      // Then
+      expect(start).toEqual(Temporal.Instant.from(expected));
+    },
+  );
 
   it("localDayRangeAcross는 묶음의 시간대마다 그 현지 날짜가 되는 순간을 모두 덮는다", () => {
     // When

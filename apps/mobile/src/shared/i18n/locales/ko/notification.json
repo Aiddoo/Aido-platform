@@ -17,8 +17,8 @@
   },
   "marketingOptIn": {
     "title": "혜택·소식도 알림으로 받을까요?",
-    "description": "이벤트·혜택 소식과 맞춤 추천을 보내드려요",
-    "notice": "광고성 정보 수신 동의예요. 설정에서 언제든 끌 수 있어요",
+    "description": "이벤트·혜택 소식과 맞춤 추천을 보내드려요.",
+    "notice": "광고성 정보 수신 동의예요. 설정에서 언제든 끌 수 있어요.",
     "agree": "받을게요",
     "later": "나중에"
   },
@@ -54,7 +54,7 @@
     "markAllRead": "모두 읽음",
     "premiumDescription": "구독하면 AI 리포트와 제안을 확인할 수 있어요",
     "loadError": "알림을 불러오지 못했어요",
-    "markAllReadFailed": "모두 읽음으로 바꾸지 못했어요. 잠시 후 다시 시도해주세요"
+    "markAllReadFailed": "모두 읽음으로 바꾸지 못했어요. 잠시 뒤 다시 시도해주세요"
   },
   "directions": {
     "received": "받은 알림",

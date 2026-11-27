@@ -1,4 +1,5 @@
 import { completionRate, isAllCompleted } from '@aido/api/vocabulary';
+import { CATEGORY_COLORS } from '@src/features/planning/category/constants/todo-category.constants';
 import { DAYS_PER_WEEK } from '@src/shared/constants/time-units';
 import {
   addDaysToDateKey,
@@ -7,13 +8,14 @@ import {
   diffDateKeysInDays,
   getDayOfWeek,
   getIsoWeekNumber,
+  getIsoWeekDateRange,
   getIsoWeekYear,
-  getMondayOfDateKey,
   getMonthEndDateKey,
   getMonthStartDateKey,
   getYearOfDateKey,
   toCivilDate,
 } from '@src/shared/date/date-key';
+import { getDaysSinceAggregationWeekStart } from '@src/shared/date/week-start';
 import { getStartOfDateKey } from '@src/shared/date/zoned';
 import { t } from '@src/shared/i18n';
 import { orderBy, range, sumBy, take, takeRightWhile } from 'es-toolkit';
@@ -21,14 +23,77 @@ import { match } from 'ts-pattern';
 
 import { TREND_WEEK_COUNT } from '../constants/report-chart.constants';
 import {
-  SAMPLE_CATEGORY_SHARES,
-  SAMPLE_COMPLETION_HOUR_WEIGHTS,
-  SAMPLE_DAILY_TODO_COUNTS,
-  SAMPLE_MISSED_TODO_COUNTS,
-  SAMPLE_TRAILING_PERFECT_DAYS,
-} from '../constants/sample-report.constants';
-import type { AiReport, DailyCompletion, ReportType } from '../domains/report.model';
+  type AiReport,
+  type DailyCompletion,
+  findPeakHour,
+  type ReportType,
+} from '../domains/report.model';
 import type { TrendWeek } from './report-chart.view-model';
+
+/** 예시 리포트의 만든 시각은 화면에 보이지 않아 기기 시간대 대신 고정 시간대로 정한다 */
+const SAMPLE_REPORT_GENERATED_TIMEZONE = 'UTC';
+
+/** 예시 하루 할 일 수(월~일). 주말은 적게 잡는다 */
+const SAMPLE_DAILY_TODO_COUNTS = [5, 6, 4, 5, 6, 3, 3] as const;
+
+/**
+ * 예시 기간마다 요일별로 못 끝낸 할 일 수(월~일). 첫 줄이 지난주·지난달이다.
+ * 주간은 최근 8주 추세까지, 월간은 맨 아래 예시의 지난번 비교까지 읽어 개수보다 길다.
+ * 주간 달성률은 오래된 주부터 59·63·59·66·69·66·72·78%로 오르내리며 좋아진다. 코치 글(ai.report.sample.weekly)의 숫자가 이 표에서 나온다
+ */
+const SAMPLE_MISSED_TODO_COUNTS = {
+  WEEKLY: [
+    [2, 1, 2, 2, 0, 0, 0],
+    [2, 1, 2, 2, 1, 1, 0],
+    [2, 2, 2, 2, 3, 0, 0],
+    [2, 2, 1, 2, 2, 1, 0],
+    [2, 2, 2, 2, 2, 0, 1],
+    [2, 2, 2, 2, 3, 1, 1],
+    [2, 2, 2, 2, 2, 1, 1],
+    [2, 3, 2, 2, 2, 1, 1],
+  ],
+  MONTHLY: [
+    [2, 1, 2, 1, 1, 1, 0],
+    [2, 2, 1, 2, 2, 1, 1],
+    [1, 2, 2, 1, 2, 1, 1],
+    [2, 2, 2, 2, 2, 1, 1],
+    [2, 2, 2, 2, 2, 2, 1],
+  ],
+} as const;
+
+/** 예시 기간 끝에 할 일을 모두 끝낸 날 수. 이 기간 연속이 되고, 이 날들은 위 표의 못 끝낸 수를 보지 않는다 */
+const SAMPLE_TRAILING_PERFECT_DAYS = {
+  WEEKLY: [3, 1, 2, 1, 0, 0, 0, 0],
+  MONTHLY: [5, 2, 3, 1, 0],
+} as const;
+
+/**
+ * 예시로 끝낸 시각의 비중. 아침 출근 전과 저녁 9시대에 봉우리가 있고 낮에는 점심 무렵만 조금 끝낸다.
+ * 코치 글이 말하는 아침 7시가 가장 많다
+ */
+const SAMPLE_COMPLETION_HOUR_WEIGHTS = [
+  { hour: 6, weight: 1 },
+  { hour: 7, weight: 7 },
+  { hour: 8, weight: 5 },
+  { hour: 9, weight: 2 },
+  { hour: 10, weight: 1 },
+  { hour: 12, weight: 2 },
+  { hour: 13, weight: 1 },
+  { hour: 15, weight: 1 },
+  { hour: 18, weight: 2 },
+  { hour: 19, weight: 1 },
+  { hour: 20, weight: 3 },
+  { hour: 21, weight: 5 },
+  { hour: 22, weight: 3 },
+  { hour: 23, weight: 1 },
+] as const;
+
+/** 예시 카테고리의 할 일·못 끝낸 할 일 몫. 코치 글처럼 업무가 가장 꾸준하고 운동이 가장 자주 밀린다. 운동은 남은 몫이다 */
+const SAMPLE_CATEGORY_SHARES = {
+  work: { todoShare: 0.45, missedShare: 0.2, color: CATEGORY_COLORS[9] },
+  study: { todoShare: 0.3, missedShare: 0.35, color: CATEGORY_COLORS[11] },
+  workout: { color: CATEGORY_COLORS[6] },
+} as const;
 
 interface SampleReportContext {
   todayKey: DateKey;
@@ -82,7 +147,10 @@ export function createSampleReport(
     aiContentSource: 'AI',
     hasActivity: true,
     // 리포트는 기간이 끝난 다음 날 만들어진다. 화면에 보이지 않는 값이다
-    generatedAt: getStartOfDateKey(addDaysToDateKey(dateRange.endDate, 1), 'UTC'),
+    generatedAt: getStartOfDateKey(
+      addDaysToDateKey(dateRange.endDate, 1),
+      SAMPLE_REPORT_GENERATED_TIMEZONE,
+    ),
   };
 }
 
@@ -100,10 +168,9 @@ function getSamplePeriod(
   todayKey: DateKey,
 ): AiReport['dateRange'] {
   return match(type)
-    .with('WEEKLY', () => {
-      const startDate = addDaysToDateKey(getMondayOfDateKey(todayKey), -DAYS_PER_WEEK * periodsAgo);
-      return { startDate, endDate: addDaysToDateKey(startDate, DAYS_PER_WEEK - 1) };
-    })
+    .with('WEEKLY', () =>
+      getIsoWeekDateRange(addDaysToDateKey(todayKey, -DAYS_PER_WEEK * periodsAgo)),
+    )
     .with('MONTHLY', () => {
       const startDate = getMonthStartDateKey(addMonthsToDateKey(todayKey, -periodsAgo));
       return { startDate, endDate: getMonthEndDateKey(startDate) };
@@ -123,8 +190,8 @@ function createSampleDays(
 
   return range(dayCount).map((offset) => {
     const date = addDaysToDateKey(startDate, offset);
-    // 표는 월요일부터다
-    const weekday = (getDayOfWeek(date) + DAYS_PER_WEEK - 1) % DAYS_PER_WEEK;
+    // 표는 집계 주 시작(월요일)부터다
+    const weekday = getDaysSinceAggregationWeekStart(getDayOfWeek(date));
     // 월간 막대가 주마다 똑같이 되풀이되지 않게 못 끝낸 요일을 주마다 하루씩 민다
     const missedDay = (weekday + Math.floor(offset / DAYS_PER_WEEK)) % DAYS_PER_WEEK;
     const total = SAMPLE_DAILY_TODO_COUNTS[weekday] ?? 0;
@@ -183,16 +250,6 @@ function createSampleCategory(
 ): AiReport['categoryBreakdown'][number] {
   const completed = total - missed;
   return { name, color, total, completed, rate: completionRate(completed, total) };
-}
-
-/** 서버 findPeakHour와 같은 규칙이다. 가장 많이 끝낸 시각, 같으면 이른 시각이고 끝낸 할 일이 없으면 null이다 */
-function findPeakHour(timePatterns: AiReport['timePatterns']): number | null {
-  const [peak] = orderBy(
-    timePatterns.filter(({ count }) => count > 0),
-    ['count', 'hour'],
-    ['desc', 'asc'],
-  );
-  return peak?.hour ?? null;
 }
 
 function createSampleTimePatterns(completedTodos: number): AiReport['timePatterns'] {

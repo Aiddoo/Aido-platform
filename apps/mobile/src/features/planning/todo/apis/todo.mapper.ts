@@ -15,21 +15,17 @@ import { dateKeySchema } from '@src/shared/date/date-key';
 import { toNullableInstant } from '@src/shared/date/instant';
 
 import {
-  DailyCompletionPolicy,
   type DailyCompletionsResult,
   type DailyCompletionSummary,
+  getDistinctCategoryColors,
 } from '../domains/daily-completion.model';
+import type { TodoDetails } from '../domains/todo-details.model';
+import type { TodoListResult } from '../domains/todo-list.model';
+import type { TodoOverview } from '../domains/todo-overview.model';
 import type { TodoResourceLimit } from '../domains/todo-resource-limit.model';
-import {
-  findScheduledTime,
-  type Todo,
-  type TodoDetails,
-  type TodoOverview,
-  TodoPolicy,
-  type TodoFieldChanges,
-  type TodoSummary,
-  type TodoListResult,
-} from '../domains/todo.model';
+import { TodoSchedulePolicy } from '../domains/todo-schedule.model';
+import type { TodoSummary } from '../domains/todo-summary.model';
+import { type Todo, type TodoFieldChanges, TodoPolicy } from '../domains/todo.model';
 import type { TodoFormValues } from '../schemas/todo-form.schema';
 import type { TodoDetailsEnvelope } from '../schemas/todo-response.schema';
 import type { TodoSeriesEditOptions } from '../schemas/todo-series-request.schema';
@@ -63,7 +59,7 @@ function toDailyCompletionSummary(dto: DailyCompletionSummaryDto): DailyCompleti
     completedTodos: dto.completedTodos,
     isComplete: dto.isComplete,
     completionRate: dto.completionRate,
-    categoryColors: DailyCompletionPolicy.toCategoryColors(dto.categoryColors),
+    categoryColors: getDistinctCategoryColors(dto.categoryColors),
   };
 }
 
@@ -88,12 +84,12 @@ export function toTodoOverview(dto: TodoOverviewResponse): TodoOverview {
   };
 }
 
-/** 카테고리를 주지 않으면(아직 없는 새 카테고리) 서버가 세지 않아 빈 카테고리다 */
+/** 카테고리를 주지 않으면(아직 없는 새 카테고리) 서버가 세지 않아 수가 없다 */
 export function toTodoResourceLimit(dto: {
   maxPerCategory: number;
   activeCount?: number;
 }): TodoResourceLimit {
-  return { maxPerCategory: dto.maxPerCategory, activeCount: dto.activeCount ?? 0 };
+  return { maxPerCategory: dto.maxPerCategory, activeCount: dto.activeCount ?? null };
 }
 
 export function toTodoSummary(dto: TodoSummaryResponse): TodoSummary {
@@ -121,8 +117,16 @@ export function toTodoDetails(dto: TodoDetailsEnvelope): TodoDetails {
       name: dto.owner.name,
       profileImage: dto.owner.profileImage,
     },
-    permissions: { ...dto.permissions },
-    metrics: { ...dto.metrics },
+    permissions: {
+      canEdit: dto.permissions.canEdit,
+      canComment: dto.permissions.canComment,
+      canNudge: dto.permissions.canNudge,
+      canThank: dto.permissions.canThank,
+    },
+    metrics: {
+      viewCount: dto.metrics.viewCount,
+      commentCount: dto.metrics.commentCount,
+    },
   };
 }
 
@@ -145,7 +149,7 @@ export function toTodoListResult(dto: TodoListResponse): TodoListResult {
 
 /** 작성 시트·반복 작성·메모 옮기기가 모두 이 모양으로 보낸다 */
 export function toCreateTodoRequest(values: TodoFormValues): CreateTodoInput {
-  const scheduledTime = findScheduledTime(values);
+  const scheduledTime = TodoSchedulePolicy.findScheduledTime(values);
   return {
     title: values.title,
     categoryId: values.categoryId,
@@ -172,7 +176,6 @@ export function toTodoFormValues(todo: Todo, timezone: string): TodoFormValues {
   };
 }
 
-/** 고친 칸에 반복 범위·규칙·체크리스트를 붙인다 */
 export function toUpdateTodoRequest(
   fields: TodoFieldChanges,
   { scope, repeat, checklist }: TodoSeriesEditOptions,

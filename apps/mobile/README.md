@@ -54,13 +54,13 @@ eas build --profile preview --platform <ios|android|all>       # 내부 테스�
 ### OTA 업데이트
 
 ```bash
-pnpm update:preview "메시지"
-pnpm update:production "메시지"
+pnpm update:preview --message "메시지"
+pnpm update:production --message "메시지"
 ```
 
 ## 스크립트
 
-명령 전체는 `package.json`의 `scripts`가 원본입니다. 앱의 `pnpm check`는 lint·format·`lint:deps`만 돌고, 커밋 전 전체 검사는 루트 `pnpm check`입니다([루트 AGENTS](../../AGENTS.md#명령)).
+명령 전체는 `package.json`의 `scripts`가 원본입니다. 앱에는 `check` script가 없고(`typecheck`·`lint:deps`·`check:unused`가 따로 있습니다), 커밋 전 전체 검사는 루트 `pnpm check`입니다([루트 AGENTS](../../AGENTS.md#명령)).
 
 ## 환경별 API URL
 

@@ -1,6 +1,6 @@
 import { createInquiryResponseSchema } from '@aido/api/contracts/inquiry/v1';
 import type { ErrorCodeType } from '@aido/api/errors';
-import { ApiError } from '@src/core/errors/api-error';
+import { createApiError } from '@src/testing/api-error';
 import { defineFixture } from '@src/testing/fixture';
 
 export const createInquiryResponseDto = defineFixture(createInquiryResponseSchema, {
@@ -10,9 +10,8 @@ export const createInquiryResponseDto = defineFixture(createInquiryResponseSchem
 export function createInquiryApiError(
   overrides?: Partial<{ code: ErrorCodeType; message: string; status: number }>,
 ) {
-  return new ApiError(
-    overrides?.code ?? 'SYS_0001',
-    overrides?.message ?? '문의 접수에 실패했습니다',
-    overrides?.status ?? 500,
-  );
+  return createApiError(overrides?.code ?? 'SYS_0001', {
+    message: overrides?.message ?? '문의 접수에 실패했습니다',
+    status: overrides?.status ?? 500,
+  });
 }

@@ -1,5 +1,5 @@
 import { i18n } from '@src/shared/i18n';
-import { getDeviceTimezone } from '@src/shared/infra/localization/device-timezone';
+import { getAppTimezone } from '@src/shared/infra/localization/app-timezone';
 import * as Crypto from 'expo-crypto';
 import type { BeforeRequestState } from 'ky';
 
@@ -28,7 +28,7 @@ export function createAppHeaders({
 /** 언어·시간대는 실행 중 바뀔 수 있고 요청 ID는 요청마다 새로 만든다 */
 export function setPerRequestHeaders(headers: Headers): void {
   headers.set(REQUEST_ID_HEADER, Crypto.randomUUID());
-  headers.set('X-Timezone', getDeviceTimezone());
+  headers.set('X-Timezone', getAppTimezone());
   if (i18n.language) {
     headers.set('Accept-Language', i18n.language);
   }

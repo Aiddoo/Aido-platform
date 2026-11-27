@@ -11,7 +11,7 @@ type PushPermissionQueryOptions = EnsureQueryDataOptions<
   ReturnType<typeof PUSH_PERMISSION_QUERY_KEYS.current>
 >;
 
-export function setCachedPushPermission(queryClient: QueryClient, permission: PushPermission) {
+export function setPushPermissionInCache(queryClient: QueryClient, permission: PushPermission) {
   queryClient.setQueryData(PUSH_PERMISSION_QUERY_KEYS.current(), permission);
 }
 
@@ -20,7 +20,7 @@ export function ensurePushPermission(
   queryClient: QueryClient,
   options: PushPermissionQueryOptions,
 ) {
-  return queryClient.ensureQueryData(options);
+  return queryClient.query({ ...options, staleTime: 'static' });
 }
 
 export function invalidatePushPermission(queryClient: QueryClient) {

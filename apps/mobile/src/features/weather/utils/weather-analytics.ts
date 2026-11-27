@@ -1,8 +1,10 @@
+import type { OsPermission } from '@src/core/ports/os-permission';
 import { isConnectivityError } from '@src/shared/errors/infra-error';
+import { getOsPermissionAccess } from '@src/shared/utils/get-os-permission-access';
 import { match, P } from 'ts-pattern';
 
-import type { BriefingResult } from '../domains/weather-briefing.model';
-import type { WeatherLocationStatus } from '../domains/weather-location.model';
+import type { WeatherLocationStatus } from '../domains/location-reading.model';
+import type { WeatherBriefing } from '../domains/weather-briefing.model';
 import {
   isLocationNotRegisteredError,
   isWeatherProviderUnavailableError,
@@ -37,13 +39,13 @@ const BRIEFING_KINDS = {
   tomorrowMorning: 'tomorrow_morning',
   dry: 'dry',
   noScheduledTodos: 'no_scheduled_todos',
-} as const satisfies Record<BriefingResult['kind'], WeatherBriefingKind>;
+} as const satisfies Record<WeatherBriefing['kind'], WeatherBriefingKind>;
 
 export function toWeatherOpenedEntry(entry: WeatherEntry | undefined): WeatherOpenedEntry {
   return entry ?? 'other';
 }
 
-export function toWeatherBriefingKind(kind: BriefingResult['kind']): WeatherBriefingKind {
+export function toWeatherBriefingKind(kind: WeatherBriefing['kind']): WeatherBriefingKind {
   return BRIEFING_KINDS[kind];
 }
 
@@ -73,14 +75,14 @@ export function toWeatherReportFailedCause(error: unknown): WeatherReportFailedC
 export type WeatherPermissionResult = 'granted' | 'needs_permission' | 'denied';
 
 /** 권한 요청 자체가 실패하면(null) 다시 물을 수 있는 상태로 본다. */
-export function toPermissionResult(
-  permission: { isGranted: boolean; canAskAgain: boolean } | null,
-): WeatherPermissionResult {
+export function toPermissionResult(permission: OsPermission | null): WeatherPermissionResult {
   if (permission == null) {
     return 'needs_permission';
   }
-  if (permission.isGranted) {
-    return 'granted';
-  }
-  return permission.canAskAgain ? 'needs_permission' : 'denied';
+  return match(getOsPermissionAccess(permission))
+    .returnType<WeatherPermissionResult>()
+    .with('granted', () => 'granted')
+    .with('ask', () => 'needs_permission')
+    .with('settings', () => 'denied')
+    .exhaustive();
 }

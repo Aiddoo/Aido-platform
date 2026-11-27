@@ -4,8 +4,8 @@ import { act, fireEvent, screen } from '@testing-library/react-native';
 import { State } from 'react-native-gesture-handler';
 import { fireGestureHandler, getByGestureTestId } from 'react-native-gesture-handler/jest-utils';
 
+import type { VoiceNotePlayback } from '../../domains/voice-note-playback.model';
 import type { VoiceNotePlayer } from '../../hooks/use-voice-note-player';
-import type { VoiceNotePlayback } from '../../utils/voice-note-playback.view-model';
 import { VoiceNotePlayerBar } from './voice-note-player-bar';
 
 const LEVELS = [0.2, 0.4, 0.6, 0.8];

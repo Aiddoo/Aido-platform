@@ -45,6 +45,8 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "node",
+    // 운영 process(Docker ENV TZ=UTC)와 같은 시간대로 돌려 개발 기기 시간대에 따라 결과가 달라지지 않게 한다
+    env: { TZ: "UTC" },
     clearMocks: true,
     restoreMocks: true,
     unstubEnvs: true,

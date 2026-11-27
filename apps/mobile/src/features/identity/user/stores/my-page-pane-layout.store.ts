@@ -5,10 +5,7 @@ export interface MyPagePaneLayoutStore {
   setScrollOffset(next: number): void;
 }
 
-/**
- * 메뉴를 그리는 곳(좁은 화면 마이 탭 첫 화면, 넓은 화면 화면마다 왼쪽 칸)이 바뀌어도 같은 스크롤에서 시작하게 위치를 넘겨받는다.
- * DI가 소유해 컨테이너를 새로 만들면(루트 다시 시도) 지난 위치가 남지 않는다
- */
+/** 좁은·넓은 화면에서 메뉴를 그리는 곳이 바뀌어도 같은 스크롤에서 시작하고, DI가 소유해 루트 다시 시도 뒤 남지 않는다 */
 export function createMyPagePaneLayoutStore(): MyPagePaneLayoutStore {
   let paneCount = 0;
   let scrollOffset = 0;

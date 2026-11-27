@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import { z } from "zod";
 
 import { runInBackground } from "#api/platform/jobs/non-blocking-init";
+import { JOB_SCHEDULE_TIMEZONE } from "#api/shared/application/job-schedule-timezone";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import {
   defineQueue,
@@ -32,7 +33,7 @@ const USAGE_RETENTION_QUEUE = defineQueue({
     {
       key: "daily-outbound-usage-retention",
       cron: "30 4 * * *",
-      timezone: "Asia/Seoul",
+      timezone: JOB_SCHEDULE_TIMEZONE,
       missed: "skip",
       payload: {},
     },

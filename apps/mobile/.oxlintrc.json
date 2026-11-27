@@ -19,8 +19,7 @@
     "eslint/no-void": "error",
     "react/rules-of-hooks": "error",
     "react/exhaustive-deps": "error",
-    // 루트 AGENTS 공통 규칙(중첩 삼항 금지, `#` 비공개만, 생성자 파라미터 프로퍼티 금지)을 앱에도 건다
-    "eslint/no-nested-ternary": "error",
+    // 루트 AGENTS 공통 규칙(`#` 비공개만, 생성자 파라미터 프로퍼티 금지)을 앱에도 건다. 중첩 삼항 금지는 루트가 건다
     "aido/no-member-accessibility": "error",
     "typescript/parameter-properties": ["error", { "prefer": "class-property" }]
   },
@@ -171,6 +170,11 @@
             ],
             "patterns": [
               {
+                "regex": "/di-context$",
+                "importNames": ["DIContext"],
+                "message": "DIContext는 src/testing의 Skia mock만 값을 비우려고 읽습니다. 앱 코드는 di-context의 use{X} 훅으로 꺼내세요(직접 읽으면 누락 검사를 건너뜁니다)."
+              },
+              {
                 "regex": "^@src/shared/ui$|/form-field$",
                 "importNames": ["FormField"],
                 "message": "폼은 변수 form, useForm 제네릭 없이, Controller로 씁니다. FormProvider, useFormContext, FormField, methods, formMethods를 쓰지 않고 form을 props로 넘기세요."
@@ -217,6 +221,11 @@
               }
             ],
             "patterns": [
+              {
+                "regex": "/di-context$",
+                "importNames": ["DIContext"],
+                "message": "DIContext는 src/testing의 Skia mock만 값을 비우려고 읽습니다. 앱 코드는 di-context의 use{X} 훅으로 꺼내세요(직접 읽으면 누락 검사를 건너뜁니다)."
+              },
               {
                 "regex": "^@src/shared/ui$|/form-field$",
                 "importNames": ["FormField"],
@@ -269,6 +278,11 @@
               }
             ],
             "patterns": [
+              {
+                "regex": "/di-context$",
+                "importNames": ["DIContext"],
+                "message": "DIContext는 src/testing의 Skia mock만 값을 비우려고 읽습니다. 앱 코드는 di-context의 use{X} 훅으로 꺼내세요(직접 읽으면 누락 검사를 건너뜁니다)."
+              },
               {
                 "regex": "^@src/shared/ui$|/form-field$",
                 "importNames": ["FormField"],
@@ -337,6 +351,11 @@
             ],
             "patterns": [
               {
+                "regex": "/di-context$",
+                "importNames": ["DIContext"],
+                "message": "DIContext는 src/testing의 Skia mock만 값을 비우려고 읽습니다. 앱 코드는 di-context의 use{X} 훅으로 꺼내세요(직접 읽으면 누락 검사를 건너뜁니다)."
+              },
+              {
                 "regex": "^@src/shared/ui$|/form-field$",
                 "importNames": ["FormField"],
                 "message": "폼은 변수 form, useForm 제네릭 없이, Controller로 씁니다. FormProvider, useFormContext, FormField, methods, formMethods를 쓰지 않고 form을 props로 넘기세요."
@@ -380,6 +399,11 @@
               }
             ],
             "patterns": [
+              {
+                "regex": "/di-context$",
+                "importNames": ["DIContext"],
+                "message": "DIContext는 src/testing의 Skia mock만 값을 비우려고 읽습니다. 앱 코드는 di-context의 use{X} 훅으로 꺼내세요(직접 읽으면 누락 검사를 건너뜁니다)."
+              },
               {
                 "regex": "^@src/shared/ui$|/form-field$",
                 "importNames": ["FormField"],
@@ -512,7 +536,7 @@
           {
             "object": "Platform",
             "property": "OS",
-            "message": "Platform.OS 대신 process.env.EXPO_OS를 씁니다. 번들에서 안 쓰는 플랫폼 코드가 빠집니다."
+            "message": "Platform.OS는 운영 빌드에서만 글자로 바뀌어, 개발 빌드에서도 바뀌는 process.env.EXPO_OS 하나로 씁니다."
           },
           {
             "object": "router",
@@ -576,7 +600,7 @@
           {
             "object": "Platform",
             "property": "OS",
-            "message": "Platform.OS 대신 process.env.EXPO_OS를 씁니다. 번들에서 안 쓰는 플랫폼 코드가 빠집니다."
+            "message": "Platform.OS는 운영 빌드에서만 글자로 바뀌어, 개발 빌드에서도 바뀌는 process.env.EXPO_OS 하나로 씁니다."
           },
           {
             "object": "router",
@@ -649,7 +673,7 @@
           {
             "object": "Platform",
             "property": "OS",
-            "message": "Platform.OS 대신 process.env.EXPO_OS를 씁니다. 번들에서 안 쓰는 플랫폼 코드가 빠집니다."
+            "message": "Platform.OS는 운영 빌드에서만 글자로 바뀌어, 개발 빌드에서도 바뀌는 process.env.EXPO_OS 하나로 씁니다."
           },
           {
             "object": "router",
@@ -708,7 +732,7 @@
           {
             "object": "Platform",
             "property": "OS",
-            "message": "Platform.OS 대신 process.env.EXPO_OS를 씁니다. 번들에서 안 쓰는 플랫폼 코드가 빠집니다."
+            "message": "Platform.OS는 운영 빌드에서만 글자로 바뀌어, 개발 빌드에서도 바뀌는 process.env.EXPO_OS 하나로 씁니다."
           },
           {
             "object": "Alert",
@@ -767,7 +791,7 @@
           {
             "object": "Platform",
             "property": "OS",
-            "message": "Platform.OS 대신 process.env.EXPO_OS를 씁니다. 번들에서 안 쓰는 플랫폼 코드가 빠집니다."
+            "message": "Platform.OS는 운영 빌드에서만 글자로 바뀌어, 개발 빌드에서도 바뀌는 process.env.EXPO_OS 하나로 씁니다."
           },
           {
             "object": "Alert",
@@ -831,7 +855,7 @@
           {
             "object": "Platform",
             "property": "OS",
-            "message": "Platform.OS 대신 process.env.EXPO_OS를 씁니다. 번들에서 안 쓰는 플랫폼 코드가 빠집니다."
+            "message": "Platform.OS는 운영 빌드에서만 글자로 바뀌어, 개발 빌드에서도 바뀌는 process.env.EXPO_OS 하나로 씁니다."
           },
           {
             "object": "Alert",
@@ -883,8 +907,7 @@
         "aido/no-strict-nullish": "error",
         "aido/range-comparison-order": "error",
         "aido/predicate-name": "error",
-        "aido/icon-prop-name": "error",
-        "aido/loading-namespace-name": "error"
+        "aido/icon-prop-name": "error"
       }
     },
     {
@@ -1093,7 +1116,7 @@
       }
     },
     {
-      "files": ["src/features/**/domains/**/*.model.ts"],
+      "files": ["src/**/*.model.ts"],
       "excludeFiles": [
         "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
         "**/__tests__/**",
@@ -1101,6 +1124,13 @@
       ],
       "rules": {
         "aido/model-exports": "error"
+      }
+    },
+    {
+      // 테스트에서도 메서드를 값으로 넘기면 this가 끊긴다
+      "files": ["src/**", "app/**"],
+      "rules": {
+        "aido/no-unbound-policy-method": "error"
       }
     },
     {
@@ -1214,34 +1244,20 @@
     {
       "files": ["src/features/engagement/comment/**", "app/?app?/todo/?todoId?/**"],
       "rules": {
-        "aido/no-inline-query-options": "error",
         "aido/no-router-push": "error"
       }
     },
     {
-      "files": ["src/features/engagement/comment/hooks/use-todo-comment-params.ts"],
-      "rules": {
-        "aido/no-router-push": "off"
-      }
-    },
-    {
-      // 원시 setParams는 params 훅에서만 꺼낸다. 펼친 피드의 할 일 선택은 칸 크기와 함께 이름 있는 setter를 만든다
+      // 원시 setParams는 params 훅에서만 꺼낸다
       "files": ["src/**/*.{ts,tsx}", "app/**/*.{ts,tsx}"],
       "excludeFiles": [
         "**/hooks/use-*-params.{ts,tsx}",
-        "src/features/planning/todo/hooks/use-feed-selected-todo-id.ts",
         "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
         "**/__tests__/**",
         "src/testing/**"
       ],
       "rules": {
         "aido/route-setter-location": "error"
-      }
-    },
-    {
-      "files": ["src/features/engagement/comment/components/**", "app/?app?/todo/?todoId?/**"],
-      "rules": {
-        "aido/no-route-id-props": "error"
       }
     },
     {
@@ -1254,6 +1270,7 @@
         "src/features/engagement/comment/schemas/**",
         "src/features/engagement/comment/utils/**",
         "src/features/engagement/comment/components/**",
+        "src/features/engagement/comment/hooks/use-todo-comment-{expansion,reveal}.test.tsx",
         "src/features/engagement/comment/__tests__/**"
       ],
       "rules": {
@@ -1261,8 +1278,10 @@
       }
     },
     {
+      // 펼친 묶음·강조 Provider 짝은 hooks/에 두고, 다시 그리는 범위를 renderScreen으로 확인한다
       "files": [
         "src/features/engagement/comment/components/**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "src/features/engagement/comment/hooks/use-todo-comment-{expansion,reveal}.test.tsx",
         "src/features/engagement/comment/__tests__/**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}"
       ],
       "rules": {
@@ -1285,6 +1304,100 @@
       ],
       "rules": {
         "aido/todo-comment-test-purity": "error"
+      }
+    },
+    // 앱 구조 규칙(docs/architecture/guardrails.md). 켜는 블록 뒤의 "래칫" off 블록은 아직 고치지 않은 기능 폴더다.
+    // 기능 층이 그 폴더의 위반을 고치면 그 줄을 지운다. 새 폴더는 처음부터 켜진다
+    {
+      "files": ["src/**", "app/**"],
+      "excludeFiles": [
+        "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "**/__tests__/**",
+        "src/testing/**"
+      ],
+      "rules": {
+        "aido/error-boundary-fallback": "error",
+        "aido/forward-on-press": "error",
+        "aido/namespace-part-name": "error",
+        "aido/no-inline-query-options": "error",
+        "aido/no-route-id-props": "error",
+        "aido/policy-model-parameter": "error",
+        "aido/props-interface": "error"
+      }
+    },
+    {
+      "files": ["src/**/*.model.ts"],
+      "excludeFiles": [
+        "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "**/__tests__/**",
+        "src/testing/**"
+      ],
+      "rules": {
+        "aido/model-function-exports": "error"
+      }
+    },
+    {
+      "files": ["src/features/**/components/**"],
+      "excludeFiles": [
+        "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "**/__tests__/**",
+        "src/testing/**"
+      ],
+      "rules": {
+        "aido/form-owner": "error",
+        "aido/component-outer-spacing": "error"
+      }
+    },
+    {
+      "files": ["app/**", "src/features/**/components/**", "src/**/hooks/**"],
+      "excludeFiles": [
+        "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "**/__tests__/**",
+        "src/testing/**"
+      ],
+      "rules": {
+        "aido/no-module-router": "error"
+      }
+    },
+    {
+      // 시트를 닫거나 시트 props를 이어야 하는 시트 fallback과, 시트 슬롯 안에서 시트를 닫아야 하는 줄(할 일 감사 요약)은 인라인 함수로 둔다
+      "files": [
+        "src/shared/ui/route-bottom-sheet/route-bottom-sheet.tsx",
+        "src/features/planning/todo-import/hooks/use-open-category-target-sheet.tsx",
+        "src/features/social/invite/components/invite-welcome-bottom-sheet.tsx",
+        "src/features/social/nudge/components/nudge-thanks-bottom-sheet.tsx",
+        "src/features/social/nudge/components/todo-thanks-summary.tsx"
+      ],
+      "rules": {
+        "aido/error-boundary-fallback": "off"
+      }
+    },
+    {
+      // 래칫
+      "files": ["src/shared/ui/steps/**"],
+      "rules": {
+        "aido/namespace-part-name": "off"
+      }
+    },
+    {
+      // 래칫
+      "files": ["src/bootstrap/**"],
+      "rules": {
+        "aido/no-inline-query-options": "off"
+      }
+    },
+    {
+      // 래칫
+      "files": ["src/shared/draft/draft.model.ts"],
+      "rules": {
+        "aido/model-function-exports": "off"
+      }
+    },
+    {
+      // 래칫
+      "files": ["src/shared/domains/completion-rate.model.ts", "src/shared/draft/draft.model.ts"],
+      "rules": {
+        "aido/model-exports": "off"
       }
     },
     // 규칙이 처음 나오는 블록이 켜는 자리이고 뒤따르는 같은 규칙의 off 블록은 허용 경로다.
@@ -1448,7 +1561,9 @@
               "weather_reschedule_applied",
               "weather_reschedule_undone",
               "whats_new_cta_pressed"
-            ]
+            ],
+            // source·surface 값은 shared/analytics/event-vocabulary.ts 한 곳에서 고른다
+            "vocabularyParams": { "source": "AnalyticsSource", "surface": "AnalyticsSurface" }
           }
         ]
       }

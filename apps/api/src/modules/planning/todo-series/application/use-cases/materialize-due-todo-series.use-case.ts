@@ -6,8 +6,8 @@ import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { localDateIn } from "#api/shared/domain/time/timezone-name";
 
-import { localDateAt } from "../../../shared/domain/todo-calendar.domain-service.js";
 import { isSeriesOwnerDormant } from "../../domain/series-dormancy.domain-service.js";
 import type { TodoSeriesId } from "../../domain/todo-series-id.vo.js";
 import type { TodoSeriesOwnerPort } from "../ports/todo-series-owner.port.js";
@@ -76,7 +76,7 @@ export class MaterializeDueTodoSeriesUseCase {
       this.#dependencies.deadlineMs ?? TODO_SERIES_MATERIALIZATION_BUDGET.DEADLINE_MS;
     const startedAt = performance.now();
     const isPastDeadline = () => performance.now() - startedAt >= deadlineMs;
-    const through = localDateAt(this.#dependencies.clock.now(), "UTC").add({
+    const through = localDateIn(this.#dependencies.clock.now(), "UTC").add({
       days: TODO_SERIES_MATERIALIZATION_BUDGET.DUE_SCAN_AHEAD_DAYS,
     });
     let afterId: TodoSeriesId | null = null;

@@ -28,7 +28,7 @@ async function renderFriendLimitInvite(isEnabled: boolean) {
   };
 }
 
-describe('친구 한도 안내의 초대 길', () => {
+describe('useFriendLimitInvite', () => {
   it('초대를 쓸 수 있으면 길을 열고 누르면 진입점을 남긴다', async () => {
     // Given
     const { analytics, getFriendLimitInvite } = await renderFriendLimitInvite(true);

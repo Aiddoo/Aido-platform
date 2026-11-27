@@ -1,0 +1,16 @@
+appId: ${MAESTRO_APP_ID}
+name: 할 일을 완료한 뒤 마케팅 알림 동의 시트가 뜨면 닫는다(기기 알림이 켜진 Android에서만 뜬다)
+---
+- extendedWaitUntil:
+    visible: ${output.labels.notification.marketingOptInLater}
+    timeout: 4000
+    optional: true
+- runFlow:
+    label: 동의 시트가 떠 있으면 나중에를 누른다(시트가 다음 탭을 가로챈다)
+    when:
+      visible: ${output.labels.notification.marketingOptInLater}
+    commands:
+      - tapOn: ${output.labels.notification.marketingOptInLater}
+      - extendedWaitUntil:
+          notVisible: ${output.labels.notification.marketingOptInLater}
+          timeout: 5000

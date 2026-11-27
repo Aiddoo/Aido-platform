@@ -8,7 +8,8 @@ import { toInstant } from '@src/shared/date/instant';
 import { pick } from 'es-toolkit';
 
 import type { AchievementYears } from '../domains/achievement-years.model';
-import type { WeeklyAchievement, WeeklyAchievementPage } from '../domains/achievement.model';
+import type { WeeklyAchievementPage } from '../domains/weekly-achievement-page.model';
+import type { WeeklyAchievement } from '../domains/weekly-achievement.model';
 
 export function toWeeklyAchievement(dto: WeeklyAchievementDto): WeeklyAchievement {
   return {

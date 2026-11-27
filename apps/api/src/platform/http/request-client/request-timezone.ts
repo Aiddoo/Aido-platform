@@ -1,6 +1,6 @@
-import type { RequestClient } from "./request-client.js";
+import { DATE_BOUNDARY_FALLBACK_TIMEZONE } from "#api/shared/domain/time/timezone-name";
 
-const REQUEST_TIMEZONE_FALLBACK = "UTC";
+import type { RequestClient } from "./request-client.js";
 
 /**
  * 요청 시간대의 해석 규칙은 이 두 함수뿐이다(docs/conventions/dates.md §2).
@@ -9,7 +9,7 @@ const REQUEST_TIMEZONE_FALLBACK = "UTC";
  * - 저장값을 쓰거나 덮어쓰는 경로(AI 파싱의 저장 시간대, 푸시 토큰 등록, 자가 치유): 보낸 값만 쓴다
  */
 export function requestTimezoneOrUtc(client: Pick<RequestClient, "timezone">): string {
-  return client.timezone ?? REQUEST_TIMEZONE_FALLBACK;
+  return client.timezone ?? DATE_BOUNDARY_FALLBACK_TIMEZONE;
 }
 
 export function requestTimezoneIfSent(client: Pick<RequestClient, "timezone">): string | undefined {

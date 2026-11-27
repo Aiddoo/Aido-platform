@@ -4,7 +4,7 @@ export interface CaptionTextPart {
 }
 
 /** 문장을 잘못 들었을 수 있는 단어(밑줄용)와 나머지 조각으로 나눈다. */
-export function toCaptionTextParts(text: string, words: readonly string[]): CaptionTextPart[] {
+export function getCaptionTextParts(text: string, words: readonly string[]): CaptionTextPart[] {
   const { parts, cursor } = words.reduce<{ parts: CaptionTextPart[]; cursor: number }>(
     (current, word) => {
       const index = text.indexOf(word, current.cursor);

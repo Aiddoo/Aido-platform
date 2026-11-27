@@ -13,13 +13,13 @@ interface DatePickerState {
 
 type DatePickerAction =
   | { type: 'selectDate'; dateKey: DateKey }
-  | { type: 'prevMonth' }
+  | { type: 'previousMonth' }
   | { type: 'nextMonth' };
 
 function datePickerReducer(state: DatePickerState, action: DatePickerAction): DatePickerState {
   return match(action)
     .with({ type: 'selectDate' }, ({ dateKey }) => ({ ...state, selectedDateKey: dateKey }))
-    .with({ type: 'prevMonth' }, () => ({
+    .with({ type: 'previousMonth' }, () => ({
       ...state,
       displayMonthKey: addMonthsToDateKey(state.displayMonthKey, -1),
     }))
@@ -37,7 +37,7 @@ export interface DatePicker {
   displayMonthKey: DateKey;
   weeks: CalendarDayCell[][];
   selectDate: (dateKey: DateKey) => void;
-  goToPrevMonth: () => void;
+  goToPreviousMonth: () => void;
   goToNextMonth: () => void;
 }
 
@@ -63,7 +63,7 @@ export function useDatePicker({ initialDateKey }: UseDatePickerOptions): DatePic
     displayMonthKey: state.displayMonthKey,
     weeks,
     selectDate: (dateKey: DateKey) => dispatch({ type: 'selectDate', dateKey }),
-    goToPrevMonth: () => dispatch({ type: 'prevMonth' }),
+    goToPreviousMonth: () => dispatch({ type: 'previousMonth' }),
     goToNextMonth: () => dispatch({ type: 'nextMonth' }),
   };
 }

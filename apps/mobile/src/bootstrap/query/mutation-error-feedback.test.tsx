@@ -1,5 +1,4 @@
 import '@src/shared/i18n/init';
-import { ApiError } from '@src/core/errors/api-error';
 import type { AppMutationMeta } from '@src/shared/constants/query-meta';
 import { NetworkError, ParseError } from '@src/shared/errors';
 import { i18n } from '@src/shared/i18n';
@@ -8,6 +7,7 @@ import {
   createHapticsGatewayStub,
   createTestQueryClient,
   createTestDi,
+  createApiError,
 } from '@src/testing/core';
 import { renderScreenHook } from '@src/testing/render';
 import { mutationOptions, useMutation } from '@tanstack/react-query';
@@ -64,7 +64,7 @@ describe('MutationErrorFeedback', () => {
 
   it('서버가 코드로 거절한 오류는 서버 문구로 알리고 보고하지 않는다', async () => {
     // Given
-    const rejection = new ApiError('TODO_0801', '할 일을 찾을 수 없어요', 404);
+    const rejection = createApiError('TODO_0801', { message: '할 일을 찾을 수 없어요' });
 
     // When
     const { errorReporter } = await failMutation(rejection, { meta: GLOBAL_FEEDBACK });

@@ -1,24 +1,54 @@
 import '@src/shared/i18n/init';
-import type { MissingSpeechPermission } from '@src/core/ports/speech-recognizer';
-import { Button, OverlayProvider } from '@src/shared/ui';
-import { createAppLoggerStub, createSpeechRecognizerStub, createTestDi } from '@src/testing/core';
+import type { MissingSpeechPermission, SpeechMode } from '@src/core/ports/speech-recognizer';
+import { Button } from '@src/shared/ui';
+import {
+  createAnalyticsStub,
+  createAppLoggerStub,
+  createExternalLinkGatewayStub,
+  createSpeechRecognizerStub,
+  createTestDi,
+  getTrackedEvents,
+} from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
-import { fireEvent, screen } from '@testing-library/react-native';
+import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import { useEnsureMicrophonePermission } from './use-ensure-microphone-permission';
 
-function PermissionProbe({ onResult }: { onResult: (isGranted: boolean) => void }) {
+interface PermissionProbeProps {
+  mode: SpeechMode;
+  onResult: (isGranted: boolean) => void;
+}
+
+function PermissionProbe({ mode, onResult }: PermissionProbeProps) {
   const ensurePermission = useEnsureMicrophonePermission();
 
   return (
     <Button
       onPress={() => {
-        ensurePermission('quick', 'ko-KR').then(onResult, jest.fn());
+        ensurePermission(mode, 'ko-KR').then(onResult, jest.fn());
       }}
     >
       시작
     </Button>
   );
+}
+
+async function renderProbe(
+  speechRecognizer = createSpeechRecognizerStub(),
+  { mode = 'quick' }: { mode?: SpeechMode } = {},
+) {
+  const externalLink = createExternalLinkGatewayStub();
+  const analytics = createAnalyticsStub();
+  const onResult = jest.fn();
+  await renderScreen(<PermissionProbe mode={mode} onResult={onResult} />, {
+    di: createTestDi({
+      ports: { speechRecognizer, externalLink, analytics, logger: createAppLoggerStub() },
+    }),
+    withOverlay: true,
+  });
+  const getPermissionEvents = () => getTrackedEvents(analytics, 'voice_permission_requested');
+
+  return { speechRecognizer, externalLink, onResult, getPermissionEvents };
 }
 
 async function renderBlocked(missing: MissingSpeechPermission) {
@@ -28,15 +58,7 @@ async function renderBlocked(missing: MissingSpeechPermission) {
     canAskAgain: false,
     missing,
   });
-  const onResult = jest.fn();
-  await renderScreen(
-    <OverlayProvider>
-      <PermissionProbe onResult={onResult} />
-    </OverlayProvider>,
-    { di: createTestDi({ ports: { speechRecognizer, logger: createAppLoggerStub() } }) },
-  );
-
-  return { speechRecognizer, onResult };
+  return renderProbe(speechRecognizer);
 }
 
 describe('useEnsureMicrophonePermission', () => {
@@ -82,7 +104,103 @@ describe('useEnsureMicrophonePermission', () => {
     await fireEvent.press(screen.getByText('시작'));
 
     // Then
-    expect(await screen.findByText('설정으로 이동')).toBeTruthy();
+    expect(await screen.findByText('설정 열기')).toBeTruthy();
     expect(speechRecognizer.requestPermission).not.toHaveBeenCalled();
+  });
+
+  it('설정 열기를 고르면 이 앱의 설정 화면을 열고 듣지 않는다', async () => {
+    // Given
+    const { externalLink, onResult } = await renderBlocked('microphone');
+    await fireEvent.press(screen.getByText('시작'));
+
+    // When
+    await fireEvent.press(await screen.findByText('설정 열기'));
+
+    // Then
+    await waitFor(() => expect(onResult).toHaveBeenCalledWith(false));
+    expect(externalLink.openSettings).toHaveBeenCalledTimes(1);
+  });
+
+  it('다시 물을 수 있으면 시스템 창을 한 번만 띄우고 거절하면 설정 대신 알림만 보인다', async () => {
+    // Given
+    const speechRecognizer = createSpeechRecognizerStub();
+    const denied = { status: 'denied', canAskAgain: true, missing: 'microphone' } as const;
+    speechRecognizer.getPermission.mockResolvedValue({ ...denied, status: 'undetermined' });
+    speechRecognizer.requestPermission.mockResolvedValue(denied);
+    const { externalLink, onResult } = await renderProbe(speechRecognizer);
+
+    // When
+    await fireEvent.press(screen.getByText('시작'));
+
+    // Then
+    await waitFor(() => expect(onResult).toHaveBeenCalledWith(false));
+    expect(speechRecognizer.requestPermission).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText('설정 열기')).toBeNull();
+    expect(externalLink.openSettings).not.toHaveBeenCalled();
+  });
+
+  it('누를 때마다 권한을 다시 읽어 그 사이 설정에서 허용했으면 두 번째에 통과한다', async () => {
+    // Given
+    const speechRecognizer = createSpeechRecognizerStub();
+    const denied = { status: 'denied', canAskAgain: true, missing: 'microphone' } as const;
+    speechRecognizer.getPermission
+      .mockResolvedValueOnce(denied)
+      .mockResolvedValueOnce({ status: 'granted', canAskAgain: true });
+    speechRecognizer.requestPermission.mockResolvedValue(denied);
+    const { onResult } = await renderProbe(speechRecognizer);
+    await fireEvent.press(screen.getByText('시작'));
+    await waitFor(() => expect(onResult).toHaveBeenLastCalledWith(false));
+
+    // When
+    await fireEvent.press(screen.getByText('시작'));
+
+    // Then
+    await waitFor(() => expect(onResult).toHaveBeenLastCalledWith(true));
+    expect(speechRecognizer.getPermission).toHaveBeenCalledTimes(2);
+    expect(speechRecognizer.requestPermission).toHaveBeenCalledTimes(1);
+  });
+
+  it('시스템 창을 띄울 때마다 요청 이벤트를 한 번 남긴다', async () => {
+    // Given
+    const speechRecognizer = createSpeechRecognizerStub();
+    speechRecognizer.getPermission.mockResolvedValue({
+      status: 'undetermined',
+      canAskAgain: true,
+      missing: 'microphone',
+    });
+    const { onResult, getPermissionEvents } = await renderProbe(speechRecognizer);
+
+    // When
+    await fireEvent.press(screen.getByText('시작'));
+    await waitFor(() => expect(onResult).toHaveBeenCalledTimes(1));
+    await fireEvent.press(screen.getByText('시작'));
+
+    // Then
+    await waitFor(() => expect(onResult).toHaveBeenCalledTimes(2));
+    expect(getPermissionEvents()).toEqual([
+      { mode: 'quick', status: 'granted' },
+      { mode: 'quick', status: 'granted' },
+    ]);
+  });
+
+  it.each<[string, SpeechMode, 'granted' | 'undetermined']>([
+    ['이미 허용했으면', 'quick', 'granted'],
+    ['받아쓰기는 창을 띄워도', 'dictation', 'undetermined'],
+  ])('%s 요청 이벤트를 남기지 않는다', async (_case, mode, status) => {
+    // Given
+    const speechRecognizer = createSpeechRecognizerStub();
+    speechRecognizer.getPermission.mockResolvedValue(
+      status === 'granted'
+        ? { status, canAskAgain: true }
+        : { status, canAskAgain: true, missing: 'microphone' },
+    );
+    const { onResult, getPermissionEvents } = await renderProbe(speechRecognizer, { mode });
+
+    // When
+    await fireEvent.press(screen.getByText('시작'));
+
+    // Then
+    await waitFor(() => expect(onResult).toHaveBeenCalledWith(true));
+    expect(getPermissionEvents()).toEqual([]);
   });
 });

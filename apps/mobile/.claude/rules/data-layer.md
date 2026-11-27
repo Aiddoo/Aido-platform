@@ -6,7 +6,7 @@ paths:
 
 # 데이터 층
 
-규칙의 원본은 [데이터](../../docs/architecture/data.md)(Api·service·repository·store, 저장 값, 쿼리·mutation, 폼)와 [모델](../../docs/architecture/model.md#mapper)(mapper·파싱·null)이다. 아래는 lint가 막는 것이다.
+규칙의 원본은 [데이터](../../docs/architecture/data.md)(Api·service·repository·store, 저장 값, 쿼리·`select`·mutation), [폼](../../docs/architecture/forms.md), [모델](../../docs/architecture/model.md#mapper)(mapper·파싱·null)이다. 키에는 서버 인자만 넣고 클라이언트 필터·정렬·범위는 `queries/`의 이름 있는 `select{X}`로 나눈다. 아래는 lint가 막는 것이다.
 
 - `queryClient`는 `queries/{feature}-cache.ts`만 만지고, cache helper는 이벤트·로그·Api를 import하지 않는다(`aido/query-client-location`, depcruise `cache-helper-purity`).
 - 쿼리 키는 `queries/*-query-keys.ts`에만 쓴다(`aido/query-key-location`).

@@ -5,7 +5,6 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { normalizeIanaTimezone } from "#api/shared/domain/time/timezone-name";
 
 import type { UserNotificationSettingsPort } from "../../../shared/application/ports/user-notification-settings.port.js";
 import type { PushChannel } from "../../../shared/domain/push-channel.constants.js";
@@ -38,7 +37,7 @@ export interface ReportPushDeviceCommand {
   readonly appVersion: string | null;
   readonly deviceModel: string | null;
   readonly osVersion: string | null;
-  /** 보낸 경우에만 저장한다. 없으면 기존 발송 시간대·언어를 유지한다. */
+  /** 보낸 경우에만 저장한다. 없으면 기존 발송 시간대·언어를 유지한다. 시간대는 RequestClient가 기기 보고 규칙(parseDeviceReportedTimezone)으로 해석한 값이다 */
   readonly timezone: string | null;
   readonly locale: string | null;
 }
@@ -165,7 +164,7 @@ export class ReportPushDeviceUseCase {
   }
 
   async #syncDeliveryLocale(command: ReportPushDeviceCommand): Promise<void> {
-    const timezone = normalizeIanaTimezone(command.timezone);
+    const { timezone } = command;
     const userId = UserId.reconstitute(command.userId);
     if (timezone) {
       await this.#dependencies.userSettings.upsertPushTimezone(userId, timezone);

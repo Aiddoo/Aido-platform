@@ -1,6 +1,4 @@
-import { DAYS_PER_WEEK } from '@src/shared/constants/time-units';
-import { addDaysToDateKey, type DateKey, getMondayOfDateKey } from '@src/shared/date/date-key';
-import { range } from 'es-toolkit';
+import { type DateKey, getIsoWeekDateRange, getWeekDateKeys } from '@src/shared/date/date-key';
 
 export interface WeeklyRecordDay {
   date: DateKey;
@@ -9,21 +7,14 @@ export interface WeeklyRecordDay {
   isUpcoming: boolean;
 }
 
-type CompletionsByDate = Record<string, { totalTodos: number; completedTodos: number }>;
+export type CompletionsByDate = Record<string, { totalTodos: number; completedTodos: number }>;
 
-export function getWeeklyRecordRange(todayKey: DateKey) {
-  const startDate = getMondayOfDateKey(todayKey);
-  return { startDate, endDate: addDaysToDateKey(startDate, DAYS_PER_WEEK - 1) };
-}
-
+/** 이번 주(월요일 시작) 막대 7칸. 아직 오지 않은 날은 기록이 없어도 0이 아니라 아직으로 구분한다 */
 export function getWeeklyRecordDays(
   completionsByDate: CompletionsByDate,
   todayKey: DateKey,
 ): WeeklyRecordDay[] {
-  const { startDate } = getWeeklyRecordRange(todayKey);
-
-  return range(DAYS_PER_WEEK).map((offset) => {
-    const date = addDaysToDateKey(startDate, offset);
+  return getWeekDateKeys(getIsoWeekDateRange(todayKey).startDate).map((date) => {
     const completion = completionsByDate[date];
 
     return {

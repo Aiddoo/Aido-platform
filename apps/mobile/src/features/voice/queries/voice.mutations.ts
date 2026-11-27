@@ -2,13 +2,15 @@ import { useHaptics, useVoiceApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { emitTodoCreated } from '@src/core/events/todo-created';
 import { parseErrorFeatureQuota } from '@src/features/billing/subscription/apis/entitlement.mapper';
-import { isFreeOfChargeError } from '@src/features/billing/subscription/domains/entitlement.error';
-import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
+import {
+  isFreeOfChargeError,
+  isLimitedFeatureError,
+} from '@src/features/billing/subscription/domains/entitlement.error';
 import { reflectFeatureQuota } from '@src/features/billing/subscription/queries/entitlement-cache';
 import { isAiDataSharingConsentRequiredError } from '@src/features/identity/consent/domains/consent.error';
 import { markAiDataSharingConsentRequired } from '@src/features/identity/consent/queries/consent-cache';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
-import { invalidateTodos } from '@src/features/planning/todo/queries/todo-cache';
+import { settleTodoBatchWrite } from '@src/features/planning/todo/queries/todo-cache';
 import { useTrack } from '@src/shared/analytics';
 import { NetworkError } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
@@ -19,11 +21,13 @@ import { match } from 'ts-pattern';
 
 import { PLAN_IN_PROGRESS_RETRY } from '../constants/voice.constants';
 import type { PreparedPlanRequest } from '../domains/plan-request.model';
-import type { VoiceNoteDigestInput } from '../domains/voice-note.model';
-import type { PlannedAction, VoicePlanSource } from '../domains/voice-plan.model';
-import { getVoicePlanFailureCause, isPlanInProgressError } from '../domains/voice.error';
+import type { PlannedAction } from '../domains/planned-action.model';
+import type { VoicePlanSource } from '../domains/voice-plan.model';
+import { getVoicePlanFailure, isPlanInProgressError } from '../domains/voice.error';
 import type { CreateQuickPlanInput } from '../schemas/quick-plan-request.schema';
+import type { VoiceNoteDigestInput } from '../schemas/voice-note-digest-request.schema';
 import { toAnalyticsSource, summarizePlanForAnalytics } from '../utils/voice-analytics';
+import { VOICE_MUTATION_KEYS } from './voice-mutation-keys';
 
 /** 응답을 놓친 뒤 다시 보냈는데 앞선 요청이 아직 처리 중이면 안내만 하고 끝내지 않고 결과가 나올 때까지 기다린다 */
 export const planInProgressRetryOptions = {
@@ -61,6 +65,7 @@ export function useApplyActionPlanMutationOptions({
   const showMutationError = useMutationErrorFeedback();
 
   return mutationOptions({
+    mutationKey: VOICE_MUTATION_KEYS.applyActionPlan(),
     // 오프라인에도 멈춰 기다리지 않고 바로 실패해 고친 카드를 남긴 채 안내한다
     networkMode: 'always',
     mutationFn: async ({
@@ -117,7 +122,7 @@ export function useApplyActionPlanMutationOptions({
       }
     },
     onError: (error) => {
-      const cause = getVoicePlanFailureCause(error);
+      const cause = getVoicePlanFailure(error);
       if (cause === 'source-memo-missing') {
         onMemoChanged();
       }
@@ -127,10 +132,9 @@ export function useApplyActionPlanMutationOptions({
         description: t(`voicePlan:failure.${cause}.description`),
       });
     },
-    // 응답을 놓친 실패도 서버에는 저장됐을 수 있고, 거절(내 카테고리가 아님)은 카테고리를 다시 받아야 한다.
-    // 저장 완료가 다시 받기를 기다리지 않게 돌려주지 않는다
+    // 응답을 놓친 실패도 서버에는 저장됐을 수 있다. 저장 완료가 다시 받기를 기다리지 않게 돌려주지 않는다
     onSettled: () => {
-      invalidateTodos(queryClient);
+      settleTodoBatchWrite(queryClient);
     },
     meta: { errorFeedback: false },
   });
@@ -141,21 +145,15 @@ interface CreateQuickPlanVariables extends PreparedPlanRequest<CreateQuickPlanIn
   signal?: AbortSignal;
 }
 
-interface CreateQuickPlanMutationOptionsInput {
-  onSubscribe?: () => void;
-}
-
-export function useCreateQuickPlanMutationOptions({
-  onSubscribe,
-}: CreateQuickPlanMutationOptionsInput = {}) {
+export function useCreateQuickPlanMutationOptions() {
   const voiceApi = useVoiceApi();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
   const haptics = useHaptics();
   const showMutationError = useMutationErrorFeedback();
-  const gate = useEntitlementGate('AI_PARSE', { surface: 'add_todo_sheet' });
 
   return mutationOptions({
+    mutationKey: VOICE_MUTATION_KEYS.createQuickPlan(),
     ...planInProgressRetryOptions,
     // 오프라인에도 멈춰 기다리지 않고 바로 실패해 글자를 남긴 채 안내한다
     networkMode: 'always',
@@ -179,12 +177,13 @@ export function useCreateQuickPlanMutationOptions({
         return;
       }
 
-      const cause = getVoicePlanFailureCause(error);
+      const cause = getVoicePlanFailure(error);
       trackEvent('voice_plan_failed', {
         source: toAnalyticsSource(input.source),
         cause,
       });
-      if (gate.promptIfBlockedError(error, { onSubscribe })) {
+      // 한도 안내 시트는 계획을 요청한 쪽이 띄운다. 구독 화면으로 갈 때 닫을 시트를 그쪽이 안다
+      if (isLimitedFeatureError(error)) {
         haptics.notify('error');
         return;
       }
@@ -216,9 +215,9 @@ export function useCreateVoiceNoteDigestMutationOptions() {
   const queryClient = useQueryClient();
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
   const haptics = useHaptics();
-  const gate = useEntitlementGate('VOICE_NOTE', { surface: 'voice_note' });
 
   return mutationOptions({
+    mutationKey: VOICE_MUTATION_KEYS.createVoiceNoteDigest(),
     ...planInProgressRetryOptions,
     // 오프라인에도 멈춰 기다리지 않고 바로 실패해 글자를 남긴 채 안내한다
     networkMode: 'always',
@@ -251,10 +250,11 @@ export function useCreateVoiceNoteDigestMutationOptions() {
         return;
       }
 
-      const cause = getVoicePlanFailureCause(error);
+      const cause = getVoicePlanFailure(error);
       trackEvent('voice_plan_failed', { source: toAnalyticsSource('voice-note'), cause });
       haptics.notify('error');
-      if (gate.promptIfBlockedError(error)) {
+      // 한도 안내 시트는 정리를 요청한 화면이 띄운다
+      if (isLimitedFeatureError(error)) {
         return;
       }
 

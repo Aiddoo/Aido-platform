@@ -7,8 +7,8 @@ import { IDEMPOTENCY_KEY_HEADER } from '@aido/api/vocabulary';
 import type { HttpClient } from '@src/core/ports/http-client';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
-import type { ImportItem } from '../domains/todo-import-item.model';
-import type { TodoImportSelection } from '../domains/todo-import-session.model';
+import type { TodoImportItem } from '../domains/todo-import-item.model';
+import type { TodoImportSelection } from '../domains/todo-import-selection.model';
 import {
   toReceiveTodoImportItemsRequest,
   toStartTodoImportRequest,
@@ -39,7 +39,7 @@ export class TodoImportApi {
     );
 
   /** 이미 받은 일정 키는 서버가 무시해 끊긴 묶음을 다시 보내도 된다 */
-  uploadItems = async (importId: string, items: readonly ImportItem[], signal?: AbortSignal) =>
+  uploadItems = async (importId: string, items: readonly TodoImportItem[], signal?: AbortSignal) =>
     parseApiResponse(
       await this.#httpClient.post(
         `v1/todo-imports/${encodeURIComponent(importId)}/items`,

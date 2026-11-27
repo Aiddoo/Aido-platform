@@ -1,8 +1,7 @@
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import { cn } from '@src/shared/utils/cn';
-import { useCallback, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { TextInput } from 'react-native';
-import { withUniwind } from 'uniwind';
 
 import { Box } from '../box/box';
 import { HStack } from '../h-stack/h-stack';
@@ -18,8 +17,6 @@ import {
   textAreaTextVariants,
 } from './text-area.variants';
 
-const StyledTextInput = withUniwind(TextInput);
-
 export function TextArea({
   ref,
   variant = 'filled',
@@ -28,9 +25,9 @@ export function TextArea({
   isInvalid = false,
   errorMessage,
   counter,
-  preserveErrorSpace = true,
+  shouldPreserveErrorSpace = true,
   textSize,
-  growsWithContent = false,
+  shouldGrowWithContent = false,
   placeholder,
   className,
   value,
@@ -54,29 +51,28 @@ export function TextArea({
   const { resolveSize } = useFontScale();
   const resolvedTextSize = textSize == null ? undefined : resolveSize(textSize);
   const growingContainerStyle =
-    growsWithContent && contentHeight != null && verticalChromeHeight != null
+    shouldGrowWithContent && contentHeight != null && verticalChromeHeight != null
       ? {
           height: Math.ceil(contentHeight + verticalChromeHeight),
         }
       : undefined;
 
-  const recordLayoutMeasurement = useCallback(
-    (measurement: { containerHeight: number } | { inputHeight: number }) => {
-      if (!growsWithContent || hasMeasuredVerticalChromeRef.current) {
-        return;
-      }
+  const recordLayoutMeasurement = (
+    measurement: { containerHeight: number } | { inputHeight: number },
+  ) => {
+    if (!shouldGrowWithContent || hasMeasuredVerticalChromeRef.current) {
+      return;
+    }
 
-      layoutMeasurementsRef.current = { ...layoutMeasurementsRef.current, ...measurement };
-      const { containerHeight, inputHeight } = layoutMeasurementsRef.current;
-      if (containerHeight == null || inputHeight == null) {
-        return;
-      }
+    layoutMeasurementsRef.current = { ...layoutMeasurementsRef.current, ...measurement };
+    const { containerHeight, inputHeight } = layoutMeasurementsRef.current;
+    if (containerHeight == null || inputHeight == null) {
+      return;
+    }
 
-      hasMeasuredVerticalChromeRef.current = true;
-      setVerticalChromeHeight(Math.max(containerHeight - inputHeight, 0));
-    },
-    [growsWithContent],
-  );
+    hasMeasuredVerticalChromeRef.current = true;
+    setVerticalChromeHeight(Math.max(containerHeight - inputHeight, 0));
+  };
 
   return (
     <Box
@@ -105,7 +101,7 @@ export function TextArea({
             recordLayoutMeasurement({ containerHeight: event.nativeEvent.layout.height });
           }}
         >
-          <StyledTextInput
+          <TextInput
             ref={ref}
             value={value}
             onChangeText={onChange}
@@ -113,7 +109,7 @@ export function TextArea({
             placeholder={placeholder}
             editable={!isDisabled}
             multiline
-            scrollEnabled={growsWithContent ? true : undefined}
+            scrollEnabled={shouldGrowWithContent ? true : undefined}
             textAlignVertical="top"
             className={cn(
               textAreaTextVariants({
@@ -137,7 +133,7 @@ export function TextArea({
               onLayout?.(event);
             }}
             onContentSizeChange={(event) => {
-              if (growsWithContent) {
+              if (shouldGrowWithContent) {
                 setContentHeight(event.nativeEvent.contentSize.height);
               }
               onContentSizeChange?.(event);
@@ -145,7 +141,7 @@ export function TextArea({
             {...props}
           />
         </Box>
-        {(preserveErrorSpace || errorMessage != null || counter != null) && (
+        {(shouldPreserveErrorSpace || errorMessage != null || counter != null) && (
           <HStack className="gap-2">
             <Text size="e1" className={cn('flex-1 text-error', !errorMessage && 'opacity-0')}>
               {errorMessage ?? ' '}

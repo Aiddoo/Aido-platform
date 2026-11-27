@@ -37,8 +37,6 @@ overrides:
   '@grpc/grpc-js@<1.13.6': ^1.13.6
   # @nestjs/terminus의 선택 peer인 Prisma client가 autoInstallPeers로 설치되지 않게 막는다.
   '@nestjs/terminus@12.2.0>@prisma/client': '-'
-  # glob 13.0.7은 GHSA-3g3m-2fjr-6pw4 수정을 13.x에 백포트했다(Sentry 소스맵 업로드·Jest가 13을 쓴다).
-  glob@>=13.0.0 <13.0.7: ^13.0.7
 
 packageExtensions:
   '@expo/image-utils@0.8.17':
@@ -56,18 +54,18 @@ catalog:
   '@photostructure/tz-lookup': '11.8.0'
   '@react-native-kakao/core': '3.2.0'
   '@react-native-kakao/share': '3.2.0'
-  '@sentry/nestjs': '11.16.0'
+  '@sentry/nestjs': '11.17.0'
   '@swc/cli': '0.8.2'
   '@swc/core': '1.16.22'
-  '@tanstack/query-async-storage-persister': '5.108.3'
-  '@tanstack/react-query': '5.108.3'
-  '@tanstack/react-query-persist-client': '5.108.3'
+  '@tanstack/query-async-storage-persister': '5.108.4'
+  '@tanstack/react-query': '5.108.4'
+  '@tanstack/react-query-persist-client': '5.108.4'
   '@testcontainers/postgresql': '12.2.2'
   '@turbo/gen': '2.11.13'
   '@types/d3-shape': '3.2.0'
   '@types/ms': '2.1.0'
   '@types/ngeohash': '0.6.8'
-  '@types/node': '26.6.6'
+  '@types/node': '26.6.11'
   '@types/pg': '8.23.1'
   '@types/supertest': '7.2.1'
   '@vitest/coverage-v8': '5.1.1'
@@ -88,8 +86,8 @@ catalog:
   'lru-cache': '11.5.3'
   'ms': '2.1.3'
   'ngeohash': '0.6.4'
-  'oxfmt': '0.79.0'
-  'oxlint': '1.94.0'
+  'oxfmt': '0.80.0'
+  'oxlint': '1.95.0'
   'pg': '8.23.1'
   'pg-boss': '12.38.2'
   'pino': '10.4.0'
@@ -122,8 +120,8 @@ catalogs:
     '@shopify/flash-list': '2.3.2'
     '@shopify/react-native-skia': '2.14.0'
     '@types/jest': '30.0.0'
-    '@types/react': '19.3.0'
-    'babel-preset-expo': '~58.0.25'
+    '@types/react': '19.3.3'
+    'babel-preset-expo': '~58.0.26'
     'expo': '58.0.26'
     'expo-apple-authentication': '~58.0.3'
     'expo-application': '~58.1.2'
@@ -163,7 +161,6 @@ catalogs:
     'jest': '30.5.2'
     'jest-expo': '~58.0.15'
     'react': '19.3.0'
-    'react-dom': '19.3.0'
     'react-native': '0.88.1'
     'react-native-android-widget': '0.26.0'
     'react-native-gesture-handler': '~3.3.0'
@@ -179,6 +176,10 @@ catalogs:
     '@nestjs-cls/transactional-adapter-drizzle-orm': '2.0.2'
     'drizzle-kit': '1.0.0-rc.6'
     'drizzle-orm': '1.0.0-rc.6'
+  react19:
+    '@types/react': '19.3.3'
+    'react': '19.3.0'
+    'react-dom': '19.3.0'
   nest12:
     '@nestjs-cls/transactional': '4.0.2'
     '@nestjs/cli': '12.0.15'
@@ -208,7 +209,7 @@ auditConfig:
   # 빌드 도구에만 있는 권고라 위험을 수용한다. 상위 패키지가 고친 버전을 받으면 지운다.
   # - GHSA-g3hv-75wg-m249(minimatch <11.0.1): @expo/fingerprint가 기본 optimizationLevel 1로 써서 해당 없다고
   #   Expo가 밝혔다(@expo/fingerprint build/Options.js). 9·10에 백포트가 없고 11은 glob 13과 맞지 않는다.
-  # - GHSA-3g3m-2fjr-6pw4(glob <=14.0.1): 13.0.7 백포트를 위 override로 받는다. 권고 범위가 갱신되지 않아
+  # - GHSA-3g3m-2fjr-6pw4(glob <=14.0.1): 13.0.7 백포트를 받아 쓴다. 권고 범위가 갱신되지 않아
   #   계속 잡히고, 남은 glob 10은 AbortSignal을 쓰지 않는 개발 도구다.
   ignoreGhsas:
     - GHSA-g3hv-75wg-m249

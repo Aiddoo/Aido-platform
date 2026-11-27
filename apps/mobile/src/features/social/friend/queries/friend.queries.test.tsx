@@ -2,7 +2,8 @@ import { createHttpClientStub, createTestDi } from '@src/testing/core';
 import { renderScreenHook } from '@src/testing/render';
 import { useInfiniteQuery } from '@tanstack/react-query';
 
-import { useGetUserSearchInfiniteQueryOptions } from './friend.queries';
+import { createFriendUser } from '../__tests__/friend.fixtures';
+import { selectFriendById, useGetUserSearchInfiniteQueryOptions } from './friend.queries';
 
 describe('useGetUserSearchInfiniteQueryOptions', () => {
   it('검색어가 2자 미만이면 쿼리를 실행하지 않는다', async () => {
@@ -17,5 +18,43 @@ describe('useGetUserSearchInfiniteQueryOptions', () => {
 
     // Then
     expect(httpClient.get).not.toHaveBeenCalled();
+  });
+});
+
+describe('selectFriendById', () => {
+  it('첫 페이지에 없는 친구도 뒤 페이지에서 찾는다', () => {
+    // Given
+    const friend = createFriendUser('later');
+    const pages = [{ items: [createFriendUser('first')] }, { items: [friend] }];
+
+    // When
+    const selected = selectFriendById({ pages }, 'later');
+
+    // Then
+    expect(selected).toBe(friend);
+    expect(pages[1]?.items).toEqual([friend]);
+  });
+
+  it('빈 페이지가 사이에 있어도 다음 페이지의 친구를 찾는다', () => {
+    // Given
+    const friend = createFriendUser('later');
+    const pages = [{ items: [] }, { items: [friend] }];
+
+    // When
+    const selected = selectFriendById({ pages }, 'later');
+
+    // Then
+    expect(selected).toBe(friend);
+  });
+
+  it('이미 받아 둔 페이지에 친구가 없으면 null을 반환한다', () => {
+    // Given
+    const pages = [{ items: [createFriendUser('first')] }];
+
+    // When
+    const selected = selectFriendById({ pages }, 'missing');
+
+    // Then
+    expect(selected).toBeNull();
   });
 });

@@ -1,10 +1,10 @@
 import { updateWeatherLocationSchema } from '@aido/api/contracts/weather/v2';
-import { ApiError } from '@src/core/errors/api-error';
 import {
   type LocationCoordinates,
   LocationUnavailableError,
   type LocationGateway,
 } from '@src/core/ports/location-gateway';
+import type { OsPermission } from '@src/core/ports/os-permission';
 import {
   createAnalyticsStub,
   createErrorReporterStub,
@@ -13,13 +13,14 @@ import {
   createAppLoggerStub,
   createTestQueryClient,
   createTestDi,
+  createApiError,
 } from '@src/testing/core';
 import { renderScreenHook } from '@src/testing/render';
 import { useQuery } from '@tanstack/react-query';
 import { act, waitFor } from '@testing-library/react-native';
 
 import { createSeoulReportDto } from '../__tests__/weather-report.fixtures';
-import type { LocationReading } from '../domains/weather-location.model';
+import type { LocationReading } from '../domains/location-reading.model';
 import { refetchWeatherLocation } from '../queries/weather-cache';
 import { WEATHER_QUERY_KEYS } from '../queries/weather-query-keys';
 import {
@@ -32,10 +33,10 @@ const SEOUL = { latitude: 37.5636, longitude: 126.9976 };
 const BUSAN = { latitude: 35.1796, longitude: 129.0756 };
 
 const GRANTED_IN_SEOUL = {
-  permission: { isGranted: true, canAskAgain: true },
+  permission: { status: 'granted', canAskAgain: true },
   coordinates: SEOUL,
   place: { countryCode: 'KR', name: { city: '서울', district: '중구' } },
-};
+} satisfies Parameters<typeof createLocationGatewayStub>[0];
 
 function setup(gateway: jest.Mocked<LocationGateway>) {
   const httpClient = createHttpClientStub();
@@ -63,7 +64,7 @@ describe('useWeatherLocation', () => {
   it('권한을 요청할 수 있으면 요청 결과를 기록하고 위치를 등록해 준비 상태가 된다', async () => {
     // Given
     const gateway = createLocationGatewayStub(GRANTED_IN_SEOUL);
-    gateway.getPermission.mockResolvedValueOnce({ isGranted: false, canAskAgain: true });
+    gateway.getPermission.mockResolvedValueOnce({ status: 'undetermined', canAskAgain: true });
     const { renderHook, httpClient, analytics, errorReporter } = setup(gateway);
     const { result } = await renderHook(() => useWeatherLocation());
     await waitFor(() => expect(result.current.status).toBe('needsPermission'));
@@ -96,7 +97,7 @@ describe('useWeatherLocation', () => {
   it('다시 물을 수 없게 거부했으면 설정 열기 상태가 되고 오류로 보고하지 않는다', async () => {
     // Given
     const gateway = createLocationGatewayStub(GRANTED_IN_SEOUL);
-    gateway.getPermission.mockResolvedValue({ isGranted: false, canAskAgain: false });
+    gateway.getPermission.mockResolvedValue({ status: 'denied', canAskAgain: false });
     const { renderHook, httpClient, errorReporter } = setup(gateway);
 
     // When
@@ -252,7 +253,7 @@ describe('useGetWeatherLocationQueryOptions', () => {
       httpClient.get
         .mockResolvedValueOnce({
           ok: false,
-          error: new ApiError('WEATHER_1902', '위치 정보가 등록되지 않았어요', 404),
+          error: createApiError('WEATHER_1902', { message: '위치 정보가 등록되지 않았어요' }),
         })
         .mockResolvedValueOnce({ ok: true, value: createSeoulReportDto() });
 
@@ -270,11 +271,13 @@ describe('useGetWeatherLocationQueryOptions', () => {
       const { renderHook, httpClient } = setup(gateway);
       const { result } = await renderHook(() => useWeatherLocation());
       await waitFor(() => expect(result.current.status).toBe('ready'));
-      const notRegistered = new ApiError('WEATHER_1902', '위치 정보가 등록되지 않았어요', 404);
+      const notRegistered = createApiError('WEATHER_1902', {
+        message: '위치 정보가 등록되지 않았어요',
+      });
       httpClient.get.mockResolvedValue({ ok: false, error: notRegistered });
       httpClient.put.mockResolvedValue({
         ok: false,
-        error: new ApiError('SYS_0001', '오류', 400),
+        error: createApiError('SYS_0001', { message: '오류', status: 400 }),
       });
 
       // When
@@ -287,7 +290,7 @@ describe('useGetWeatherLocationQueryOptions', () => {
   });
 
   describe('앱을 다시 켠 직후 권한 확인이 늦는 경우', () => {
-    const NOT_ASKED = { isGranted: false, canAskAgain: true };
+    const NOT_ASKED: OsPermission = { status: 'undetermined', canAskAgain: true };
     const previousLocated: LocationReading = {
       status: 'located',
       registered: { ...SEOUL, timezone: 'Asia/Seoul' },
@@ -363,7 +366,7 @@ describe('useGetWeatherLocationQueryOptions', () => {
     it('다시 물을 수 없게 거부했으면 직전 위치가 있어도 설정 열기 상태가 된다', async () => {
       // Given
       const gateway = createLocationGatewayStub(GRANTED_IN_SEOUL);
-      gateway.getPermission.mockResolvedValue({ isGranted: false, canAskAgain: false });
+      gateway.getPermission.mockResolvedValue({ status: 'denied', canAskAgain: false });
       const { renderHook } = setupWithPreviousLocation(gateway);
 
       // When
@@ -382,7 +385,7 @@ describe('useGetWeatherLocationQueryOptions', () => {
       const { renderHook } = setupWithPreviousLocation(gateway);
       const { result } = await renderHook(() => useWeatherLocation());
       await waitFor(() => expect(result.current).toMatchObject({ isLastKnown: true }));
-      gateway.getPermission.mockResolvedValue({ isGranted: true, canAskAgain: true });
+      gateway.getPermission.mockResolvedValue({ status: 'granted', canAskAgain: true });
 
       // When
       await act(async () => {

@@ -1,22 +1,24 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { type SubTodo, SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
 import type { Todo } from '@src/features/planning/todo/domains/todo.model';
-import { useSheetSubTodo } from '@src/features/planning/todo/hooks/use-sheet-todo';
-import { useTodoSheetDateKey } from '@src/features/planning/todo/hooks/use-todo-sheet-date-key';
+import { useSuspenseSheetSubTodo } from '@src/features/planning/todo/hooks/use-suspense-sheet-todo';
+import { useTodoSheetDateKey } from '@src/features/planning/todo/hooks/use-todo-params';
 import {
   useDeleteSubTodoMutationOptions,
   useUpdateSubTodoMutationOptions,
 } from '@src/features/planning/todo/queries/sub-todo.mutations';
+import { subTodoFormSchema } from '@src/features/planning/todo/schemas/sub-todo-form.schema';
 import { SERVER_VALUES_RESET_OPTIONS } from '@src/shared/constants/server-values-reset-options';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, IconButton, TrashIcon, VStack } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
+import { noop } from 'es-toolkit';
 import { Separator } from 'heroui-native';
 import { type ComponentProps } from 'react';
-import { useForm, useFormState } from 'react-hook-form';
+import { Controller, FormState, useForm, Watch } from 'react-hook-form';
 
-import { subTodoFormSchema } from '../schemas/sub-todo-form.schema';
 import { SubTodoBottomSheet, SubTodoDictation, SubTodoTitleInput } from './sub-todo-bottom-sheet';
 import { TodoComposerSubmitButton } from './todo-composer-submit-button';
 
@@ -31,7 +33,7 @@ export function EditSubTodoBottomSheet(props: EditSubTodoBottomSheetProps) {
 }
 
 EditSubTodoBottomSheet.Form = function Form({ onClose }: { onClose: () => void }) {
-  const target = useSheetSubTodo({ onMissing: onClose });
+  const target = useSuspenseSheetSubTodo({ onMissing: onClose });
 
   if (target == null) {
     return null;
@@ -57,26 +59,11 @@ function EditSubTodoForm({ todo, subTodo, onClose }: EditSubTodoFormProps) {
     values: { title: subTodo.title },
     resetOptions: SERVER_VALUES_RESET_OPTIONS,
   });
-  const { isValid } = useFormState({ control: form.control });
   const updateSubTodo = useMutation(useUpdateSubTodoMutationOptions());
   const deleteSubTodo = useMutation(useDeleteSubTodoMutationOptions());
   const isBusy = updateSubTodo.isPending || deleteSubTodo.isPending;
-  const isSubmitDisabled = !isValid || isBusy;
 
-  // 저장 중에는 아무 일도 하지 않는다. 시트를 닫으면 저장 결과를 볼 수 없다. 빈 제목은 저장 대신 닫는다
-  const handleTitleSubmit = () => {
-    if (isBusy) {
-      return;
-    }
-    if (!isValid) {
-      onClose();
-
-      return;
-    }
-    submit();
-  };
-
-  const submit = form.handleSubmit(async ({ title }) => {
+  const submitSubTodo = form.handleSubmit(async ({ title }) => {
     if (isBusy) {
       return;
     }
@@ -85,36 +72,57 @@ function EditSubTodoForm({ todo, subTodo, onClose }: EditSubTodoFormProps) {
 
       return;
     }
-
-    try {
-      await updateSubTodo.mutateAsync({
-        todoId: todo.id,
-        subTodoId: subTodo.id,
-        title,
-        date,
-      });
-      onClose();
-    } catch {
-      // 실패 안내와 보고는 mutation의 meta.errorFeedback이 맡는다
-    }
+    await updateSubTodo.mutateAsync({
+      todoId: todo.id,
+      subTodoId: subTodo.id,
+      title,
+      date,
+    });
+    onClose();
   });
 
-  const handleDelete = async () => {
+  // isPending은 다음 렌더에야 켜져 같은 프레임의 두 번째 탭·완료 키가 한 번 더 보낸다
+  const handleSavePress = useSingleTap(() => {
+    submitSubTodo().catch(noop);
+  });
+
+  // 저장 중에는 아무 일도 하지 않는다. 시트를 닫으면 저장 결과를 볼 수 없다. 빈 제목은 저장 대신 닫는다
+  const handleTitleSubmit = (isValid: boolean) => {
     if (isBusy) {
       return;
     }
-
-    try {
-      await deleteSubTodo.mutateAsync({ todoId: todo.id, subTodoId: subTodo.id, date });
+    if (!isValid) {
       onClose();
-    } catch {
-      // 실패 안내와 보고는 mutation의 meta.errorFeedback이 맡는다
+
+      return;
     }
+    handleSavePress();
+  };
+
+  // 실패 안내와 보고는 mutation의 meta.errorFeedback이 맡는다
+  const handleDelete = () => {
+    if (isBusy) {
+      return;
+    }
+    deleteSubTodo
+      .mutateAsync({ todoId: todo.id, subTodoId: subTodo.id, date })
+      .then(() => onClose())
+      .catch(noop);
   };
 
   return (
     <VStack gap={12}>
-      <SubTodoTitleInput form={form} onSubmitEditing={handleTitleSubmit} />
+      <Controller
+        control={form.control}
+        name="title"
+        render={({ field, formState: { isValid } }) => (
+          <SubTodoTitleInput
+            value={field.value}
+            onChange={field.onChange}
+            onSubmitEditing={() => handleTitleSubmit(isValid)}
+          />
+        )}
+      />
 
       <Separator thickness={1} className="bg-gray-2" />
 
@@ -137,12 +145,29 @@ function EditSubTodoForm({ todo, subTodo, onClose }: EditSubTodoFormProps) {
 
         <Box className="flex-1" />
 
-        <SubTodoDictation form={form} />
-        <TodoComposerSubmitButton
-          testID="sub-todo-submit"
-          isDisabled={isSubmitDisabled}
-          isSubmitting={updateSubTodo.isPending}
-          onPress={() => submit()}
+        <Watch
+          control={form.control}
+          name="title"
+          render={(title) => (
+            <SubTodoDictation
+              value={title}
+              // 적은 글자처럼 고친 칸으로 두고 바로 검사해 다시 받은 값이 덮지 않고 전송·완료 키가 따른다
+              onChange={(text) =>
+                form.setValue('title', text, { shouldDirty: true, shouldValidate: true })
+              }
+            />
+          )}
+        />
+        <FormState
+          control={form.control}
+          render={({ isValid }) => (
+            <TodoComposerSubmitButton
+              testID="sub-todo-submit"
+              isDisabled={!isValid || isBusy}
+              isSubmitting={updateSubTodo.isPending}
+              onPress={() => handleSavePress()}
+            />
+          )}
         />
       </HStack>
     </VStack>

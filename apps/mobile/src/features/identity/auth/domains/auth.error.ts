@@ -37,10 +37,7 @@ export function isPasswordMismatchError(error: unknown) {
   return isApiError(error) && error.hasCode(ErrorCode.USER_0602);
 }
 
-/**
- * 탈퇴 요청이 서버에 닿았을 수 있는데 응답을 받지 못했다. 시간 초과와 온라인에서의 연결 오류(보낸 뒤 끊겼을 수 있다)다.
- * 오프라인에서 난 연결 오류는 요청이 기기를 떠나지 않았다
- */
+/** 시간 초과와 온라인 연결 오류는 탈퇴 요청이 서버에 닿았을 수 있다. 오프라인 연결 오류는 요청이 기기를 떠나지 않았다 */
 export function isAccountDeletionUnanswered(error: unknown, { wasOnline }: { wasOnline: boolean }) {
   return error instanceof TimeoutError || (wasOnline && error instanceof NetworkError);
 }
@@ -77,11 +74,7 @@ export function findResendCooldown(error: unknown): number | null {
   return details.success ? details.data.remainingSeconds : null;
 }
 
-/**
- * 로그아웃을 위해 남긴 refresh 토큰을 쓰지 못했을 때. 요청 과다(429)·서버 장애(5xx)는 기록을 두고 다음 복귀 때 다시
- * 시도하고, 그 밖의 거절(만료·재사용·없는 토큰)은 세션이 이미 끝난 것이다. refresh는 봉투를 읽지 않는 원시 응답이라
- * 코드 대신 상태로 가른다
- */
+/** 429·5xx는 다음 복귀 때 다시 시도하고 그 밖의 거절은 세션이 이미 끝난 것이다. refresh는 원시 응답이라 상태로 가른다 */
 export function getPendingRefreshFailure(status: number): 'retry' | 'ended' {
   return status === HttpStatus.TOO_MANY_REQUESTS || status >= HttpStatus.INTERNAL_SERVER_ERROR
     ? 'retry'
@@ -89,7 +82,7 @@ export function getPendingRefreshFailure(status: number): 'retry' | 'ended' {
 }
 
 /** 로그인 실패를 추적할 때의 이유. 서버·공급자 코드를 그대로 싣지 않고 몇 갈래로 묶는다 */
-export type LoginFailureReason =
+export type LoginFailure =
   | 'email_not_verified'
   | 'invalid_credentials'
   | 'network'
@@ -97,15 +90,15 @@ export type LoginFailureReason =
   | 'unknown';
 
 /** 사용자가 직접 닫은 소셜 창은 실패가 아니라 null이다. 서버가 거부한 것만 rejected이고, 앱이 판단한 실패(창 열기·코드 없음)는 unknown이다 */
-export function findLoginFailureReason(
+export function findLoginFailure(
   error: unknown,
   method: 'email' | OAuthProviderSlug,
-): LoginFailureReason | null {
+): LoginFailure | null {
   if (isLoginCancelledError(error)) {
     return null;
   }
   return match(error)
-    .returnType<LoginFailureReason>()
+    .returnType<LoginFailure>()
     .when(isEmailNotVerifiedError, () => 'email_not_verified')
     .when(
       (value) => method === 'email' && isPasswordMismatchError(value),

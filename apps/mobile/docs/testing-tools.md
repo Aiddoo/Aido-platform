@@ -13,13 +13,25 @@
 | `di.ts`                                                                   | `createTestPorts`, `createTestDi({ ports, seeds })` → `TestDi`(운영 조립 + `queryClient`)                                                                                        |
 | `render-route-hook.tsx`                                                   | `renderRouteHook`(진짜 Expo Router 위에서 훅을 돌린다), `renderAppRoute(routes, { url, di })`(route 파일 표를 앱 Provider 위에 올린다), `renderRoutes`(Provider 없이 route 표만) |
 | `query-client.ts`, `timers.ts`, `mock-method.ts`, `fixture.ts`, `core.ts` | `createTestQueryClient`·`deliverQueryNotifications`, `setupFakeTimersPerTest`, `mockMethod`, `defineFixture`, 가벼운 공용 export(`render.tsx` 제외)                              |
+| `tracked-events.ts`                                                       | `getTrackedEvents(analytics, name)`: 그 이름으로 남긴 분석 값 목록(남긴 순서). 이름은 `AppEventMap` 키만 받는다                                                                  |
+| `view-measure.ts`, `initial-url.ts`, `idle-callback.ts`                   | `setupViewMeasurePerTest({ measure, measureInWindow })`(`moveTo`로 바꿈), `stubInitialUrl(url)`, `setupIdleCallbackPerTest(create?)`. 모두 테스트가 끝나면 되돌린다              |
+| `date-key.ts`, `temporal-oracle.ts`                                       | `createDateKey('2026-11-24')`(없는 날이면 던진다), `temporalOracle`(Node 네이티브 Temporal로 날짜 계산의 정답을 낸다)                                                            |
+| `window-dimensions.ts`, `window-layout.fixtures.ts`                       | `stubWindowDimensions(width)`, `createAppWindow`·`createPaneArea`·`DEVICE_WINDOW`·`IPAD_SIDEBAR_WIDTH`·`IPHONE_DUO_RAIL_WIDTH`(창·칸 배치 모델 fixture와 기기 창 크기)           |
+| `device-widget-bridge.ts`, `ky-after-response-hook.ts`                    | `createDeviceWidgetBridge()`(운영 조립의 플랫폼 위젯 브리지), `runKyAfterResponseHook(hook, request, response)`(실제 ky로 afterResponse 훅 한 번)                                |
 
 - 도구는 `function` 선언이고 `jest.Mocked<포트>`를 돌려준다. 메서드는 `mockMethod<Port['method']>(구현)`으로 포트에서 타입을 가져와, 포트가 바뀌면 기본값도 컴파일되지 않게 한다. 같은 일을 하는 도구를 따로 만들지 않는다. feature 전용 도구는 이유가 있을 때만 그 feature의 `__tests__`에 둔다.
 - **stub 기본값**은 정상 기기와 빈 데이터다(알림 허용, 클립보드 비어 있음, 요금제·구독 없음, 로그인 창 닫음). 값이 있어야 하는 메서드(`HttpClient`, `JsonFetcher`, 좌표)는 정하지 않고 부르면 `createXStub: get 응답을 정하지 않았습니다`처럼 이름을 대며 실패한다. 어긋난 기본값은 테스트가 반환된 `jest.fn`을 바꿔 준다. 포트를 넓히면 stub도 같은 커밋에서 넓힌다.
 - 상태를 보는 stub: `createNetworkStatusGatewayStub`(`emit(isOnline)`, `getListenerCount()`), `createAppLifecycleGatewayStub(initial)`(`emit(state)`), `createPurchasesGatewayStub`(`isConfigured()`, `getListenerCount()`), `createPushNotificationGatewayStub(overrides)`(수신·응답을 `emit*`로 흘림), `createMemoryObservableSyncStorage`(남은 구독 수), `createMemorySyncStorage`(`keys`·`clear` 포함), `createMemoryTokenStore(tokens)`, `createIdGeneratorStub`(호출마다 다른 id).
 - SDK를 `jest.mock`하는 `shared/infra` 어댑터 테스트는 `core.ts` 대신 도구 파일을 직접 import한다. 앱 전체가 가로챈 SDK보다 먼저 읽히지 않게 하기 위해서다.
+- 서버가 코드로 거절한 실패는 `createApiError(code, { message, status, details, retryAfterMs })`(`api-error.ts`, `core.ts`)로 만들고 `new ApiError(`를 테스트에 직접 쓰지 않는다. 문구·상태를 주지 않으면 서버 카탈로그(`Errors[code]`)의 값이고, 기능 fixture의 `create{Feature}ApiError`는 기능 기본 코드를 정해 이것을 부른다.
 - 기타: 끝나는 시점·실패를 테스트가 정하는 Promise는 내장 `Promise.withResolvers<T>()`를 쓴다(앱 코드는 lint가 막는다). 그 위의 `createPendingResponse(value)`(정한 값으로 끝나는 HTTP 응답, 두 번 누름·늦은 응답), `createStalledBodyResponse(status)`(헤더 뒤 본문이 멈춘 응답), `observeSettlement(promise)`(끝나지 않는 대기를 시간 초과 대신 `pending`으로 단언), `respondByPath({ path: 응답 })`(HTTP stub 하나가 URL마다 다른 응답), `createWidgetBridgeStub()`, `createRouteParamsFake(initial)`(공용 expo-router mock의 URL을 움직임), `stubWindowDimensions(width)`, `OverlayStateContext.Provider`(시트 활성 여부를 값으로 준다).
+- 분석 단언: `analytics.trackEvent.mock.calls`를 이름으로 거르지 않고 `getTrackedEvents`를 쓴다. 몇 번 남았는지는 `toHaveLength`, 값은 `toEqual([{ … }])`다. 이름 앞머리로 거르는 것, 전체 호출 순서, 개인정보가 남지 않았는지(`JSON.stringify`)만 `mock.calls`를 직접 본다.
+- RN의 `View.prototype.measure`·`measureInWindow`는 이미 `jest.fn`이라 `restoreMocks`가 구현을 되돌리지 못한다. `jest.spyOn(View.prototype, …)`을 쓰지 않고 `setupViewMeasurePerTest`를 쓴다. `global.fetch`를 바꾸는 어댑터 테스트는 원래 값을 `afterEach`에서 되돌린다.
+- `createTestPorts`의 기본값은 모두 `ports/`의 stub이다(`createDeviceTraitsStub(overrides)`, `createRefreshTokensRequestStub()` 포함).
+- 콘솔 로그: React가 경계에 잡힌 렌더 오류를 `console.error`로 다시 찍는 것처럼 예상한 로그는 `silenceConsole('error')`(`core.ts`)로 삼킨다. 조건 함수를 주면 그 로그만 삼키고 나머지는 그대로 찍는다. 테스트에서 `console`을 직접 `jest.spyOn(…).mockImplementation`하지 않는다.
+- 같은 프레임 두 번 누르기: `await pressTwiceInSameFrame(element)`(`press.ts`, `core.ts`가 아니라 직접 import). 렌더 전에 한 act 안에서 두 번 눌러 `isPending`이 아직 꺼진 순간을 만든다. 누름 사이에 렌더·마이크로태스크가 끼는 테스트는 도구를 쓰지 않는다.
 - fake timer가 켜진 테스트에서 마이크로태스크를 비울 때는 `await Promise.resolve()` 대신 `await jest.advanceTimersByTimeAsync(0)`를 쓴다.
+- 상태는 남고 effect만 다시 도는 경우(StrictMode·Fast Refresh)는 `<Activity mode="visible">`로 그린 뒤 `hidden` → `visible`로 `rerender`해 재현한다(`use-voice-capture-session.test.tsx`). 이 테스트 렌더러는 `<StrictMode>`로 감싸도 effect를 다시 돌리지 않는다.
 
 |                                     | `jest.mock`                 | stub·fake                                |
 | ----------------------------------- | --------------------------- | ---------------------------------------- |
@@ -82,6 +94,8 @@ expect(screen.getByRole('textbox', { name: '문의 내용' })).toHaveDisplayValu
 `jest.setup.ts`가 `expo-router`를 `src/testing/mocks/expo-router.tsx`로 바꾸고 `beforeEach`의 `resetExpoRouterMock()`이 기본값으로 되돌린다. 테스트 파일에서 `jest.mock('expo-router', …)`를 새로 쓰지 않는다.
 
 - 제공: `router`(`push`, `replace`, `back`, `navigate`, `setParams`, `canGoBack`), `useLocalSearchParams`, `useIsFocused`, `useRouter`, `useNavigation`, `Redirect`, `Stack.Screen`, `Stack.Toolbar`.
+- 화면이 하나뿐이고 focus돼 있어 `useNavigation()`은 렌더마다 같은 객체이고 그 `setParams`는 `router.setParams`로 간다. route 값 setter(`useView`·`useRouteParams`)는 화면의 `navigation.setParams`를 쓰지만 테스트는 `router.setParams`·`createRouteParamsFake`로 본다. 다른 화면이 focus된 뒤의 쓰기는 진짜 라우터(`renderRouteHook`)로 본다.
+- `useNavigationContainerRef`는 준비되지 않은 컨테이너를 돌려준다. 루트 상태를 읽는 코드(`toSelectedTabPath`)는 테스트가 `getRootState`를 정한다.
 - `Stack.Toolbar.Button`은 접근성 이름이 있는 버튼으로 그려진다(`getByLabelText`).
 - 여기에 없는 export(`useFocusEffect` 등)는 `undefined`다. 쓰는 화면을 테스트하려면 먼저 이 파일에 더한다.
 - 이동은 호출을 확인한다. 실제 내비게이션은 기기에서 확인한다.
@@ -115,7 +129,7 @@ export const createSuggestionDto = defineFixture(recurringSuggestionSchema, { �
 - 전역 옵션(`testTimeout`·`randomize`·`maxWorkers` 등)은 `module.exports`에, 프로젝트 옵션(`cacheDirectory`·`setupFilesAfterEnv` 등)은 `base`에 둔다. 반대로 두면 Jest가 조용히 무시한다(`jest --showConfig`로 확인).
 - 유지: `randomize`+`showSeed`, `workerIdleMemoryLimit`, `maxWorkers` 50%(`AIDO_TEST_WORKERS`로 조절, `@aido/test-config`의 `resolveTestWorkers`), `clearMocks`·`restoreMocks`, 테스트에서도 React Compiler.
 - 추가한 것: 프로젝트마다 `cacheDirectory`(`node_modules/.cache/jest`), 전역 `testTimeout` 15초·`errorOnDeprecated`(지원 중단 Jest API를 바로 실패시킨다), CI(`CI=true`)에서 `logHeapUsage`(`--ci`는 Jest가 CI 환경에서 스스로 켠다), `test:handles`(`--runInBand --detectOpenHandles`), RNTL `asyncUtilTimeout` 3초, 테스트마다 `clearTestQueryClients`.
-- Node 내장 러너 테스트(`scripts/**/__tests__`, `plugins/**/__tests__`, 스토어 그림 `store-metadata/art`)는 `pnpm test:node`가 돌리고 turbo `test:node` 태스크로 CI에 걸린다. `store-listing.test.mjs`는 릴리스 `release.json`이 있어야 해 `test:store-listing`으로 따로 돈다.
+- Node 내장 러너 테스트(`scripts/**/__tests__`, `plugins/**/__tests__`, 스토어 그림 `store-metadata/art`)는 `pnpm test:node`가 돌리고 turbo `test:node` 태스크로 CI에 걸린다. `scripts/__tests__/store-listing.test.mjs`는 현재 버전의 릴리스 `release.json`이 있어야 하므로 버전을 올리면 `store-metadata/<버전>/release.json`을 함께 만든다.
 - `moduleNameMapper`의 `@aido/api/*`는 한 줄이다. `jest.resolver.cjs`는 RN 0.88 preset의 경로 해석을 유지하고 실제 Reanimated·Worklets 패키지 경로만 공식 resolver로 보낸다. pnpm peer suffix에 `react-native-worklets`가 있다는 이유로 ExpoModulesCore까지 웹 구현으로 바꾸면 안 된다([Reanimated 4 Jest testing](https://docs.swmansion.com/react-native-reanimated/docs/guides/testing/)).
 - 기기 시간대에 기대는 테스트(피커·자정·서머타임)는 파일 docblock에 `@jest-environment <rootDir>/jest.time-zone-environment.cjs`와 `@time-zone America/New_York`을 적는다. 테스트 안의 `process.env.TZ`는 사본이라 Date·Intl이 따르지 않고, 이 환경이 그 파일 동안만 worker의 시간대를 바꾸고 되돌린다(`time-picker.test.tsx`).
 - `jest.setup.ts`는 Hermes에 없는 `toSorted`·`Array.fromAsync`를 Node에서 지워 앱에서만 죽는 호출을 테스트에서도 드러낸다.

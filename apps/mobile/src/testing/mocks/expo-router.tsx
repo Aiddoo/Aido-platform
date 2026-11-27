@@ -1,6 +1,6 @@
 import { Children, cloneElement, isValidElement, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
 
 export const router = {
   push: jest.fn(),
@@ -9,6 +9,7 @@ export const router = {
   navigate: jest.fn(),
   setParams: jest.fn(),
   canGoBack: jest.fn(),
+  dismiss: jest.fn(),
   dismissAll: jest.fn(),
   canDismiss: jest.fn(),
   dismissTo: jest.fn(),
@@ -23,9 +24,19 @@ export const useSegments = jest.fn();
 export const useFocusEffect = jest.fn();
 /** 화면이 마운트된 채 focus만 잃는 경우(탭 바꾸기·위에 쌓기)는 테스트가 바꾼 navigation을 돌려준다 */
 export const useNavigation = jest.fn();
+/** 네이티브 내비게이터가 없어 막을 제거 동작이 오지 않는다. 막기를 푸는 함수만 돌려준다 */
+export const usePreventRemove = jest.fn();
+/** 루트 레이아웃이 묶는 내비게이션 컨테이너. 테스트가 루트 상태를 정한다 */
+export const useNavigationContainerRef = jest.fn();
 
+/** 화면이 하나뿐이고 focus돼 있어 그 화면의 setParams는 focus route에 쓰는 `router.setParams`와 같다 */
 function createNavigation() {
-  return { isFocused: () => true, getParent: () => undefined, addListener: () => () => undefined };
+  return {
+    isFocused: () => true,
+    getParent: () => undefined,
+    addListener: () => () => undefined,
+    setParams: (params: object) => router.setParams(params),
+  };
 }
 
 function useRunFocusEffect(effect: () => void | (() => void)) {
@@ -52,7 +63,13 @@ export function resetExpoRouterMock() {
   usePathname.mockReset().mockReturnValue('/');
   useSegments.mockReset().mockReturnValue([]);
   useFocusEffect.mockReset().mockImplementation(useRunFocusEffect);
-  useNavigation.mockReset().mockImplementation(createNavigation);
+  // 실제 화면의 navigation처럼 렌더마다 같은 객체다
+  useNavigation.mockReset().mockReturnValue(createNavigation());
+  usePreventRemove.mockReset().mockReturnValue(() => undefined);
+  useNavigationContainerRef.mockReset().mockReturnValue({
+    isReady: () => false,
+    getRootState: () => ({ routes: [] }),
+  });
 }
 
 resetExpoRouterMock();
@@ -189,8 +206,21 @@ function StackScreen({ options }: { options?: { title?: string; headerTitle?: ()
   return options?.headerTitle?.() ?? <Text>{options?.title}</Text>;
 }
 
-function StackSearchBar() {
-  return null;
+/** 네이티브 헤더 검색창 대신 같은 이벤트 모양(`nativeEvent.text`)을 내는 검색 입력칸을 그린다 */
+function StackSearchBar({
+  placeholder,
+  onChangeText,
+}: {
+  placeholder?: string;
+  onChangeText?: (event: { nativeEvent: { text: string } }) => void;
+}) {
+  return (
+    <TextInput
+      accessibilityRole="search"
+      placeholder={placeholder}
+      onChangeText={(text) => onChangeText?.({ nativeEvent: { text } })}
+    />
+  );
 }
 
 export const Stack = { Toolbar, Screen: StackScreen, SearchBar: StackSearchBar };
@@ -199,9 +229,8 @@ export function useRouter() {
   return router;
 }
 
-export function Redirect() {
-  return null;
-}
+// 어디로 보냈는지 테스트가 호출 기록(props의 href)으로 읽는다
+export const Redirect = jest.fn(() => null);
 
 // ThemeProvider는 내비게이션 컨텍스트에 테마만 전한다. 테스트는 배경색이 정해지는지만 읽는다
 export const DarkTheme = { colors: { background: 'black' } };

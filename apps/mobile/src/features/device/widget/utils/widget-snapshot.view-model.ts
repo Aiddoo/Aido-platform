@@ -1,3 +1,4 @@
+import { DAYS_PER_WEEK } from '@src/shared/constants/time-units';
 import { addDaysToDateKey, getCalendarWeek, type DateKey } from '@src/shared/date/date-key';
 import { formatDateKeyLabel, type DateFormatContext } from '@src/shared/date/format/date-format';
 import { formatCalendarWeekLabel, formatRangeLabel } from '@src/shared/date/format/date-labels';
@@ -5,7 +6,7 @@ import { APP_LOCALES } from '@src/shared/i18n/app-locales';
 import type { ResolvedLanguage } from '@src/shared/preferences/language.preference';
 import { keyBy, range } from 'es-toolkit';
 
-import type { WidgetSnapshotStrings } from '../schemas/widget-snapshot-storage.schema';
+import type { StoredWidgetStrings } from '../schemas/widget-snapshot-storage.schema';
 
 /** 스냅샷 문구를 굽는 최소 번역 함수 — i18next `t`가 그대로 만족한다 (순수성/테스트 용이성) */
 export type WidgetTranslateFn = (
@@ -42,17 +43,13 @@ export interface WidgetWeekCompletion {
   isComplete: boolean;
 }
 
-export function getWidgetDayState(summary: Pick<WidgetDayCounts, 'totalTodos'>) {
-  return summary.totalTodos > 0 ? ('data' as const) : ('empty' as const);
-}
-
-export function toWidgetSnapshotStrings(
+export function getWidgetSnapshotStrings(
   t: WidgetTranslateFn,
   summary: Pick<
     WidgetDayCounts,
     'completedTodos' | 'totalTodos' | 'completionRate' | 'currentStreak'
   >,
-): WidgetSnapshotStrings {
+): StoredWidgetStrings {
   return {
     progressTitle: t('widget:progress.title'),
     percentLabel: t('widget:progress.percent', { rate: Math.round(summary.completionRate) }),
@@ -72,7 +69,10 @@ export function toWidgetSnapshotStrings(
   };
 }
 
-export function toWidgetWeek(
+/** 위젯 주는 날짜 key만 그린다. 날짜 key는 시간대와 상관없이 같은 날이라 고정 시간대로 읽는다 */
+const WIDGET_WEEK_TIMEZONE = 'UTC';
+
+export function getWidgetWeek(
   summary: Pick<WidgetDayCounts, 'date' | 'totalTodos' | 'isComplete'>,
   {
     locale,
@@ -85,10 +85,10 @@ export function toWidgetWeek(
   const completions = keyBy(weekCompletions ?? [], (completion) => completion.date);
   const dateFormatContext: DateFormatContext = {
     locale: APP_LOCALES[locale].intlLocale,
-    timezone: 'UTC',
+    timezone: WIDGET_WEEK_TIMEZONE,
   };
   const week = getCalendarWeek(summary.date);
-  const days = range(7).map((dayOffset) => {
+  const days = range(DAYS_PER_WEEK).map((dayOffset) => {
     const date = addDaysToDateKey(week.startDateKey, dayOffset);
     const completion = completions[date];
     return {

@@ -38,7 +38,9 @@ describe('콕 응답을 클라이언트 모델로 변환', () => {
     const nudge = toNudgeInteraction(dto);
     // Then
     expect(nudge.todoTitle).toBeNull();
-    expect(nudge.senderName).toBe('SENDER01');
+    expect(nudge.isTodoCompleted).toBeNull();
+    expect(nudge.senderName).toBeNull();
+    expect(nudge.senderUserTag).toBe('SENDER01');
     expect(nudge.isAvailable).toBe(false);
     expect(nudge.thankedAt).toBeNull();
   });

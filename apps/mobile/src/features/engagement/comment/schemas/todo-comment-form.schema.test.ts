@@ -1,5 +1,5 @@
 import { createTodoComment } from '../__tests__/todo-comment.fixtures';
-import { toEditFormValues, toReplyFormValues } from './todo-comment-form.schema';
+import { toEditFormValues, toReplyFormValues } from '../apis/todo-comment.mapper';
 
 describe('toReplyFormValues', () => {
   it('답글은 빈 입력으로 시작한다', () => {

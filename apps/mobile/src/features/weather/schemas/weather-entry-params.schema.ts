@@ -9,3 +9,8 @@ export const weatherEntryParamsSchema = z.object({
   entry: z.enum(WEATHER_ENTRIES).optional().catch(undefined),
   openedAt: z.coerce.number().int().positive().optional().catch(undefined),
 });
+
+/** 날씨는 앱 Stack에 하나만 두어 연 시각을 붙여야 다시 마운트되지 않아도 열 때마다 `weather_opened`를 센다 */
+export function toWeatherHref({ entry, openedAt }: { entry: WeatherEntry; openedAt: number }) {
+  return { pathname: '/weather', params: { entry, openedAt } } as const;
+}

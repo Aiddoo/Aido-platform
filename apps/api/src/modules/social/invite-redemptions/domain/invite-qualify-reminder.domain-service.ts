@@ -1,5 +1,6 @@
 import { INVITE_QUALIFICATION } from "@aido/api/vocabulary";
 
+import { resolveDeliveryTimezone } from "#api/shared/domain/time/timezone-name";
 import { Timezone } from "#api/shared/domain/time/timezone.vo";
 import { localDateOf, toZonedInstant } from "#api/shared/domain/time/zoned-time";
 
@@ -10,17 +11,9 @@ const HOURS_PER_DAY = 24;
 /** 사용 시작까지 하루만 남은 활동일 수. 이 수일 때만 "하루만 더"가 맞는 말이다. */
 const ONE_DAY_LEFT_ACTIVE_DAYS = INVITE_QUALIFICATION.MIN_ACTIVE_DAYS - 1;
 
-/**
- * 발송 시각은 배송 경로(resolveDeliveryTimezone)와 같이 미상·UTC 시간대를 KST로 본다. 잔존 UTC는 헤더를
- * 못 받아 기본값에 머문 한국 사용자가 대부분이다.
- */
+/** 발송 시각은 배송 경로와 같은 발송 시간대 규칙(미상·UTC는 KST)이다. */
 export function deliveryTimezoneOf(timezone: Timezone): Timezone {
-  try {
-    const resolved = Timezone.create(timezone.value);
-    return resolved.equals(Timezone.UTC) ? Timezone.SEOUL : resolved;
-  } catch {
-    return Timezone.SEOUL;
-  }
+  return Timezone.reconstitute(resolveDeliveryTimezone(timezone.value));
 }
 
 /** 이 시각 이전에 마감되는 수락이 알림 후보다. */

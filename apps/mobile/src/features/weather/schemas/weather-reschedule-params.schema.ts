@@ -1,4 +1,8 @@
-import { WEATHER_RESCHEDULE_MAX_TODO_IDS, WEATHER_RESCHEDULE_REASONS } from '@aido/api/vocabulary';
+import {
+  WEATHER_RESCHEDULE_DEEP_LINK,
+  WEATHER_RESCHEDULE_MAX_TODO_IDS,
+  WEATHER_RESCHEDULE_REASONS,
+} from '@aido/api/vocabulary';
 import { routeIdSchema } from '@src/shared/schemas/route-params.schema';
 import { z } from 'zod';
 
@@ -12,3 +16,10 @@ export const weatherRescheduleParamsSchema = z.object({
 });
 
 export type WeatherRescheduleParams = z.output<typeof weatherRescheduleParamsSchema>;
+
+export function toWeatherRescheduleHref(params: WeatherRescheduleParams) {
+  return {
+    pathname: WEATHER_RESCHEDULE_DEEP_LINK,
+    params: weatherRescheduleParamsSchema.encode(params),
+  } as const;
+}

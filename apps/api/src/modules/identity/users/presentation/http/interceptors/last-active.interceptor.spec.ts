@@ -68,7 +68,7 @@ describe("LastActiveInterceptor — 사용자 활동 기록", () => {
       interceptor.intercept(new ExecutionContextHost([{ user }, {}]), { handle: () => of("ok") }),
     );
 
-  it("X-Timezone을 정규 IANA 타임존으로 변환해 활동 writer에 전달한다", () => {
+  it("X-Timezone의 IANA 이름을 다른 이름으로 바꾸지 않고 활동 writer에 전달한다", () => {
     // Given
     const user = userOf("1");
 
@@ -76,7 +76,7 @@ describe("LastActiveInterceptor — 사용자 활동 기록", () => {
     intercept(user, { "x-timezone": "US/Eastern" });
 
     // Then
-    expect(activityWriter.writes).toEqual([["user-1", "America/New_York", undefined]]);
+    expect(activityWriter.writes).toEqual([["user-1", "US/Eastern", undefined]]);
   });
 
   it("기존 클라이언트가 X-Timezone을 보내지 않으면 UTC로 기록한다", () => {

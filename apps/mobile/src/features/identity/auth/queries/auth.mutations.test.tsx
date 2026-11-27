@@ -253,7 +253,7 @@ describe('회원가입 인증 메일', () => {
   }
 
   const NOT_SENT_MESSAGE =
-    '가입은 됐지만 인증 메일을 보내지 못했어요. 잠시 후 다시 보내기를 눌러주세요';
+    '가입은 됐지만 인증 메일을 보내지 못했어요. 잠시 뒤 다시 보내기를 눌러주세요';
 
   it('메일을 보내지 못했으면 가입은 성공이고 재발송을 안내한다', async () => {
     // When
@@ -317,7 +317,9 @@ describe('계정 연결 실패 안내', () => {
     );
 
     await act(async () => {
-      await result.current.mutateAsync('kakao').catch(() => undefined);
+      await result.current
+        .mutateAsync({ provider: 'kakao', providerName: '카카오' })
+        .catch(() => undefined);
     });
   }
 

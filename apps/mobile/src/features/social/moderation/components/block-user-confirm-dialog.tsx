@@ -2,6 +2,7 @@ import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useTranslation } from '@src/shared/i18n';
 import { ConfirmDialog, useSheetRoute } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
+import { useNavigation } from 'expo-router';
 
 import { useBlockUserMutationOptions } from '../queries/moderation.mutations';
 import { blockUserParamsSchema } from '../schemas/moderation-params.schema';
@@ -10,6 +11,7 @@ import { blockUserParamsSchema } from '../schemas/moderation-params.schema';
 export function BlockUserConfirmDialog() {
   const { t } = useTranslation(['moderation', 'common']);
   const [{ userId, name }] = useRouteParams(blockUserParamsSchema);
+  const navigation = useNavigation();
   const dialog = useSheetRoute('/feed');
   const blockUser = useMutation(useBlockUserMutationOptions());
 
@@ -23,7 +25,12 @@ export function BlockUserConfirmDialog() {
       confirmColor="danger"
       confirmTestID="block-user-confirm"
       onConfirm={() => blockUser.mutateAsync({ userId, displayName: name })}
-      onFinish={() => dialog.exit()}
+      onFinish={() => {
+        // 차단을 기다리는 사이 이 확인 창 route를 이미 떠났으면 지금 보이는 아래 화면을 닫지 않는다
+        if (navigation.isFocused()) {
+          dialog.exit();
+        }
+      }}
     />
   );
 }

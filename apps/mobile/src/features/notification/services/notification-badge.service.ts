@@ -4,7 +4,6 @@ import type { AuthStatus } from '@src/core/session/auth-status';
 import { getErrorMessage } from '@src/shared/errors';
 
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
-import { NotificationBadgePolicy } from '../domains/notification-badge.model';
 
 interface NotificationBadgeServicePorts {
   badge: Pick<PushNotificationGateway, 'setBadgeCount'>;
@@ -28,7 +27,7 @@ export class NotificationBadgeService {
     authStatus: AuthStatus;
     unreadCount: number | undefined;
   }): Promise<void> => {
-    const count = NotificationBadgePolicy.findBadgeCount(unreadCount, { authStatus });
+    const count = findBadgeCount(authStatus, unreadCount);
     if (count == null) {
       return;
     }
@@ -43,4 +42,16 @@ export class NotificationBadgeService {
         ),
       );
   };
+}
+
+/** 앱 아이콘 배지에 쓸 수. null이면 배지를 건드리지 않는다 */
+function findBadgeCount(authStatus: AuthStatus, unreadCount: number | undefined): number | null {
+  // 콜드 스타트의 인증 확인 중(loading·locked)은 로그아웃이 아니다. 지우면 읽지 않은 알림이 있어도 배지가 사라진다
+  if (authStatus === 'loading' || authStatus === 'locked') {
+    return null;
+  }
+  if (authStatus === 'unauthenticated') {
+    return 0;
+  }
+  return unreadCount ?? null;
 }

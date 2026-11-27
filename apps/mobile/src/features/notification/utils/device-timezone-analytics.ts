@@ -1,6 +1,6 @@
-import type { DeviceTimezoneChange, TimezoneOffsetBucket } from '../domains/device-timezone.model';
+import { MINUTES_PER_HOUR } from '@src/shared/constants/time-units';
 
-const MINUTES_PER_HOUR = 60;
+import type { DeviceTimezoneChange, TimezoneOffsetBucket } from '../domains/device-timezone.model';
 
 /** 측정 전용. 시간대 이름 대신 바뀐 폭만 보낸다 */
 export function getTimezoneOffsetBucket({

@@ -1,7 +1,7 @@
 import { createWidgetDaySnapshot } from '../__tests__/widget-snapshot.fixtures';
 import { toWidgetProps } from './widget-props.mapper';
 
-describe('위젯 표시 데이터 변환', () => {
+describe('toWidgetProps', () => {
   it('양 플랫폼에 같은 표시 정보와 콜드 실행 계약을 전달한다', () => {
     // Given
     const snapshot = createWidgetDaySnapshot();

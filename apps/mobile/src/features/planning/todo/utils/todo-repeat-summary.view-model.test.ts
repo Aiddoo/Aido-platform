@@ -56,7 +56,7 @@ describe('formatRepeatSummary', () => {
     );
 
     // Then
-    expect(label).toBe('매월 15일 · 10회');
+    expect(label).toBe('매월 15일 · 10번');
   });
 
   it.each([

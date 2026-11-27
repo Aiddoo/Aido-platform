@@ -1,15 +1,15 @@
-import { selectPageItems } from '@src/shared/domains/cursor-page.model';
+import { selectPageItems } from '@src/shared/query/cursor-page';
 import type { InfiniteData } from '@tanstack/react-query';
-import { compact } from 'es-toolkit';
+import { compact, uniqBy } from 'es-toolkit';
 
 import {
-  type TodoComment,
   type TodoCommentPagination,
-  TodoCommentPolicy,
   type TodoCommentReplyPage,
   type TodoCommentThread,
   type TodoCommentThreadPage,
-} from '../domains/todo-comment.model';
+  TodoCommentThreadPolicy,
+} from '../domains/todo-comment-thread.model';
+import type { TodoComment } from '../domains/todo-comment.model';
 
 /** null은 첫 페이지(또는 anchor 페이지), 문자열은 서버가 방향을 담아 준 cursor다 */
 export type TodoCommentPageParam = string | null;
@@ -29,6 +29,7 @@ export function getPreviousTodoCommentPageParam({
 }: Pick<TodoCommentPagination, 'hasPrevious' | 'previousCursor'>) {
   return hasPrevious && previousCursor != null ? previousCursor : undefined;
 }
+
 export type TodoCommentThreadPages = InfiniteData<TodoCommentThreadPage, TodoCommentPageParam>;
 export type TodoCommentReplyPages = InfiniteData<TodoCommentReplyPage, TodoCommentPageParam>;
 export type TodoCommentTransform = (comment: TodoComment) => TodoComment;
@@ -44,6 +45,16 @@ export interface TodoCommentThreadPlacement extends TodoCommentPlacement {
   thread: TodoCommentThread;
 }
 
+/** 앞뒤로 이어 받은 페이지에 같은 묶음이 겹쳐 오면 한 번만 보인다 */
+export function flattenThreadPages(data: TodoCommentThreadPages): TodoCommentThread[] {
+  return uniqBy(selectPageItems(data), (thread) => thread.comment.id);
+}
+
+/** 방금 쓴 답글은 마지막 페이지 끝에 먼저 붙고, 남은 페이지를 받으면 그 뒤 위치(작성 순)로 옮겨 간다 */
+export function flattenReplyPages(data: TodoCommentReplyPages): TodoComment[] {
+  return uniqBy(selectPageItems(data).toReversed(), (reply) => reply.id).toReversed();
+}
+
 /** 바뀌지 않은 페이지·묶음의 참조는 setQueriesData가 구조 공유로 되돌리므로 여기서는 새로 만들어도 된다 */
 function mapPages<TPage extends { items: readonly unknown[] }>(
   data: InfiniteData<TPage, TodoCommentPageParam>,
@@ -53,10 +64,10 @@ function mapPages<TPage extends { items: readonly unknown[] }>(
 }
 
 function findPlacement<TItem>(
-  data: InfiniteData<{ items: readonly TItem[] }, TodoCommentPageParam> | undefined,
+  data: InfiniteData<{ items: readonly TItem[] }, TodoCommentPageParam>,
   isTarget: (item: TItem) => boolean,
 ): TodoCommentPlacement | null {
-  for (const [pageIndex, page] of (data?.pages ?? []).entries()) {
+  for (const [pageIndex, page] of data.pages.entries()) {
     const index = page.items.findIndex(isTarget);
     if (index !== -1) {
       return { pageIndex, index };
@@ -133,8 +144,11 @@ export function findCommentInThreadPages(
   data: TodoCommentThreadPages | undefined,
   commentId: string,
 ): TodoComment | null {
-  for (const thread of selectPageItems(data ?? { pages: [] })) {
-    const comment = TodoCommentPolicy.findCommentInThread(thread, commentId);
+  if (data == null) {
+    return null;
+  }
+  for (const thread of selectPageItems(data)) {
+    const comment = TodoCommentThreadPolicy.findCommentInThread(thread, commentId);
     if (comment != null) {
       return comment;
     }
@@ -146,7 +160,10 @@ export function findCommentInReplyPages(
   data: TodoCommentReplyPages | undefined,
   commentId: string,
 ): TodoComment | null {
-  return selectPageItems(data ?? { pages: [] }).find((reply) => reply.id === commentId) ?? null;
+  if (data == null) {
+    return null;
+  }
+  return selectPageItems(data).find((reply) => reply.id === commentId) ?? null;
 }
 
 export function removeCommentFromThreadPages(
@@ -160,7 +177,7 @@ export function removeCommentFromThreadPages(
   return mapPages(data, (page) => ({
     ...page,
     items: compact(
-      page.items.map((thread) => TodoCommentPolicy.withCommentRemoved(thread, removed)),
+      page.items.map((thread) => TodoCommentThreadPolicy.withCommentRemoved(thread, removed)),
     ),
   }));
 }
@@ -175,7 +192,7 @@ export function removeCommentFromReplyPages(
 
   return mapPages(data, (page) => ({
     ...page,
-    items: TodoCommentPolicy.withRepliesRemoved(page.items, commentId),
+    items: page.items.filter((reply) => reply.id !== commentId),
   }));
 }
 
@@ -192,13 +209,12 @@ export function addRepliesToThreadPages(
     ...page,
     items: page.items.map((thread) =>
       thread.comment.id === threadCommentId
-        ? TodoCommentPolicy.withReplyAdded(thread, replies)
+        ? TodoCommentThreadPolicy.withReplyAdded(thread, replies)
         : thread,
     ),
   }));
 }
 
-/** 방금 쓴 답글은 마지막 페이지 끝에 붙여 바로 보인다. 남은 페이지를 받으면 flattenReplies가 작성 순 자리로 옮긴다 */
 export function appendRepliesToReplyPages(
   data: TodoCommentReplyPages | undefined,
   replies: readonly TodoComment[],
@@ -219,11 +235,13 @@ export function findThreadPlacement(
   data: TodoCommentThreadPages | undefined,
   comment: TodoComment,
 ): TodoCommentThreadPlacement | null {
+  if (data == null) {
+    return null;
+  }
   const isContainingThread = (thread: TodoCommentThread) =>
     thread.comment.id === comment.id || thread.comment.id === comment.threadCommentId;
   const placement = findPlacement(data, isContainingThread);
-  const thread =
-    placement == null ? null : data?.pages[placement.pageIndex]?.items[placement.index];
+  const thread = placement == null ? null : data.pages[placement.pageIndex]?.items[placement.index];
 
   return placement == null || thread == null ? null : { ...placement, thread };
 }
@@ -232,13 +250,10 @@ export function findReplyPlacement(
   data: TodoCommentReplyPages | undefined,
   commentId: string,
 ): TodoCommentPlacement | null {
-  return findPlacement(data, (reply) => reply.id === commentId);
+  return data == null ? null : findPlacement(data, (reply) => reply.id === commentId);
 }
 
-/**
- * 지운 댓글 하나만 지금 캐시에 되돌린다. 묶음이 남아 있으면 지운 댓글을 다시 세우거나 답글 수를 되돌리고,
- * 통째로 빠졌으면 지우기 전 묶음을 원래 자리에 넣는다. 같은 묶음의 다른 변경은 남는다
- */
+/** 같은 묶음의 다른 변경이 남게 지운 댓글 하나만 되돌리고, 묶음이 통째로 빠졌으면 지우기 전 묶음을 원래 자리에 넣는다 */
 export function restoreCommentInThreadPages(
   data: TodoCommentThreadPages | undefined,
   removed: TodoComment,
@@ -251,7 +266,7 @@ export function restoreCommentInThreadPages(
   if (findPlacement(data, (thread) => thread.comment.id === threadId) == null) {
     return withItemInserted(data, placement, placement.thread);
   }
-  const optimisticReplyCount = TodoCommentPolicy.withCommentRemoved(placement.thread, removed)
+  const optimisticReplyCount = TodoCommentThreadPolicy.withCommentRemoved(placement.thread, removed)
     ?.replySummary.totalCount;
 
   return mapPages(data, (page) => ({
@@ -267,7 +282,7 @@ export function restoreCommentInThreadPages(
       const isRefetched =
         thread.previewReply?.id === removed.id ||
         thread.replySummary.totalCount !== optimisticReplyCount;
-      return isRefetched ? thread : TodoCommentPolicy.withReplyAdded(thread, [removed]);
+      return isRefetched ? thread : TodoCommentThreadPolicy.withReplyAdded(thread, [removed]);
     }),
   }));
 }

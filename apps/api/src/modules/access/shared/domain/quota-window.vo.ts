@@ -10,7 +10,7 @@ interface QuotaWindowValue {
 }
 
 // 월간 quota 기간은 출시 앱 AI 사용량(/v1/ai/usage)과 같은 KST 달력 월이다. 사용자 시간대와 무관한 계약이다
-const MONTHLY_QUOTA_TIMEZONE = Timezone.SEOUL;
+const MONTHLY_QUOTA_TIMEZONE = Timezone.reconstitute("Asia/Seoul");
 
 function startOfMonth(month: Temporal.PlainYearMonth): Temporal.Instant {
   return month.toPlainDate({ day: 1 }).toZonedDateTime(MONTHLY_QUOTA_TIMEZONE.value).toInstant();

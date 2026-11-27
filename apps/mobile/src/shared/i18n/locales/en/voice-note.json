@@ -71,7 +71,6 @@
   "record": {
     "languageChangeFailed": "Couldn't switch languages. We'll keep listening in the current one.",
     "title": "Voice note",
-    "close": "Close",
     "pause": "Pause",
     "finish": "Finish",
     "mark": "Mark",
@@ -145,8 +144,6 @@
     "delete": "Delete voice note",
     "deleteTitle": "Delete this voice note?",
     "deleteDescription": "Deletes the summary, what we heard, and the audio from this device. This can't be undone.",
-    "deleteConfirm": "Delete",
-    "deleteCancel": "Cancel",
     "notFound": "We can't find this voice note"
   },
   "drafts": {

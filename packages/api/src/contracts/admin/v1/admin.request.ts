@@ -2,7 +2,10 @@ import { z } from "zod";
 
 import { entityIdSchema } from "../../../common/entity-id.js";
 import { notificationActionSchema } from "../../../common/notification-value.js";
-import { BROADCAST_TARGET_FILTER } from "../../../vocabulary/admin.constants.js";
+import {
+  ADMIN_NOTIFICATION_LIMITS,
+  BROADCAST_TARGET_FILTER,
+} from "../../../vocabulary/admin.constants.js";
 
 const MAX_GROWTH_QUERY_DAYS = 90;
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -67,12 +70,18 @@ export const broadcastNotificationSchema = z
     title: z
       .string()
       .min(1, "제목을 입력해주세요")
-      .max(100, "제목은 100자 이하로 입력해주세요")
+      .max(
+        ADMIN_NOTIFICATION_LIMITS.TITLE_MAX_LENGTH,
+        `제목은 ${ADMIN_NOTIFICATION_LIMITS.TITLE_MAX_LENGTH}자 이하로 입력해주세요`,
+      )
       .meta({ description: "알림 제목" }),
     body: z
       .string()
       .min(1, "내용을 입력해주세요")
-      .max(500, "내용은 500자 이하로 입력해주세요")
+      .max(
+        ADMIN_NOTIFICATION_LIMITS.BODY_MAX_LENGTH,
+        `내용은 ${ADMIN_NOTIFICATION_LIMITS.BODY_MAX_LENGTH}자 이하로 입력해주세요`,
+      )
       .meta({ description: "알림 내용" }),
     targetFilter: z.enum(BROADCAST_TARGET_FILTER).default(BROADCAST_TARGET_FILTER.ALL).meta({
       description:
@@ -104,12 +113,18 @@ export const targetedNotificationSchema = z
     title: z
       .string()
       .min(1, "제목을 입력해주세요")
-      .max(100, "제목은 100자 이하로 입력해주세요")
+      .max(
+        ADMIN_NOTIFICATION_LIMITS.TITLE_MAX_LENGTH,
+        `제목은 ${ADMIN_NOTIFICATION_LIMITS.TITLE_MAX_LENGTH}자 이하로 입력해주세요`,
+      )
       .meta({ description: "알림 제목" }),
     body: z
       .string()
       .min(1, "내용을 입력해주세요")
-      .max(500, "내용은 500자 이하로 입력해주세요")
+      .max(
+        ADMIN_NOTIFICATION_LIMITS.BODY_MAX_LENGTH,
+        `내용은 ${ADMIN_NOTIFICATION_LIMITS.BODY_MAX_LENGTH}자 이하로 입력해주세요`,
+      )
       .meta({ description: "알림 내용" }),
     userIds: z
       .array(entityIdSchema)

@@ -1,5 +1,12 @@
 import { completionRate, isAllCompleted } from '@aido/api/vocabulary';
-import { dateKeySchema, type DateKey } from '@src/shared/date/date-key';
+import {
+  addMonthsToDateKey,
+  dateKeySchema,
+  getCalendarWeek,
+  getMonthEndDateKey,
+  getMonthStartDateKey,
+  type DateKey,
+} from '@src/shared/date/date-key';
 import { completionRateSchema } from '@src/shared/domains/completion-rate.model';
 import { orderBy, uniq } from 'es-toolkit';
 import { z } from 'zod';
@@ -23,8 +30,43 @@ export const dailyCompletionsResultSchema = z.object({
 });
 export type DailyCompletionsResult = z.infer<typeof dailyCompletionsResultSchema>;
 
-/** 서버는 GROUP BY 순서로 색을 모아 응답마다 순서가 바뀔 수 있다. 정렬해 두면 같은 날을 다시 받아도 달력이 다시 그려지지 않는다 */
-export function toCategoryColors(colors: readonly string[]): string[] {
+export interface DailyCompletionRange {
+  startDate: DateKey;
+  endDate: DateKey;
+}
+
+/** 한 달(그 달 1일)의 완료 기록으로 받는 범위: 그 달을 일요일 시작 주로 채운 달력 칸 전체 */
+export function getCompletionMonthRange(month: DateKey): DailyCompletionRange {
+  return {
+    startDate: getCalendarWeek(getMonthStartDateKey(month)).startDateKey,
+    endDate: getCalendarWeek(getMonthEndDateKey(month)).endDateKey,
+  };
+}
+
+function isRangeWithin(range: DailyCompletionRange, outer: DailyCompletionRange): boolean {
+  return outer.startDate <= range.startDate && range.endDate <= outer.endDate;
+}
+
+/** 그 기간을 덮는 가장 적은 달들(각 달 1일). 한 달 칸이 덮으면 그 달 하나, 아니면 걸친 달 모두다 */
+export function getCompletionMonthsCovering(range: DailyCompletionRange): [DateKey, ...DateKey[]] {
+  const firstMonth = getMonthStartDateKey(range.startDate);
+  const lastMonth = getMonthStartDateKey(range.endDate);
+  const months: [DateKey, ...DateKey[]] = [firstMonth];
+  for (
+    let month = addMonthsToDateKey(firstMonth, 1);
+    month <= lastMonth;
+    month = addMonthsToDateKey(month, 1)
+  ) {
+    months.push(month);
+  }
+  const coveringMonth = months.find((month) =>
+    isRangeWithin(range, getCompletionMonthRange(month)),
+  );
+  return coveringMonth == null ? months : [coveringMonth];
+}
+
+/** 서버는 GROUP BY 순서로 색을 모아 응답마다 순서가 바뀔 수 있다. 서버 값도 목록에서 계산한 값도 같은 순서로 두면 같은 날을 다시 받아도 달력이 다시 그려지지 않는다 */
+export function getDistinctCategoryColors(colors: readonly string[]): string[] {
   return uniq(colors).sort();
 }
 
@@ -54,35 +96,34 @@ function withCompletions(
   };
 }
 
-export function withTodoDailyCompletion(
-  result: DailyCompletionsResult,
-  date: DateKey,
-  todos: readonly Todo[],
-): DailyCompletionsResult {
-  const { startDate, endDate } = result.dateRange;
-  const isInRange = startDate <= date && date <= endDate;
-  if (!isInRange) {
-    return result;
-  }
-  const dayTodos = todos.filter((todo) => TodoPolicy.isTodoOnDate(todo, date));
-  const others = result.completions.filter((completion) => completion.date !== date);
-  return withCompletions(
-    result,
-    dayTodos.length === 0
-      ? others
-      : [
-          ...others,
-          createDailyCompletionSummary({
-            date,
-            totalTodos: dayTodos.length,
-            completedTodos: dayTodos.filter((todo) => todo.completed).length,
-            categoryColors: toCategoryColors(dayTodos.map((todo) => todo.category.color)),
-          }),
-        ],
-  );
-}
-
 export const DailyCompletionPolicy = {
-  toCategoryColors,
-  withTodoDailyCompletion,
-} as const;
+  withTodoDailyCompletion(
+    result: DailyCompletionsResult,
+    date: DateKey,
+    todos: readonly Todo[],
+  ): DailyCompletionsResult {
+    const { startDate, endDate } = result.dateRange;
+    const isInRange = startDate <= date && date <= endDate;
+    if (!isInRange) {
+      return result;
+    }
+    const dayTodos = todos.filter((todo) => TodoPolicy.isTodoOnDate(todo, date));
+    const others = result.completions.filter((completion) => completion.date !== date);
+    return withCompletions(
+      result,
+      dayTodos.length === 0
+        ? others
+        : [
+            ...others,
+            createDailyCompletionSummary({
+              date,
+              totalTodos: dayTodos.length,
+              completedTodos: dayTodos.filter((todo) => todo.completed).length,
+              categoryColors: getDistinctCategoryColors(
+                dayTodos.map((todo) => todo.category.color),
+              ),
+            }),
+          ],
+    );
+  },
+};

@@ -6,6 +6,7 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { localDateIn } from "#api/shared/domain/time/timezone-name";
 
 import {
   AiGenerationError,
@@ -20,7 +21,6 @@ import {
 import { generateWithPrompt } from "../../../ai-generations/application/messages/prompt-definition.messages.js";
 import type { AiGeneratorPort } from "../../../ai-generations/application/ports/ai-generator.port.js";
 import type { CheckScheduledAiConsentUseCase } from "../../../ai-generations/application/use-cases/check-scheduled-ai-consent.use-case.js";
-import { localDateAt } from "../../../shared/domain/user-calendar.domain-service.js";
 import { AiReport } from "../../domain/ai-report.aggregate.js";
 import type {
   AggregateParams,
@@ -98,7 +98,7 @@ export class GenerateReportUseCase {
       });
       return null;
     }
-    const localToday = localDateAt(this.#dependencies.clock.now(), timezone);
+    const localToday = localDateIn(this.#dependencies.clock.now(), timezone);
 
     const window = resolveLastReportWindow({ type, localToday, timezone });
 

@@ -2,7 +2,6 @@ import { useTranslation } from '@src/shared/i18n';
 import { Box, H3, Text, VStack } from '@src/shared/ui';
 import type { ReactNode } from 'react';
 
-/** 주간 달성 배지 상장. 머리말·제목·부제목과 이중 테두리를 고정하고 본문만 children으로 받는다. */
 export function Certificate({ subtitle, children }: { subtitle?: ReactNode; children: ReactNode }) {
   const { t } = useTranslation('achievement');
 
@@ -24,14 +23,6 @@ export function Certificate({ subtitle, children }: { subtitle?: ReactNode; chil
   );
 }
 
-Certificate.Subtitle = function Subtitle({ children }: { children: string }) {
-  return (
-    <Text size="b4" shade={6} weight="medium">
-      {children}
-    </Text>
-  );
-};
-
 Certificate.Ornament = function Ornament() {
   return (
     <Text tone="brand" align="center">
@@ -40,7 +31,6 @@ Certificate.Ornament = function Ornament() {
   );
 };
 
-/** 상장 느낌의 이중 라운드 테두리. 바깥은 굵고 진하게, 안쪽은 가늘고 옅게 겹쳐 그린다 */
 function CertificateBorder({ children }: { children: ReactNode }) {
   return (
     <Box className="relative">

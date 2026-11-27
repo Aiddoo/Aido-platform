@@ -3,6 +3,7 @@
 #
 # 사용: capture.sh [--devices iphone17pro,iphonese,duo,android,fold,flip] [--roles free,premium]
 #                  [--themes light,dark] [--skip-seed] [--build <빌드 설명>]
+#                  [--font-scales xsmall,medium,xlarge] [--out <결과 폴더>] [--dry-run]
 #
 # 기기 × 계정(일반/프리미엄) × 테마(라이트/다크) × 언어(ko, iPhone 17 Pro만 en 추가)마다
 #  1) 기기를 부팅하고 상태 표시줄(9:41, 배터리 100%)과 테마·언어를 맞춘다
@@ -10,6 +11,11 @@
 #  3) 이 폴더를 maestro test로 돌리고 NN_*.png만
 #     ~/Desktop/Aido-Screens-<앱 버전>/<기기>/<일반|프리미엄>/<라이트|다크>[/en]/ 로 복사한다
 #  4) 프리미엄 실행은 새 계정의 초대 수락을 소비하므로 끝나면 demo-seed reset-newbie로 되돌린다
+# --font-scales: 앱 글자 크기 단계(xsmall,small,medium,large,xlarge) 목록. 주면 로그인 직후 subflows/font-scale.yaml이
+#   설정 화면에서 그 단계를 고르고, 결과는 <테마>[/en]/font-<단계>/ 에 쌓는다. 안 주면 지금과 같은 폴더·동작이다.
+#   앱 데이터를 지우고 시작하는 01(로그아웃) 흐름은 글자 크기를 바꿀 수 없어 글자 단계 실행에서는 뺀다.
+# --out: 결과 루트(SCREENS_OUT보다 우선). 리팩터링 전후는 --out을 달리해 두 번 돌려 같은 이름의 PNG를 비교한다.
+# --dry-run: 기기·시뮬레이터·Maestro·seed를 건드리지 않고 실행할 조합과 결과 경로만 출력한다.
 # iPhone Duo 펼침은 simctl로 바꿀 수 없어(DeviceHub 자세 슬라이더) 중간에 멈추고 Enter를 기다린다.
 set -euo pipefail
 
@@ -18,7 +24,9 @@ cd "$HERE"
 
 app_version="$(node -p "require('$HERE/../../package.json').version")"
 OUT_ROOT="${SCREENS_OUT:-$HOME/Desktop/Aido-Screens-$app_version}"
-APP_ID="com.aido.mobile"
+# 개발 변형 빌드(com.aido.mobile.dev)로 찍을 때는 SCREENS_APP_ID로 바꾼다. flow는 MAESTRO_APP_ID로 읽는다
+APP_ID="${SCREENS_APP_ID:-com.aido.mobile}"
+export MAESTRO_APP_ID="$APP_ID"
 QA_SCHEME="${QA_SCHEME:-aido-dev}"
 QA_API_BASE_URL="${QA_API_BASE_URL:-http://localhost:8080}"
 ANDROID_SDK="${ANDROID_HOME:-$HOME/Library/Android/sdk}"
@@ -30,6 +38,8 @@ devices="iphone17pro,iphonese,duo,android,fold"
 roles="free,premium"
 themes="light,dark"
 skip_seed=0
+dry_run=0
+font_scales=""
 build_label="${SCREENS_BUILD:-}"
 
 while [[ $# -gt 0 ]]; do
@@ -39,7 +49,10 @@ while [[ $# -gt 0 ]]; do
     --themes) themes="$2"; shift 2 ;;
     --skip-seed) skip_seed=1; shift ;;
     --build) build_label="$2"; shift 2 ;;
-    -h | --help) sed -n '2,15p' "$0"; exit 0 ;;
+    --font-scales) font_scales="$2"; shift 2 ;;
+    --out) OUT_ROOT="$2"; shift 2 ;;
+    --dry-run) dry_run=1; shift ;;
+    -h | --help) awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "$0"; exit 0 ;;
     *) echo "알 수 없는 인자: $1" >&2; exit 2 ;;
   esac
 done
@@ -47,6 +60,41 @@ done
 log() { printf '\n[capture] %s\n' "$*"; }
 warn() { printf '[capture] 경고: %s\n' "$*" >&2; }
 has() { [[ ",$1," == *",$2,"* ]]; }
+
+# 글자 크기 단계 → 설정 화면의 ko|en 줄 이름(font-size.tsx의 RadioGroup 항목, locales settings.fontSize)
+font_label() {
+  case "$1" in
+    xsmall) echo '아주 작게|Extra small' ;;
+    small) echo '작게|Small' ;;
+    medium) echo '보통|Medium' ;;
+    large) echo '크게|Large' ;;
+    xlarge) echo '아주 크게|Extra large' ;;
+    *) return 1 ;;
+  esac
+}
+
+font_list=("")
+if [[ -n "$font_scales" ]]; then
+  font_list=()
+  for font in ${font_scales//,/ }; do
+    font_label "$font" >/dev/null || { echo "알 수 없는 글자 크기: $font (xsmall,small,medium,large,xlarge)" >&2; exit 2; }
+    font_list+=("$font")
+  done
+fi
+
+if [[ "$dry_run" -eq 1 ]]; then
+  log "dry-run: 아무것도 실행하지 않습니다"
+  echo "결과 루트: $OUT_ROOT"
+  echo "기기: $devices / 계정: $roles / 테마: $themes / 글자 크기: ${font_scales:-(기본, 설정을 바꾸지 않음)}"
+  for font in "${font_list[@]}"; do
+    if [[ -n "$font" ]]; then
+      echo "  글자 $font → 설정 줄 '$(font_label "$font")', 폴더 .../font-$font, 제외 태그 logged-out"
+    else
+      echo "  기본 → 기존 폴더 구조 그대로"
+    fi
+  done
+  exit 0
+fi
 
 # ---------- 준비 ----------
 
@@ -237,13 +285,15 @@ run_matrix() {
     [[ "$platform" == "ios" ]] && ios_locale "$device_id" "$locale"
     for role in ${roles//,/ }; do
       for theme in ${themes//,/ }; do
+       for font in "${font_list[@]}"; do
         role_dir="일반"; [[ "$role" == "premium" ]] && role_dir="프리미엄"
         theme_dir="라이트"; [[ "$theme" == "dark" ]] && theme_dir="다크"
         dest="$OUT_ROOT/$device_dir/$role_dir/$theme_dir"
         [[ "$locale" != "ko" ]] && dest="$dest/$locale"
+        [[ -n "$font" ]] && dest="$dest/font-$font"
         if [[ "$platform" == "ios" ]]; then ios_theme "$device_id" "$theme"; else android_theme "$device_id" "$theme"; fi
 
-        log "$device_dir / $role_dir / $theme_dir / $locale"
+        log "$device_dir / $role_dir / $theme_dir / $locale${font:+ / font-$font}"
         tmp="$(mktemp -d "${TMPDIR:-/tmp}/aido-screens.XXXXXX")"
         local upper role_upper
         upper="$(echo "$locale" | tr "[:lower:]" "[:upper:]")"
@@ -253,6 +303,9 @@ run_matrix() {
         (
           # 비밀번호는 argv가 아닌 shell 변수로만 maestro에 넘긴다(Maestro가 MAESTRO_ 접두 변수를 flow 변수로 읽는다)
           export MAESTRO_SHOT_ROLE="$role" MAESTRO_SHOT_LOCALE="$locale"
+          # 비어 있으면 subflows/font-scale.yaml이 아무것도 하지 않는다
+          export MAESTRO_SHOT_FONT_LABEL=""
+          [[ -n "$font" ]] && MAESTRO_SHOT_FONT_LABEL="$(font_label "$font")"
           export MAESTRO_SHOT_EMAIL="$(env_value "SCREENS_${upper}_${role_upper}_EMAIL")"
           export MAESTRO_SHOT_PASSWORD="$(env_value "SCREENS_${upper}_${role_upper}_PASSWORD")"
           export MAESTRO_SHOT_GRANT_EMAIL="$(env_value "SCREENS_${upper}_GRANT_EMAIL")"
@@ -267,7 +320,7 @@ run_matrix() {
           export MAESTRO_SHOT_INVITE_CODE="$(env_value "SCREENS_${upper}_INVITE_CODE")"
           export MAESTRO_SHOT_STRANGER_NAME="$(env_value "SCREENS_${upper}_STRANGER_NAME")"
           export MAESTRO_SHOT_TODAY="$(env_value SCREENS_TODAY)" MAESTRO_SHOT_YESTERDAY="$(env_value SCREENS_YESTERDAY)"
-          maestro --device "$device_id" test --include-tags "$role" --test-output-dir "$tmp" \
+          maestro --device "$device_id" test --include-tags "$role" ${font:+--exclude-tags logged-out} --test-output-dir "$tmp" \
             -e "QA_SCHEME=$QA_SCHEME" -e "QA_API_BASE_URL=$QA_API_BASE_URL" "$HERE"
         ) || { failures=$((failures + 1)); warn "일부 flow 실패: $device_dir/$role_dir/$theme_dir/$locale (결과 $tmp)"; }
 
@@ -275,10 +328,11 @@ run_matrix() {
         find "$tmp" -type f -name '[0-9][0-9]_*.png' -exec cp {} "$dest/" \;
         local count
         count="$(find "$dest" -maxdepth 1 -name '*.png' | wc -l | tr -d ' ')"
-        summary_lines+=("| $device_dir | $role_dir | $theme_dir | $locale | $count |")
+        summary_lines+=("| $device_dir | $role_dir | $theme_dir | $locale${font:+ / font-$font} | $count |")
         if [[ "$role" == "premium" ]]; then
           "${SEED[@]}" reset-newbie "$locale" >/dev/null
         fi
+       done
       done
     done
   done
@@ -300,8 +354,10 @@ mkdir -p "$OUT_ROOT"
 for device in ${devices//,/ }; do
   case "$device" in
     iphone17pro)
-      udid="$(ios_udid 'iPhone 17 Pro')"; ios_boot "$udid"
-      run_matrix "$udid" "iPhone 17 Pro" ios "ko,en" ;;
+      # 설치된 Xcode에 iPhone 17 Pro가 없으면 SCREENS_IPHONE_PRO로 같은 급 기기를, 언어는 SCREENS_IPHONE_PRO_LOCALES로 고른다
+      iphone_pro="${SCREENS_IPHONE_PRO:-iPhone 17 Pro}"
+      udid="$(ios_udid "$iphone_pro")"; ios_boot "$udid"
+      run_matrix "$udid" "$iphone_pro" ios "${SCREENS_IPHONE_PRO_LOCALES:-ko,en}" ;;
     iphonese)
       udid="$(ios_udid 'iPhone SE (3rd generation)')"; ios_boot "$udid"
       run_matrix "$udid" "iPhone SE 3" ios "ko" ;;
@@ -356,7 +412,7 @@ git_sha="$(git -C "$HERE" rev-parse --short HEAD)"
   echo "프리미엄은 스토어 구독 + 초대 보상을 쌓아 둔 계정이며 초대 보상 전용 계정(80~81)과 새 계정의 초대 수락(85~86)을 포함한다."
   echo "로그아웃 화면(01~04)과 빈 화면(90~95)은 일반 폴더에만 있다. en은 iPhone 17 Pro에만 있다."
   echo
-  echo "| 기기 | 계정 | 테마 | 언어 | 장수 |"
+  echo "| 기기 | 계정 | 테마 | 언어${font_scales:+ / 글자 크기} | 장수 |"
   echo "| --- | --- | --- | --- | --- |"
   printf '%s\n' "${summary_lines[@]}"
   echo

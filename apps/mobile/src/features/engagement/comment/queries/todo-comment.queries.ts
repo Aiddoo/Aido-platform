@@ -1,12 +1,13 @@
 import { TODO_COMMENT_SORT, type TodoCommentSort } from '@aido/api/vocabulary';
 import { useTodoCommentApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
+import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time-units';
 import { infiniteQueryOptions } from '@tanstack/react-query';
 
 import { toRepliesQuery, toThreadsQuery } from '../apis/todo-comment.mapper';
-import { TODO_COMMENT_QUERY_TIMING } from '../constants/todo-comment.constants';
-import { TodoCommentPolicy } from '../domains/todo-comment.model';
 import {
+  flattenReplyPages,
+  flattenThreadPages,
   getNextTodoCommentPageParam,
   getPreviousTodoCommentPageParam,
   INITIAL_TODO_COMMENT_PAGE_PARAM,
@@ -14,6 +15,12 @@ import {
   type TodoCommentThreadPages,
 } from './todo-comment-pages-cache';
 import { TODO_COMMENT_QUERY_KEYS } from './todo-comment-query-keys';
+
+const TODO_COMMENT_QUERY_TIMING = {
+  latestStaleTimeMs: 30 * SECOND_MS,
+  popularStaleTimeMs: 10 * SECOND_MS,
+  gcTimeMs: 30 * MINUTE_MS,
+} as const;
 
 interface TodoCommentThreadsQueryInput {
   todoId: number;
@@ -31,13 +38,13 @@ interface TodoCommentRepliesQueryInput {
 
 function selectTodoCommentThreads(data: TodoCommentThreadPages) {
   return {
-    threads: TodoCommentPolicy.flattenThreads(data.pages),
+    threads: flattenThreadPages(data),
     anchor: data.pages[0]?.anchor ?? null,
   };
 }
 
 function selectTodoCommentReplies(data: TodoCommentReplyPages) {
-  return TodoCommentPolicy.flattenReplies(data.pages);
+  return flattenReplyPages(data);
 }
 
 export function useGetTodoCommentThreadsInfiniteQueryOptions({

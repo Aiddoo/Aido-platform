@@ -382,7 +382,7 @@
     "moved_one": "Moved {{count}} to-do",
     "moved_other": "Moved {{count}} to-dos",
     "undo": "Undo",
-    "expired": "That time has passed, so I picked another one. Check it and tap again",
+    "expired": "That time has passed, so we picked another one. Check it and tap again",
     "undone": "Moved back to the original time",
     "chartLabel": "Hourly chance of precipitation for the rest of today",
     "todoNotFound": "Couldn't find the to-dos to move",

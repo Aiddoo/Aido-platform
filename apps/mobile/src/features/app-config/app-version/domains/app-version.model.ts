@@ -8,70 +8,45 @@ import { z } from 'zod';
 const appStoreVersionSchema = z.string().regex(new RegExp(APP_STORE_VERSION_PATTERN));
 
 const appVersionPlatformSchema = z.enum(APP_PLATFORMS);
-type AppVersionPlatform = z.infer<typeof appVersionPlatformSchema>;
-
-const enabledAppVersionConfigSchema = z.object({
-  enabled: z.literal(true),
-  latestByPlatform: z.object({
-    ios: appStoreVersionSchema,
-    android: appStoreVersionSchema,
-  }),
-});
-type EnabledAppVersionConfig = z.infer<typeof enabledAppVersionConfigSchema>;
 
 export const appVersionConfigSchema = z.discriminatedUnion('enabled', [
   z.object({ enabled: z.literal(false) }),
-  enabledAppVersionConfigSchema,
+  z.object({
+    enabled: z.literal(true),
+    latestByPlatform: z.object({
+      ios: appStoreVersionSchema,
+      android: appStoreVersionSchema,
+    }),
+  }),
 ]);
 export type AppVersionConfig = z.infer<typeof appVersionConfigSchema>;
 
-/** 설치 정보를 모르면 플랫폼·버전이 null이다 */
-export interface AppVersionPolicyInput {
-  config: AppVersionConfig;
+/** 이 기기에 깔린 앱. 네이티브가 주지 않으면 플랫폼·버전이 null이다 */
+interface AppInstallation {
   platform: string | null;
   currentVersion: string | null;
 }
 
-interface ComparableInput {
-  config: EnabledAppVersionConfig;
-  platform: AppVersionPlatform;
-  currentVersion: string;
-}
+type AppVersionUpdateStatus = 'unknown' | 'outdated' | 'up-to-date';
 
 function isValidVersion(version: string | null): version is string {
   return appStoreVersionSchema.safeParse(version).success;
 }
 
-/** 점검이 켜져 있고 플랫폼과 두 버전이 모두 올바를 때만 판정한다. 아니면 어떤 안내도 하지 않는다 */
-function isVersionComparable(input: AppVersionPolicyInput): input is ComparableInput {
-  const { config, platform, currentVersion } = input;
-  const parsedPlatform = appVersionPlatformSchema.safeParse(platform);
-  if (!config.enabled || !parsedPlatform.success) {
-    return false;
-  }
-  const latest = config.latestByPlatform[parsedPlatform.data];
+export const AppVersionPolicy = {
+  /** 점검이 꺼졌거나 플랫폼·버전이 올바르지 않으면 어떤 안내도 하지 않도록 `unknown`이다 */
+  getUpdateStatus(config: AppVersionConfig, installation: AppInstallation): AppVersionUpdateStatus {
+    const platform = appVersionPlatformSchema.safeParse(installation.platform);
+    if (!config.enabled || !platform.success) {
+      return 'unknown';
+    }
+    const latestVersion = config.latestByPlatform[platform.data];
+    const { currentVersion } = installation;
+    if (!isValidVersion(currentVersion) || !isValidVersion(latestVersion)) {
+      return 'unknown';
+    }
+    const difference = compareSemanticVersions(currentVersion, latestVersion);
 
-  return isValidVersion(currentVersion) && isValidVersion(latest);
-}
-
-function isBehindLatest(input: ComparableInput) {
-  const difference = compareSemanticVersions(
-    input.currentVersion,
-    input.config.latestByPlatform[input.platform],
-  );
-
-  return difference != null && difference < 0;
-}
-
-type AppVersionUpdateStatus = 'unknown' | 'outdated' | 'up-to-date';
-
-/** 판정할 수 없으면 `unknown`이다. 스토어에 더 새 버전이 있으면 `outdated`, 이미 최신이거나 더 앞선 빌드면 `up-to-date`다 */
-function getUpdateStatus(input: AppVersionPolicyInput): AppVersionUpdateStatus {
-  if (!isVersionComparable(input)) {
-    return 'unknown';
-  }
-
-  return isBehindLatest(input) ? 'outdated' : 'up-to-date';
-}
-
-export const AppVersionPolicy = { getUpdateStatus } as const;
+    return difference != null && difference < 0 ? 'outdated' : 'up-to-date';
+  },
+};

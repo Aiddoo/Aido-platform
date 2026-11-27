@@ -9,7 +9,7 @@ export function UserReportBottomSheet() {
 
   return (
     <ReportReasonBottomSheet
-      target={{ targetUserId: userId, targetType, targetId }}
+      target={{ targetUserId: userId, targetType, targetId: targetId ?? null }}
       targetDisplayName={name}
     />
   );

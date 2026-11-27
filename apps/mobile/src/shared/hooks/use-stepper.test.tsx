@@ -86,6 +86,32 @@ describe('useStepper', () => {
     expect(result.current.index).toBe(0);
   });
 
+  it('backTo는 기록에 있는 이름 있는 단계로 돌아가고 onStepChange로 알린다', async () => {
+    // Given
+    const onStepChange = jest.fn();
+    const { result } = await renderHook(() =>
+      useStepper<Contexts>({ id: 'signup', initial: INITIAL, onStepChange }),
+    );
+    await act(async () => {
+      result.current.history.push('password', { email: 'a@b.c' });
+      result.current.history.push('done');
+    });
+
+    // When
+    await act(async () => {
+      result.current.history.backTo('email');
+    });
+
+    // Then
+    expect(result.current.step).toBe('email');
+    expect(result.current.index).toBe(0);
+    expect(onStepChange).toHaveBeenLastCalledWith({
+      step: 'email',
+      context: { email: '' },
+      index: 0,
+    });
+  });
+
   it('연속으로 빠르게 두 번 push해도 한 단계만 쌓는다', async () => {
     // Given
     const { result } = await renderHook(() =>

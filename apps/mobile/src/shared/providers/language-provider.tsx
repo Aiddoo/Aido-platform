@@ -1,3 +1,4 @@
+import { DEFAULT_LOCALE } from '@aido/api/vocabulary';
 import type { ObservableSyncStorage } from '@src/core/ports/observable-sync-storage';
 import { i18n } from '@src/shared/i18n';
 import { useSystemLocale } from '@src/shared/infra/localization/device-locale';
@@ -38,6 +39,7 @@ export function LanguageProvider({
   const [languageMode, setLanguageMode] = useStoredValueIn(syncStorage, languageModeStoredValue);
   const deviceLanguage = useDeviceLanguage();
 
+  // React Compiler가 훅을 prop 값으로 받는 컴포넌트를 건너뛰므로 손으로 메모한다
   const resolvedLanguage = useMemo(
     () => resolveLanguage(languageMode, deviceLanguage),
     [languageMode, deviceLanguage],
@@ -62,7 +64,7 @@ export function LanguageProvider({
 // Provider 없이도 안전하게 동작해야 함 (테스트, 부분 렌더 환경)
 const DEFAULT_CONTEXT: LanguageContextValue = {
   languageMode: 'system',
-  resolvedLanguage: 'ko',
+  resolvedLanguage: DEFAULT_LOCALE,
   setLanguageMode: noop,
 };
 

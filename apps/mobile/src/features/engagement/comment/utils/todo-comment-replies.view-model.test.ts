@@ -84,7 +84,7 @@ describe('답글 아래 줄', () => {
     const collapsedByUser = { isExpanded: false, source: 'user' } as const;
 
     // When
-    const expansions = [expandThread(collapsedByUser, 'auto'), expandThread(undefined, 'auto')];
+    const expansions = [expandThread(collapsedByUser, 'auto'), expandThread(null, 'auto')];
 
     // Then
     expect(expansions).toEqual([

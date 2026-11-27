@@ -11,8 +11,7 @@ import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui';
 
 import { SUBSCRIPTION_MANAGE_OPEN_FAILURE } from '../utils/subscription-failure.view-model';
-import { createManagementUrl } from '../utils/subscription-links.view-model';
-import { findSubscriptionStore } from '../utils/subscription-store.view-model';
+import { createManagementUrl, findSubscriptionStore } from '../utils/subscription-store.view-model';
 import { useOpenSubscriptionInquiry } from './use-open-subscription-inquiry';
 
 const STORE_EVENT_VALUES = { appStore: 'app_store', googlePlay: 'play_store' } as const;

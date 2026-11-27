@@ -162,16 +162,15 @@ export function createWinbackNotificationMessage({
   locale,
   variantContext,
 }: WinbackNotificationInput): NotificationMessage {
+  const stages = [
+    { minimumInactiveDays: 30, template: SYSTEM_COPY.WINBACK_DAY30, templateKey: "winback.day_30" },
+    { minimumInactiveDays: 21, template: SYSTEM_COPY.WINBACK_DAY21, templateKey: "winback.day_21" },
+    { minimumInactiveDays: 14, template: SYSTEM_COPY.WINBACK_DAY14, templateKey: "winback.day_14" },
+    { minimumInactiveDays: 7, template: SYSTEM_COPY.WINBACK_DAY7, templateKey: "winback.day_7" },
+  ];
+  const dayThreeStage = { template: SYSTEM_COPY.WINBACK_DAY3, templateKey: "winback.day_3" };
   const selection =
-    inactiveDays >= 30
-      ? { template: SYSTEM_COPY.WINBACK_DAY30, templateKey: "winback.day_30" }
-      : inactiveDays >= 21
-        ? { template: SYSTEM_COPY.WINBACK_DAY21, templateKey: "winback.day_21" }
-        : inactiveDays >= 14
-          ? { template: SYSTEM_COPY.WINBACK_DAY14, templateKey: "winback.day_14" }
-          : inactiveDays >= 7
-            ? { template: SYSTEM_COPY.WINBACK_DAY7, templateKey: "winback.day_7" }
-            : { template: SYSTEM_COPY.WINBACK_DAY3, templateKey: "winback.day_3" };
+    stages.find((stage) => inactiveDays >= stage.minimumInactiveDays) ?? dayThreeStage;
 
   return renderNotificationTemplate(selection.template, {
     facts: {},

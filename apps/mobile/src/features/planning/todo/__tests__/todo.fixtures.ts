@@ -1,16 +1,17 @@
 import { dailyCompletionsRangeResponseSchema } from '@aido/api/contracts/daily-completion/v1';
+import { todoDetailsResponseSchema } from '@aido/api/contracts/todo-comment/v1';
 import {
   type Todo as TodoDto,
   todoItemResponseSchema,
   todoListResponseSchema,
   todoSchema as todoDtoSchema,
 } from '@aido/api/contracts/todo/v1';
-import { ErrorCode, type ErrorCodeType, Errors } from '@aido/api/errors';
-import { ApiError } from '@src/core/errors/api-error';
+import { ErrorCode, type ErrorCodeType } from '@aido/api/errors';
+import { createApiError } from '@src/testing/api-error';
 import { createDateKey } from '@src/testing/date-key';
 import { defineFixture } from '@src/testing/fixture';
 
-import { todoDetailsSchema } from '../domains/todo.model';
+import { todoDetailsSchema } from '../domains/todo-details.model';
 import { todoFormSchema } from '../schemas/todo-form.schema';
 import { createParentTodo } from './sub-todo.fixtures';
 
@@ -67,19 +68,31 @@ export const createTodoItemResponseDto = defineFixture(todoItemResponseSchema, {
   updatedAt: '2026-03-08T00:00:00.000Z',
 });
 
-/** 상태를 주지 않으면 서버 카탈로그가 그 코드에 붙이는 상태다 */
 export function createTodoApiError({
   code = ErrorCode.TODO_0801,
   message = '할일을 찾을 수 없어요',
-  status = Errors[code].httpStatus,
+  status,
 }: Partial<{ code: ErrorCodeType; message: string; status: number }> = {}) {
-  return new ApiError(code, message, status);
+  return createApiError(code, { message, status });
 }
 
 export const createTodoDetails = defineFixture(todoDetailsSchema, {
   todo: createParentTodo(),
   owner: { id: 'clz7x5p8k0010qz0z8z8z8z8z', name: '친구', profileImage: null },
   permissions: { canEdit: false, canComment: true, canNudge: true, canThank: false },
+  metrics: { viewCount: 0, commentCount: 0 },
+});
+
+/** 할 일 상세 응답. 기본은 내가 쓴 할 일이라 고치고 댓글을 달 수 있다 */
+export const createTodoDetailsDto = defineFixture(todoDetailsResponseSchema, {
+  todo: TODO_DTO,
+  owner: {
+    id: TODO_DTO.userId,
+    name: '나',
+    userTag: 'TEST2025',
+    profileImage: null,
+  },
+  permissions: { canEdit: true, canComment: true, canNudge: false, canThank: false },
   metrics: { viewCount: 0, commentCount: 0 },
 });
 

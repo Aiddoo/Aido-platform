@@ -1,3 +1,4 @@
+import { VOICE_NOTE_RETENTION_DAYS } from '@aido/api/vocabulary';
 import { FlashList } from '@shopify/flash-list';
 import { useVoiceNoteStorageService } from '@src/bootstrap/providers/di-context';
 import { useSuspenseMyAccountId } from '@src/features/identity/user/hooks/use-suspense-my-account-id';
@@ -5,7 +6,7 @@ import { useTrack } from '@src/shared/analytics';
 import { formatYearAwareDateLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -64,7 +65,7 @@ export function VoiceStorageUsage() {
                     {formatFileSize(usage.totalBytes, dateFormatContext.locale)}
                   </Text>
                   <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
-                    {t('voiceStorage.description')}
+                    {t('voiceStorage.description', { count: VOICE_NOTE_RETENTION_DAYS })}
                   </Text>
                 </SettingsListGroup.Custom>
               </SettingsListGroup>
@@ -162,7 +163,7 @@ interface RemoveRecordingButtonProps {
 
 /** 확인을 받은 뒤 기기에 남긴 녹음 파일을 지운다. 지운 뒤 용량은 부모가 `onRemoved`에서 다시 읽는다 */
 function RemoveRecordingButton({ draftId, onRemoved }: RemoveRecordingButtonProps) {
-  const { t } = useTranslation('settings');
+  const { t } = useTranslation(['settings', 'common']);
   const { trackEvent } = useTrack();
   const confirmDialog = useConfirmDialog();
   const storage = useVoiceNoteStorageService();
@@ -172,9 +173,9 @@ function RemoveRecordingButton({ draftId, onRemoved }: RemoveRecordingButtonProp
     const isConfirmed = await confirmDialog.openAsync({
       title: draftId == null ? t('voiceStorage.removeAllTitle') : t('voiceStorage.removeOneTitle'),
       description: t('voiceStorage.removeDescription'),
-      confirmLabel: t('voiceStorage.removeConfirm'),
+      confirmLabel: t('common:actions.delete'),
       confirmColor: 'danger',
-      cancelLabel: t('voiceStorage.removeCancel'),
+      cancelLabel: t('common:actions.cancel'),
     });
     if (!isConfirmed) {
       return;

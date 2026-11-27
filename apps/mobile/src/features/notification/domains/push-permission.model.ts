@@ -5,11 +5,12 @@ import {
   fromEpochMs,
   hasInstantPassed,
   type Instant,
-  instantSchema,
   toEpochMs,
 } from '@src/shared/date/instant';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
+
+import type { PushPermissionPrompt } from './push-permission-prompt.model';
 
 /** 홈 알림 안내를 닫으면 이 날수 동안 다시 보이지 않는다 */
 const PUSH_PROMPT_SNOOZE_DAYS = 14;
@@ -22,20 +23,6 @@ export const pushPermissionSchema = z.object({
 });
 export type PushPermission = z.infer<typeof pushPermissionSchema>;
 
-const pushDeviceSchema = z.object({
-  permission: pushPermissionSchema,
-  hasActiveToken: z.boolean(),
-  reportedAt: instantSchema,
-});
-export type PushDevice = z.infer<typeof pushDeviceSchema>;
-
-/** 계정마다 기기에 남긴 답. 알림 화면과 피드 꺼짐 안내를 닫은 시각이다 */
-const pushPermissionPromptSchema = z.object({
-  deferredAt: instantSchema.nullable(),
-  noticeDismissedAt: instantSchema.nullable(),
-});
-type PushPermissionPrompt = z.infer<typeof pushPermissionPromptSchema>;
-
 /** 알림을 받으려면 사용자가 다음에 할 일. 코드에서 부르는 이름은 constants의 PUSH_PERMISSION_STEP */
 export type PushPermissionStep =
   | 'ASK'
@@ -44,6 +31,8 @@ export type PushPermissionStep =
   | 'ENABLE_IN_APP'
   | 'NONE';
 type PushDeviceStep = Exclude<PushPermissionStep, 'ENABLE_IN_APP'>;
+/** 알림 설정 줄에 보일 지금 상태. 기기에서 꺼짐은 앱에서 켰는데 기기가 거절해 닿지 않는 때다 */
+export type PushSummary = 'on' | 'off' | 'deviceOff';
 /** 알림을 어떻게 물을지. 코드에서 부르는 이름은 constants의 PUSH_ASK_MOMENT */
 export type PushAskMoment = 'ONBOARDING_SCREEN' | 'SYSTEM_DIALOG' | 'DENIED_NOTICE';
 
@@ -54,7 +43,7 @@ type PushAskContext =
       prompt: Pick<PushPermissionPrompt, 'deferredAt'>;
       now: Instant;
     }
-  | { surface: 'todo-time' }
+  | { surface: 'todo_time' }
   | {
       surface: 'feed';
       hasUpcomingTimedTodo: boolean;
@@ -62,20 +51,8 @@ type PushAskContext =
       now: Instant;
     };
 
-function isPushDeliverable(permission: PushPermission): boolean {
-  return isDeliverablePushPermission(permission.status);
-}
-
-function isUndecided(permission: PushPermission): boolean {
-  return permission.status === PUSH_PERMISSION_STATUS.NOT_DETERMINED;
-}
-
-function canRequestSystemDialog(permission: PushPermission): boolean {
-  return !isPushDeliverable(permission) && permission.canAskAgain;
-}
-
 function isSettingsRequired(permission: PushPermission): boolean {
-  return !isPushDeliverable(permission) && !permission.canAskAgain;
+  return !PushPermissionPolicy.isPushDeliverable(permission) && !permission.canAskAgain;
 }
 
 function isPromptSnoozed(dismissedAt: Instant | null, now: Instant): boolean {
@@ -97,70 +74,88 @@ function isRecentSignup(signedUpAt: Instant, now: Instant): boolean {
 }
 
 function isDenied(permission: PushPermission): boolean {
-  return !isPushDeliverable(permission) && !isUndecided(permission);
-}
-
-/**
- * 알림을 묻는 곳은 셋이다. 가입 직후 알림 화면은 한 번, 할 일 시간을 정하면 그 자리에서 시스템 창,
- * 거절한 뒤에는 알림이 갈 할 일이 있을 때만 꺼짐 안내다. 허용했으면 묻지 않는다
- */
-function findAskMoment(permission: PushPermission, context: PushAskContext): PushAskMoment | null {
-  if (isPushDeliverable(permission)) {
-    return null;
-  }
-
-  return match(context)
-    .with({ surface: 'onboarding' }, ({ signedUpAt, prompt, now }) =>
-      isUndecided(permission) && prompt.deferredAt == null && isRecentSignup(signedUpAt, now)
-        ? 'ONBOARDING_SCREEN'
-        : null,
-    )
-    .with({ surface: 'todo-time' }, () =>
-      isUndecided(permission) ? 'SYSTEM_DIALOG' : 'DENIED_NOTICE',
-    )
-    .with({ surface: 'feed' }, ({ hasUpcomingTimedTodo, prompt, now }) =>
-      isDenied(permission) &&
-      hasUpcomingTimedTodo &&
-      !isPromptSnoozed(prompt.noticeDismissedAt, now)
-        ? 'DENIED_NOTICE'
-        : null,
-    )
-    .exhaustive();
-}
-
-/** OS가 허용했고 앱 푸시 설정도 켜져 있어야 할 일 알림이 닿는다 */
-function canReceivePush(permission: PushPermission, { pushEnabled }: { pushEnabled: boolean }) {
-  return isPushDeliverable(permission) && pushEnabled;
-}
-
-/** 기기 권한만 본 다음 단계. 앱 안 푸시 설정은 보지 않는다 */
-function getDeviceStep(permission: PushPermission): PushDeviceStep {
-  return match(permission)
-    .returnType<PushDeviceStep>()
-    .when(isPushDeliverable, () => 'NONE')
-    .when(isSettingsRequired, () => 'OPEN_SETTINGS')
-    .when(isUndecided, () => 'ASK')
-    .otherwise(() => 'REQUEST_SYSTEM');
-}
-
-/** 알림을 받으려면 사용자가 다음에 무엇을 해야 하는지 정한다. 문구·화면은 컴포넌트가 정한다 */
-function getNextStep(
-  permission: PushPermission,
-  { pushEnabled }: { pushEnabled: boolean },
-): PushPermissionStep {
-  const deviceStep = getDeviceStep(permission);
-  if (deviceStep === 'NONE' && !pushEnabled) {
-    return 'ENABLE_IN_APP';
-  }
-  return deviceStep;
+  return (
+    !PushPermissionPolicy.isPushDeliverable(permission) &&
+    !PushPermissionPolicy.isUndecided(permission)
+  );
 }
 
 export const PushPermissionPolicy = {
-  isPushDeliverable,
-  isUndecided,
-  canRequestSystemDialog,
-  canReceivePush,
-  findAskMoment,
-  getDeviceStep,
-  getNextStep,
-} as const;
+  isPushDeliverable(permission: PushPermission): boolean {
+    return isDeliverablePushPermission(permission.status);
+  },
+
+  isUndecided(permission: PushPermission): boolean {
+    return permission.status === PUSH_PERMISSION_STATUS.NOT_DETERMINED;
+  },
+
+  canRequestSystemDialog(permission: PushPermission): boolean {
+    return !this.isPushDeliverable(permission) && permission.canAskAgain;
+  },
+
+  /** 가입 직후 알림 화면은 한 번, 할 일 시간을 정하면 시스템 창, 거절한 뒤에는 알림이 갈 할 일이 있을 때만 꺼짐 안내다 */
+  findAskMoment(permission: PushPermission, context: PushAskContext): PushAskMoment | null {
+    if (this.isPushDeliverable(permission)) {
+      return null;
+    }
+
+    return match(context)
+      .with({ surface: 'onboarding' }, ({ signedUpAt, prompt, now }) =>
+        this.isUndecided(permission) && prompt.deferredAt == null && isRecentSignup(signedUpAt, now)
+          ? 'ONBOARDING_SCREEN'
+          : null,
+      )
+      .with({ surface: 'todo_time' }, () =>
+        this.isUndecided(permission) ? 'SYSTEM_DIALOG' : 'DENIED_NOTICE',
+      )
+      .with({ surface: 'feed' }, ({ hasUpcomingTimedTodo, prompt, now }) =>
+        isDenied(permission) &&
+        hasUpcomingTimedTodo &&
+        !isPromptSnoozed(prompt.noticeDismissedAt, now)
+          ? 'DENIED_NOTICE'
+          : null,
+      )
+      .exhaustive();
+  },
+
+  /** OS가 허용했고 앱 푸시 설정도 켜져 있어야 할 일 알림이 닿는다 */
+  canReceivePush(permission: PushPermission, { pushEnabled }: { pushEnabled: boolean }): boolean {
+    return this.isPushDeliverable(permission) && pushEnabled;
+  },
+
+  /** 기기 권한만 본 다음 단계. 앱 안 푸시 설정은 보지 않는다 */
+  getDeviceStep(permission: PushPermission): PushDeviceStep {
+    return match(permission)
+      .returnType<PushDeviceStep>()
+      .when(
+        (permission) => this.isPushDeliverable(permission),
+        () => 'NONE',
+      )
+      .when(isSettingsRequired, () => 'OPEN_SETTINGS')
+      .when(
+        (permission) => this.isUndecided(permission),
+        () => 'ASK',
+      )
+      .otherwise(() => 'REQUEST_SYSTEM');
+  },
+
+  /** 앱에서 켰는데 기기에서 거절해 닿지 않으면 그 이유를 따로 보이고, 아직 묻지 않은 기기는 꺼짐으로 둔다 */
+  getSummary(permission: PushPermission, { pushEnabled }: { pushEnabled: boolean }): PushSummary {
+    if (this.isPushDeliverable(permission)) {
+      return pushEnabled ? 'on' : 'off';
+    }
+    return pushEnabled && !this.isUndecided(permission) ? 'deviceOff' : 'off';
+  },
+
+  /** 알림을 받으려면 사용자가 다음에 무엇을 해야 하는지 정한다. 문구·화면은 컴포넌트가 정한다 */
+  getNextStep(
+    permission: PushPermission,
+    { pushEnabled }: { pushEnabled: boolean },
+  ): PushPermissionStep {
+    const deviceStep = this.getDeviceStep(permission);
+    if (deviceStep === 'NONE' && !pushEnabled) {
+      return 'ENABLE_IN_APP';
+    }
+    return deviceStep;
+  },
+};

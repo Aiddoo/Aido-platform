@@ -1,6 +1,6 @@
 # 빌드와 배포
 
-EAS 빌드·로컬 빌드, 환경 변수, 스토어 제출, 배포 순서를 다룬다. 명령은 `apps/mobile`에서 실행한다. 새 기능 소개(Steps·캠페인·이미지)는 [whats-new-release.md](./whats-new-release.md), 릴리스별 변경은 [releases/](./releases/)에 있다.
+EAS 빌드·로컬 빌드, 환경 변수, 스토어 제출, 배포 순서를 다룬다. 명령은 `apps/mobile`에서 실행한다. 새 기능 소개(Steps·캠페인·이미지)는 [whats-new-release.md](./whats-new-release.md), 릴리스별 변경은 [docs/releases/](../../../docs/releases/)에 있다.
 
 ## 배포 순서
 
@@ -8,12 +8,13 @@ EAS 빌드·로컬 빌드, 환경 변수, 스토어 제출, 배포 순서를 다
 
 ## 환경과 프로필
 
-| Profile             | APP_ENV     | API URL               | 용도                             | iOS            | Android |
-| ------------------- | ----------- | --------------------- | -------------------------------- | -------------- | ------- |
-| `development`       | development | 자동 감지             | 개발·디버깅(dev client)          | 시뮬레이터용   | APK     |
-| `preview`           | preview     | `https://api.aido.kr` | 내부 테스트·QA                   | 실기기(Ad Hoc) | APK     |
-| `production`        | production  | `https://api.aido.kr` | 스토어 제출(빌드 번호 자동 증가) | App Store용    | AAB     |
-| `production-device` | production  | 위와 같음             | 실기기 Release 검증              | Ad Hoc         | APK     |
+| Profile                 | APP_ENV     | API URL               | 용도                             | iOS            | Android |
+| ----------------------- | ----------- | --------------------- | -------------------------------- | -------------- | ------- |
+| `development`           | development | 자동 감지             | 개발·디버깅(dev client)          | 실기기(Debug)  | APK     |
+| `development-simulator` | development | 자동 감지             | 개발·디버깅(iOS 시뮬레이터)      | 시뮬레이터용   | APK     |
+| `preview`               | preview     | `https://api.aido.kr` | 내부 테스트·QA                   | 실기기(Ad Hoc) | APK     |
+| `production`            | production  | `https://api.aido.kr` | 스토어 제출(빌드 번호 자동 증가) | App Store용    | AAB     |
+| `production-device`     | production  | 위와 같음             | 실기기 Release 검증              | Ad Hoc         | APK     |
 
 - API URL은 `EXPO_PUBLIC_API_URL`이 있으면 그 값이고, 없으면 `app.config.ts`의 환경별 기본값이다. EAS `preview` 환경에는 `EXPO_PUBLIC_API_URL`이 없어 preview 빌드도 운영 API를 부른다.
 - `--profile`을 생략하면 `production`이다. `production-device`는 `production` EAS environment를 명시적으로 상속한다(내부 배포의 기본 environment인 preview로 production 설정이 바뀌지 않게 한다).
@@ -24,8 +25,9 @@ EAS 빌드·로컬 빌드, 환경 변수, 스토어 제출, 배포 순서를 다
 
 ```bash
 # 런타임
-APP_ENV                      # development | preview | production
+APP_ENV                      # development | preview | production. 모르는 값은 설정·빌드가 실패한다
 EXPO_PUBLIC_API_URL          # API 서버 URL
+EXPO_PUBLIC_DEV_MACHINE_IP   # (선택, development) 실기기가 붙을 개발 머신 IP. 없으면 자동 감지
 EXPO_PUBLIC_SENTRY_DSN       # Sentry DSN (publishable)
 EXPO_PUBLIC_SENTRY_DEBUG     # (선택) dev에서 Sentry SDK만 켠다. 'true'일 때만
 EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY  # 카카오톡 공유 네이티브 앱 키 (publishable)
@@ -40,13 +42,11 @@ SENTRY_AUTH_TOKEN            # Sentry 소스맵 업로드 (sensitive)
 EXPO_PUBLIC_EAS_PROJECT_ID   # EAS 프로젝트 ID
 ```
 
-OAuth 클라이언트 ID·시크릿은 앱에 두지 않고 **API 서버 환경 변수**에서 관리한다([인증](./auth.md#소셜-로그인)). 값·서명 파일·로그를 Git에 넣지 않는다.
+`APP_ENV`는 `app.config.ts`의 `resolveAppEnvironment`가 Zod로 검증해 모르는 값(`prod`·빈 값)이 개발로 내려가지 않는다. 없을 때만 `NODE_ENV`를 본다(`production`이면 운영, `development`·`test`·없음이면 개발, 그 밖은 실패. 표는 `app.config.test.ts`). 빌드 프로필은 `eas.json`의 `env`, OTA(`pnpm update:*`)는 EAS environment의 `APP_ENV`를 쓴다. 앱 코드는 빌드 값을 `shared/config/env.ts`의 `ENV`로 읽고(푸시 토큰의 EAS `projectId`만 `expo-push-notification-gateway.ts`가 `Constants`에서 직접 읽는다) 관측 도구를 켜는 기준은 `ENV.TELEMETRY`([관측](./observability.md#환경별-구현))다. OAuth 클라이언트 ID·시크릿은 앱에 두지 않고 **API 서버 환경 변수**에서 관리한다([인증](./auth.md#소셜-로그인)). 값·서명 파일·로그를 Git에 넣지 않는다.
 
 ## EAS 환경 변수
 
-값은 EAS environment(`development`·`preview`·`production`)마다 `eas env:set`으로 넣고 `eas env:list <environment>`로 확인한다. 세 environment 모두 `APP_ENV`를 둔다. Apple 팀 ID는 비밀이 아니라 `app.config.ts`의 상수다.
-
-`app.config.ts`가 설정을 읽을 때 환경 변수를 Base64 디코딩해 Firebase 파일(`google-services.json`, 환경별 `GoogleService-Info*.plist`)을 복원하고(`restoreBase64File`), `googleServicesFile`이 그 파일을 참조한다.
+값은 EAS environment(`development`·`preview`·`production`)마다 `eas env:set`으로 넣고 `eas env:list <environment>`로 확인한다. 세 environment 모두 `APP_ENV`를 둔다. Apple 팀 ID는 비밀이 아니라 `app.config.ts`의 상수다. `app.config.ts`가 설정을 읽을 때 환경 변수를 Base64 디코딩해 Firebase 파일(`google-services.json`, 환경별 `GoogleService-Info*.plist`)을 복원하고(`restoreBase64File`), `googleServicesFile`이 그 파일을 참조한다.
 
 ```bash
 # Android: 모든 환경이 같은 파일을 쓴다
@@ -149,7 +149,7 @@ JS만 바뀐 핫픽스는 OTA로 낸다. runtime이 fingerprint라 운영 빌드
 - 머지된 `main`의 독립 clone(위 1단계)에서 `eas.json`의 `node` 버전으로 `eas fingerprint:generate --environment production`이 운영 빌드와 같은지 먼저 본다. 운영 runtime은 `eas update:list --branch production`에서 그 스토어 버전으로 낸 OTA의 runtime이다(로컬 빌드는 `eas build:list`에 없다). `main`에 네이티브 변경이 함께 들어가 다르면 마지막 JS 커밋(stack의 네이티브 층 바로 아래)에서 같은 절차로 낸다. 작업 중인 checkout은 git 제외 파일 때문에 값이 달라 OTA가 아무에게도 가지 않는다.
 - `pnpm update:production --message "메시지"`로 보낸다. `--environment production`이 빠지면 `extra`(API·Sentry·RevenueCat·카카오 키)가 비어 결제가 깨진다.
 - 보낸 뒤 출력의 runtime이 운영과 같은지, `loaded from the "production" environment` 줄에 API·Sentry·RevenueCat·카카오 키 이름이 있는지 확인한다. 소스맵은 `eas env:exec production 'node_modules/.bin/sentry-expo-upload-sourcemaps dist'`로 올린다. OTA는 다음 콜드 스타트에 적용된다.
-- 네이티브 모듈·config plugin을 더한 버전은 fingerprint가 바뀌어 OTA로 낼 수 없고 스토어 빌드로 낸다. 1.17.0은 `expo-calendar`(캘린더 읽기 권한)를 더한다.
+- 네이티브 모듈·config plugin을 더한 버전은 fingerprint가 바뀌어 OTA로 낼 수 없고 스토어 빌드로 낸다.
 
 ## 스토어 제출
 
@@ -171,7 +171,7 @@ Play Console은 AAB에서 Android 15(API 35)가 지원 중단한 시스템 바 �
 
 - **Android 15에서는 효과가 없다.** [Android 15 동작 변경](https://developer.android.com/about/versions/15/behavior-changes-15#edge-to-edge): "`setStatusBarColor` and `R.attr#statusBarColor` are deprecated and have no effect on Android 15." 내비게이션 바 색은 "deprecated and don't affect gesture navigation"이고 3버튼 내비게이션에만 남는다. 컷아웃은 "`SHORT_EDGES`, `NEVER`, and `DEFAULT` are interpreted as `ALWAYS`"다. RN이 넣는 값(투명·`ALWAYS`)이 Android 15 기본과 같아 화면은 그대로이고, Android 14 이하는 이 호출로 edge-to-edge가 된다.
 - **앱 코드 호출은 0건이다.** `git grep -nE 'statusBarColor|statusBarBackgroundColor|navigationBarColor|statusBarTranslucent|navigationBarTranslucent|setBackgroundColorAsync|setBorderColorAsync|StatusBar\.set|androidStatusBar|androidNavigationBar|expo-navigation-bar|expo-status-bar' -- apps/mobile/src apps/mobile/app apps/mobile/app.config.ts apps/mobile/plugins apps/mobile/package.json`가 아무것도 찾지 않는다(1.15.2 [21/32]). RN 0.88 `StatusBar`에는 `backgroundColor`·`translucent`·`setBackgroundColor`·`setTranslucent`가 없고, react-native-screens 4.30은 화면 옵션 `statusBarColor`·`navigationBarColor` setter를 Android에서 빈 함수로 둔다.
-- **빌드 설정.** targetSdk는 Expo SDK 58 기본 36이고 prebuild 템플릿의 `android/gradle.properties`가 `edgeToEdgeEnabled=true`다. Expo는 이 값을 끄는 설정을 없앴다(`withEdgeToEdge`: Android 16은 edge-to-edge가 의무).
+- **빌드 설정.** targetSdk는 Expo SDK 58 기본 36이고 prebuild 템플릿의 `android/gradle.properties`가 `edgeToEdgeEnabled=true`다. Expo에는 이 값을 끄는 설정이 없다(`withEdgeToEdge`: Android 16은 edge-to-edge가 의무).
 - **앱에서 고칠 것은 없다.** 경고에 답할 때 이 절을 근거로 쓴다. 새 앱 코드가 같은 API를 부르지 않도록 `aido/no-system-bar-color`가 `src`·`app`·`app.config.ts`·`plugins`를 본다.
 - **RN·네이티브 라이브러리를 올린 뒤 다시 확인한다.** `apps/mobile`에서 `grep -rlE 'setStatusBarColor|setNavigationBarColor|statusBarColor *=|navigationBarColor *=|LAYOUT_IN_DISPLAY_CUTOUT_MODE_(SHORT_EDGES|DEFAULT)' node_modules/*/android/src node_modules/@*/*/android/src node_modules/react-native/ReactAndroid/src/main`이 지금은 위 두 파일과 react-native-screens `ScreenViewManager.kt`(빈 setter)만 찾는다. 결과가 바뀌면 이 표를 고친다.
 

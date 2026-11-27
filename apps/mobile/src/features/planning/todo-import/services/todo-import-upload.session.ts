@@ -1,3 +1,4 @@
+import { TODO_IMPORT_LIMITS } from '@aido/api/vocabulary';
 import type { ApiError } from '@src/core/errors/api-error';
 import { ok, type Result, unwrap } from '@src/core/errors/result';
 import type { AppLogger } from '@src/core/ports/app-logger';
@@ -5,26 +6,30 @@ import type { IdGenerator } from '@src/core/ports/id-generator';
 import type { SyncStorage } from '@src/core/ports/sync-storage';
 import type { TodoImportSource } from '@src/core/ports/todo-import-source';
 import type { SignOutEpoch } from '@src/core/session/sign-out-epoch';
+import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time-units';
 import { addDaysToDateKey, type DateKey } from '@src/shared/date/date-key';
 import { getStartOfDateKey } from '@src/shared/date/zoned';
-import { getErrorMessage, toError } from '@src/shared/errors';
+import { toError } from '@src/shared/errors';
 import {
   readStoredValue,
   removeStoredValue,
   writeStoredValue,
 } from '@src/shared/storage/define-stored-value';
-import { compact, delay, noop, retry } from 'es-toolkit';
+import { getExponentialBackoffMs } from '@src/shared/utils/get-exponential-backoff-ms';
+import { getOsPermissionAccess } from '@src/shared/utils/get-os-permission-access';
+import { chunk, compact, delay, orderBy, retry, uniqBy } from 'es-toolkit';
 
-import { toImportItem } from '../apis/todo-import-item.mapper';
+import { toTodoImportItem } from '../apis/todo-import-item.mapper';
 import type { TodoImportApi } from '../apis/todo-import.api';
 import { TODO_IMPORT_LOG_EVENT } from '../constants/todo-import-log-events';
-import { TODO_IMPORT_MAX_RETRIES } from '../constants/todo-import.constants';
-import { chunkItems, filterByRange, fingerprintItems } from '../domains/todo-import-item.model';
+import { TODO_IMPORT_MAX_RETRY_COUNT } from '../constants/todo-import.constants';
+import { type TodoImportItem, TodoImportItemPolicy } from '../domains/todo-import-item.model';
 import {
-  adjustSelectionToToday,
-  createTodoImportSession,
-  getRetryDelayMs,
   type TodoImportSelection,
+  TodoImportSelectionPolicy,
+} from '../domains/todo-import-selection.model';
+import {
+  createTodoImportSession,
   type TodoImportSession,
   TodoImportSessionPolicy,
 } from '../domains/todo-import-session.model';
@@ -94,6 +99,63 @@ interface RunContext extends TodoImportUploadInput {
 
 const IDLE_SNAPSHOT: TodoImportUploadSnapshot = { stage: 'idle' };
 
+const RETRY_BASE_DELAY_MS = SECOND_MS;
+const MAX_RETRY_DELAY_MS = MINUTE_MS;
+
+interface RetryWaitInput {
+  attempt: number;
+  retryAfterMs: number | null;
+  random: () => number;
+}
+
+interface RetryWait {
+  // 서버가 Retry-After로 정한 시간. 깨워도 줄지 않는다
+  serverMs: number;
+  // 서버 시간 뒤에 남는 우리 백오프. 온라인·앱 복귀·다시 시도가 깨우면 건너뛴다
+  backoffMs: number;
+}
+
+// 재시도 전 기다릴 시간. 백오프(full jitter)는 시도마다 상한이 두 배로 늘고 1분을 넘지 않으며,
+// 서버가 정한 시간보다 짧으면 서버 시간만 기다린다. 난수는 인자로 받아 테스트가 정한다
+export function getRetryWait({ attempt, retryAfterMs, random }: RetryWaitInput): RetryWait {
+  const serverMs = retryAfterMs ?? 0;
+  const backoffMs = getExponentialBackoffMs(attempt, {
+    baseMs: RETRY_BASE_DELAY_MS,
+    maxMs: MAX_RETRY_DELAY_MS,
+    random,
+  });
+  return { serverMs, backoffMs: Math.max(backoffMs - serverMs, 0) };
+}
+
+// 가까운 날짜부터 같은 순서로 나눠야 끊긴 뒤 이어 보낼 때 같은 묶음 번호가 같은 일정을 가리킨다.
+// 날짜가 같으면 종일(시각 없음)이 먼저다
+export function chunkItems(items: readonly TodoImportItem[]): TodoImportItem[][] {
+  const ordered = orderBy(
+    uniqBy(items, (item) => item.sourceKey),
+    [(item) => item.startDate, (item) => item.localTime ?? '', (item) => item.sourceKey],
+    ['asc', 'asc', 'asc'],
+  );
+  return chunk(ordered, TODO_IMPORT_LIMITS.MAX_ITEMS_PER_CHUNK);
+}
+
+// FNV-1a 32비트. 암호용이 아니라 캘린더가 바뀌었는지 가늠하는 값이고 키는 이미 해시다
+const FNV_OFFSET_BASIS = 0x811c9dc5;
+const FNV_PRIME = 0x01000193;
+const HEX_RADIX = 16;
+
+// 다시 읽은 캘린더가 같으면 같은 값이라 끊긴 묶음부터 이어 보낸다
+export function fingerprintItems(chunks: readonly (readonly TodoImportItem[])[]): string {
+  let hash = FNV_OFFSET_BASIS;
+  let count = 0;
+  for (const item of chunks.flat()) {
+    count += 1;
+    for (let index = 0; index < item.sourceKey.length; index += 1) {
+      hash = Math.imul(hash ^ item.sourceKey.charCodeAt(index), FNV_PRIME);
+    }
+  }
+  return `${count}:${(hash >>> 0).toString(HEX_RADIX)}`;
+}
+
 /**
  * 고른 일정을 읽어 100개씩 차례로 올리고 확정한다. 앱이 꺼지거나 연결이 끊겨도 계정 저장소의 상태로 이어 간다.
  * 실행은 하나씩만 돌고, 새로 시작하거나 놓으면 앞 실행을 멈춘다. 로그아웃 뒤에는 저장소에 쓰지 않는다
@@ -106,6 +168,7 @@ export class TodoImportUploadSession {
   #generation = 0;
   #isRunning = false;
   #controller: AbortController | null = null;
+  #wakeRetryWait: (() => void) | null = null;
 
   constructor(ports: TodoImportUploadSessionPorts) {
     this.#ports = ports;
@@ -213,9 +276,14 @@ export class TodoImportUploadSession {
     return result;
   };
 
-  /** 돌고 있으면 새로 돌리지 않고 그 실행을 기다린다 */
-  resume = (input: TodoImportUploadInput): Promise<void> =>
-    this.#isRunning ? this.#pending : this.#schedule(input, this.#generation);
+  /** 돌고 있으면 새로 돌리지 않고 그 실행을 기다린다. 재시도를 기다리던 실행은 남은 백오프를 건너뛰고 다시 보낸다 */
+  resume = (input: TodoImportUploadInput): Promise<void> => {
+    if (this.#isRunning) {
+      this.#wakeRetryWait?.();
+      return this.#pending;
+    }
+    return this.#schedule(input, this.#generation);
+  };
 
   /** 실행을 멈추고 구독을 푼다. 저장한 상태는 남아 다음 resume이 이어 간다 */
   dispose = (): void => {
@@ -275,7 +343,10 @@ export class TodoImportUploadSession {
     if (session.hasAdjustedRange || !isStartBeforeTodayError(error)) {
       return null;
     }
-    const selection = adjustSelectionToToday(session.selection, this.#ports.getTodayKey());
+    const selection = TodoImportSelectionPolicy.findAdjustedToToday(
+      session.selection,
+      this.#ports.getTodayKey(),
+    );
     return selection == null
       ? null
       : createTodoImportSession({
@@ -382,8 +453,11 @@ export class TodoImportUploadSession {
     this.#save(accountId, session, isCurrent);
 
     // 서버가 한 가져오기에 한 요청씩 받도록 묶음을 차례로 보낸다
-    for (let chunkIndex = session.nextChunkIndex; chunkIndex < chunks.length; chunkIndex += 1) {
-      const items = chunks[chunkIndex] ?? [];
+    const firstChunkIndex = session.nextChunkIndex;
+    for (const [chunkIndex, items] of chunks.entries()) {
+      if (chunkIndex < firstChunkIndex) {
+        continue;
+      }
       this.#emitIfCurrent(isCurrent, {
         stage: 'uploading',
         importId,
@@ -448,7 +522,7 @@ export class TodoImportUploadSession {
     try {
       // 설정에서 캘린더 접근을 끄면 읽기가 계속 실패한다. 다시 시도해도 같으니 권한 이유로 멈춘다
       const permission = await this.#ports.source.getPermission();
-      if (permission.status !== 'granted') {
+      if (getOsPermissionAccess(permission) !== 'granted') {
         this.#ports.logger.warn(TODO_IMPORT_LOG_EVENT.SOURCE_PERMISSION_MISSING, {
           status: permission.status,
         });
@@ -466,13 +540,14 @@ export class TodoImportUploadSession {
       });
       const items = compact(
         records.map((record) =>
-          toImportItem(record, { timezone, timeMode, untitledTitle: context.untitledTitle }),
+          toTodoImportItem(record, { timezone, timeMode, untitledTitle: context.untitledTitle }),
         ),
       );
-      return chunkItems(filterByRange(items, { startDate, endDate }));
+      return chunkItems(TodoImportItemPolicy.filterByRange(items, { startDate, endDate }));
     } catch (error) {
+      // 네이티브 오류 원문에는 일정 제목 같은 사용자 내용이 들어올 수 있어 이름만 남긴다
       this.#ports.logger.warn(TODO_IMPORT_LOG_EVENT.SOURCE_READ_FAILED, {
-        error: getErrorMessage(error),
+        errorName: toError(error).name,
       });
       this.#emitIfCurrent(context.isCurrent, {
         stage: 'paused',
@@ -485,37 +560,77 @@ export class TodoImportUploadSession {
 
   /**
    * 연결·서버 장애·속도 제한은 기다렸다 다시 보낸다. 4xx는 바로 던진다.
-   * retry의 대기는 취소되지 않아, 기다림은 다음 시도 앞에서 실행의 signal로 끊기는 delay로 한다(놓으면 타이머가 남지 않는다)
+   * retry의 대기는 취소되지 않아, 기다림은 다음 시도 앞에서 끊을 수 있는 delay로 한다(놓으면 타이머가 남지 않는다).
+   * 깨워서 일찍 보낸 시도는 재시도 횟수에 넣지 않는다. 앱 복귀가 잦아도 횟수가 먼저 닳아 더 일찍 멈추지 않는다
    */
   #request = <T>(call: () => Promise<Result<T, ApiError>>, context: RunContext): Promise<T> => {
-    let waitMs = 0;
+    let retryCount = 0;
+    let wait: RetryWait | null = null;
     return retry(
       async () => {
-        if (waitMs > 0) {
-          await delay(waitMs, { signal: context.signal });
+        if (wait != null) {
+          const isWoken = await this.#waitForRetry(wait, context.signal);
+          if (!isWoken) {
+            retryCount += 1;
+          }
         }
         return unwrap(await call());
       },
       {
-        retries: TODO_IMPORT_MAX_RETRIES,
         signal: context.signal,
-        shouldRetry: (error, attempt) => {
-          if (!isRetryableTodoImportError(error) || !context.isCurrent()) {
+        shouldRetry: (error) => {
+          const hasRetryLeft = retryCount < TODO_IMPORT_MAX_RETRY_COUNT;
+          if (!hasRetryLeft || !isRetryableTodoImportError(error) || !context.isCurrent()) {
             return false;
           }
-          waitMs = getRetryDelayMs({
-            attempt,
+          wait = getRetryWait({
+            attempt: retryCount,
             retryAfterMs: findRetryAfterMs(error),
             random: this.#ports.random,
           });
           this.#ports.logger.info(TODO_IMPORT_LOG_EVENT.UPLOAD_CHUNK_RETRYING, {
-            total: attempt + 1,
-            durationMs: waitMs,
+            total: retryCount + 1,
+            durationMs: wait.serverMs + wait.backoffMs,
           });
           return true;
         },
       },
     );
+  };
+
+  /**
+   * 서버가 정한 시간은 실행이 멈출 때만 끝나고, 그 뒤 남은 백오프는 `resume`이 깨우면 건너뛴다.
+   * 서버 시간 동안 깨웠으면 그 시간이 지난 뒤 백오프를 기다리지 않는다. 백오프를 건너뛰었으면 true다
+   */
+  #waitForRetry = async (
+    { serverMs, backoffMs }: RetryWait,
+    runSignal: AbortSignal,
+  ): Promise<boolean> => {
+    const backoff = new AbortController();
+    const wake = () => backoff.abort();
+    runSignal.addEventListener('abort', wake);
+    this.#wakeRetryWait = wake;
+    try {
+      if (0 < serverMs) {
+        await delay(serverMs, { signal: runSignal });
+      }
+      if (backoffMs === 0) {
+        return false;
+      }
+      if (!backoff.signal.aborted) {
+        await delay(backoffMs, { signal: backoff.signal });
+        return false;
+      }
+      return true;
+    } catch (error) {
+      if (runSignal.aborted) {
+        throw error;
+      }
+      return true;
+    } finally {
+      runSignal.removeEventListener('abort', wake);
+      this.#wakeRetryWait = null;
+    }
   };
 
   #handleFailure = (error: unknown, context: RunContext, importId: string | null) => {
@@ -545,7 +660,12 @@ export class TodoImportUploadSession {
     // 멈추고 기기 상태를 지운다. 이유는 이 기기 화면이 보인다
     this.#ports.logger.warn(TODO_IMPORT_LOG_EVENT.UPLOAD_REJECTED, { code: rejection.code });
     if (importId != null) {
-      this.#ports.todoImportApi.cancelImport(importId).catch(noop);
+      // 멈추지 못해도(5xx·연결 끊김) 이 기기의 업로드는 끝났다. 서버가 버려진 가져오기를 정리하고 여기서는 흔적만 남긴다
+      this.#ports.todoImportApi.cancelImport(importId).catch((error: unknown) =>
+        this.#ports.logger.warn(TODO_IMPORT_LOG_EVENT.UPLOAD_CANCEL_FAILED, {
+          errorName: toError(error).name,
+        }),
+      );
     }
     this.#clear(accountId, isCurrent);
     this.#emit({ stage: 'failed', importId, rejection });
@@ -566,7 +686,7 @@ export class TodoImportUploadSession {
       removeStoredValue(this.#ports.storage, todoImportSessionStoredValue, accountId);
     } catch (error) {
       this.#ports.logger.warn(TODO_IMPORT_LOG_EVENT.RESUME_FAILED, {
-        error: getErrorMessage(error),
+        errorName: toError(error).name,
       });
     }
   };

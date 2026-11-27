@@ -1,6 +1,6 @@
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useOpenAppSettings } from '@src/shared/hooks/use-open-app-settings';
 import { useTranslation } from '@src/shared/i18n';
-import { IS_IOS_APP_ON_MAC } from '@src/shared/infra/device/device-info';
 import {
   CalendarIllustration,
   CheckmarkIcon,
@@ -25,10 +25,7 @@ interface CalendarPermissionPromptProps {
 const FACT_ICON_SIZE = 12;
 const FACT_BADGE_SIZE = 20;
 
-/**
- * 시스템 캘린더 창 바로 앞의 안내(App Store 5.1.1, Play 눈에 띄는 공개). 그림과 글만 그리고,
- * "계속"·"설정 열기"는 다른 단계처럼 화면 아래 버튼이 맡는다
- */
+/** 시스템 캘린더 창 바로 앞의 안내다(App Store 5.1.1, Play 눈에 띄는 공개) */
 export function CalendarPermissionPrompt({ view }: CalendarPermissionPromptProps) {
   return match(view)
     .with('ask', () => <CalendarPermissionPrompt.Ask />)
@@ -55,6 +52,7 @@ CalendarPermissionPrompt.Ask = function Ask() {
 /** Mac은 아이두 설정 화면이 아니라 시스템 설정의 개인정보 보호에서 켠다 */
 CalendarPermissionPrompt.Denied = function Denied() {
   const { t } = useTranslation('todoImport');
+  const appSettings = useOpenAppSettings();
 
   return (
     <Prompt>
@@ -63,9 +61,9 @@ CalendarPermissionPrompt.Denied = function Denied() {
           {t('permission.deniedTitle')}
         </Text>
         <WordWrapText size="b3" shade={6} align="center">
-          {IS_IOS_APP_ON_MAC
-            ? t('permission.deniedDescriptionMac')
-            : t('permission.deniedDescription')}
+          {appSettings.canOpen
+            ? t('permission.deniedDescription')
+            : t('permission.deniedDescriptionMac')}
         </WordWrapText>
       </VStack>
     </Prompt>

@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { JOB_SCHEDULE_TIMEZONE } from "#api/shared/application/job-schedule-timezone";
 import { defineQueue, JOB_POLLING_SECONDS } from "#api/shared/application/ports/job-queue.port";
 import { DAY_SECONDS } from "#api/shared/domain/time/time-units";
 
@@ -25,7 +26,7 @@ export const TODO_IMPORT_CLEANUP_QUEUE = defineQueue({
     {
       key: "daily-todo-import-cleanup-scheduler",
       cron: "20 4 * * *",
-      timezone: "Asia/Seoul",
+      timezone: JOB_SCHEDULE_TIMEZONE,
       missed: "skip",
       payload: {},
     },

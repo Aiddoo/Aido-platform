@@ -1,8 +1,8 @@
-import { useMyPageDetailRootStore } from '@src/bootstrap/providers/di-context';
 import { createEventChannel } from '@src/core/events/event-channel';
+import { useDismissKeyboard } from '@src/shared/hooks/use-dismiss-keyboard';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { usePaneSizeClass } from '@src/shared/ui';
-import { type Href, router, usePathname } from 'expo-router';
+import { type Href, useRouter, usePathname } from 'expo-router';
 import {
   createContext,
   type PropsWithChildren,
@@ -11,7 +11,6 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react';
-import { Keyboard } from 'react-native';
 
 import { isMyPageMenuItemSelected } from '../utils/my-page-menu.view-model';
 
@@ -44,25 +43,24 @@ const MyPageMenuNavigationContext = createContext<MyPageMenuNavigation | null>(n
 
 /** 메뉴 행마다 경로·창 크기·연타 가드를 따로 구독하지 않게 메뉴 칸이 한 번만 구독해 내려 준다 */
 export function MyPageMenuNavigationProvider({ children }: PropsWithChildren) {
+  const dismissKeyboard = useDismissKeyboard();
   const pathname = usePathname();
   const isCompact = usePaneSizeClass() === 'compact';
-  const detailRootStore = useMyPageDetailRootStore();
   const [currentPathname] = useState(() => createCurrentPathnameStore(pathname));
 
   useEffect(() => {
     currentPathname.set(pathname);
-    detailRootStore.clear();
-  }, [currentPathname, detailRootStore, pathname]);
+  }, [currentPathname, pathname]);
 
+  const router = useRouter();
   const navigate = useSingleTap((target: Href) => {
     if (pathname === (typeof target === 'string' ? target : target.pathname)) {
       return;
     }
     // 상세 칸 입력의 키보드가 새 화면 위에 남지 않게 내린다
-    Keyboard.dismiss();
+    dismissKeyboard();
     // 넓은 화면은 상세를 고른 메뉴 하나로 바꾼다. 그 안에서 더 들어간 화면이 뒤로 가기에 남지 않게 먼저 걷어 낸다
     if (!isCompact && router.canDismiss()) {
-      detailRootStore.request(typeof target === 'string' ? target : target.pathname);
       router.dismissAll();
     }
     router.push(target);

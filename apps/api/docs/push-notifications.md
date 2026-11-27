@@ -18,9 +18,9 @@
 | 야간 참여 유도   | 동의 여부와 관계없이 발송하지 않음. 21:00까지 1분 미만이면 보내지 않고, 보낸 푸시도 받는 사람 21:00에 공급자 보관이 끝난다([보관 시간](push-delivery.md#deliveryreceipt))                                                                                           |
 | 야간 일반 푸시   | `nightPushEnabled=true`일 때 발송                                                                                                                                                                                                                                   |
 | 야간 예외        | 사용자가 시각을 정한 `TODO_REMINDER`(할 일 시각 60·10분 전), `MORNING_REMINDER`·`EVENING_REMINDER`(프리미엄이 고른 시각, 무료 08:00·19:00은 야간 밖), `WEATHER_MORNING`, `WEATHER_EVENING`. `nightPushEnabled=false`여도 보낸다. 광고성·소셜·재방문은 예외가 아니다 |
-| Redis 장애       | 기존 정책대로 fail-open. 비정상 배치 결과도 타입 검증 후 전체 허용                                                                                                                                                                                                  |
+| Redis 장애       | fail-open. 비정상 배치 결과도 타입 검증 후 전체 허용                                                                                                                                                                                                                |
 
-기본 제한 저장소는 PostgreSQL이다. Redis backend를 선택한 경우 배치는 하나의 Lua 실행으로 입력 순서대로 예약하며 기존 fail-open 의미를 유지한다. 동일 dispatch retry는 reservation을 재사용하고, 저장소 선택과 새 delivery attempt를 혼동하지 않는다.
+기본 제한 저장소는 PostgreSQL이다. Redis backend를 선택한 경우 배치는 하나의 Lua 실행으로 입력 순서대로 예약하고 장애 때는 fail-open이다. 동일 dispatch retry는 reservation을 재사용하고, 저장소 선택과 새 delivery attempt를 혼동하지 않는다.
 
 ## 자동 발송 일정과 대상
 
@@ -61,7 +61,7 @@ AI 제안 분석은 매시 정각 dispatch가 사용자 현지 09시대(따라�
 
 `목적`이 `참여`인 항목만 광고성 푸시 동의와 참여 유도 일일 한도를 적용한다. `서비스`와 `거래`는 일반 시간당 한도와 야간 설정을 적용한다(사용자가 시각을 정한 위 야간 예외는 빼고, `TODO_REMINDER`는 시간당 한도도 빼고).
 
-목적 분류 근거: 정보통신망법 제50조는 영리목적 광고성 정보에 명시적 사전 동의를, 21~08시에는 별도 동의를 요구한다. 「불법스팸 방지를 위한 정보통신망법 안내서」(방송미디어통신위원회·KISA, KISA-GD-2025-0037, 2025.12) 11쪽은 계약·거래 관계로 반드시 전할 정보를 광고성의 예외로 보고, 51쪽 Q&A 01-05는 돈을 내고 받는 정보 제공을 계약에 따른 서비스로 본다. 그래서 프리미엄이 구독한 AI 제안·주간·월간 리포트의 도착 알림은 `서비스`다. 같은 11쪽은 광고가 부수적으로 섞이면 전체를 광고로 보므로 이 문구에 할인·업그레이드 권유를 넣지 않는다. Apple App Review Guidelines 4.5.4와 HIG(Managing notifications)는 광고성 푸시의 명시적 동의와 앱 안 설정을, Android 알림 채널 가이드는 종류마다 채널을 권한다. 서비스 알림도 사용자가 종류별로 끌 수 있게 `aiPushEnabled`를 둔다. Android 채널은 `default` 하나다(분리는 [1.16.0 다음 버전 후보](../../../docs/releases/1.16.0/README.md#다음-버전-후보)).
+목적 분류 근거: 정보통신망법 제50조는 영리목적 광고성 정보에 명시적 사전 동의를, 21~08시에는 별도 동의를 요구한다. 「불법스팸 방지를 위한 정보통신망법 안내서」(방송미디어통신위원회·KISA, KISA-GD-2025-0037, 2025.12) 11쪽은 계약·거래 관계로 반드시 전할 정보를 광고성의 예외로 보고, 51쪽 Q&A 01-05는 돈을 내고 받는 정보 제공을 계약에 따른 서비스로 본다. 그래서 프리미엄이 구독한 AI 제안·주간·월간 리포트의 도착 알림은 `서비스`다. 같은 11쪽은 광고가 부수적으로 섞이면 전체를 광고로 보므로 이 문구에 할인·업그레이드 권유를 넣지 않는다. Apple App Review Guidelines 4.5.4와 HIG(Managing notifications)는 광고성 푸시의 명시적 동의와 앱 안 설정을, Android 알림 채널 가이드는 종류마다 채널을 권한다. 서비스 알림도 사용자가 종류별로 끌 수 있게 `aiPushEnabled`를 둔다. Android 채널은 `default` 하나다.
 리마인드 알림 버튼(완료·10분 뒤 다시, `categoryId: TODO_REMINDER`, 단계 `ACTIONABLE_TODO_REMINDER_STAGES`의 60·10분·다시 알림에만 붙고 반복 알림 멈춤 안내에는 없다)과 다시 알림(`POST /v1/todo-reminders/{todoId}/snoozes`, 누른 알림마다 한 번)은 동의를 더 받지 않는다. 사용자가 정한 할 일의 서비스 알림을 사용자가 버튼으로 직접 다시 청한 것이라 광고성 정보가 아니기 때문이다. 그래서 같은 `TODO_REMINDER`·`SCHEDULED_SERVICE`로 보내 푸시 켜짐·기기 권한·야간 예외를 그대로 따르고 광고 표기·`MARKETING` 카테고리를 붙이지 않는다. 푸시 보관은 울릴 시각 + 15분까지다([보관 시간](push-delivery.md)). 보낼 때 완료·삭제를 다시 보고 15분 넘게 늦으면 버린다.
 
 | 타입                       | 발생 조건/생성 주체                                                                      | 목적         | 기본 이동                              |
@@ -102,9 +102,9 @@ AI 제안 분석은 매시 정각 dispatch가 사용자 현지 09시대(따라�
 
 `BROWSER`, `WEBVIEW`, `NONE` action은 표의 기본 이동보다 우선한다. `DEEP_LINK`에 URL이 있으면 해당 내부 경로를 우선한다.
 
-할 일이 대상인 알림(`todoId`가 있는 댓글·답글·좋아요 `TODO_SHARED`, `TODO_REMINDER`, 할 일 콕 `NUDGE_RECEIVED`)은 `PublishNotificationUseCase`가 발행할 때 그 할 일의 주인과 시작일을 `metadata.todoOwnerId`·`metadata.todoDate`(YYYY-MM-DD)로 더한다. 알림함은 metadata로, push는 payload `routing`으로 같은 값을 받는다(`notificationRoutingSchema`, 1.13.0+). 앱은 펼친 화면에서 목록 pane을 그 사람(친구면 친구 피드)의 그 날짜로 열고 상세 pane에 할 일을 고른다. 할 일이 이미 지워졌으면 더하지 않고, 이전 알림·이전 앱은 지금처럼 동작한다. `context`는 배포된 DTO 모양이라 늘리지 않는다.
+할 일이 대상인 알림(`todoId`가 있는 댓글·답글·좋아요 `TODO_SHARED`, `TODO_REMINDER`, 할 일 콕 `NUDGE_RECEIVED`)은 `PublishNotificationUseCase`가 발행할 때 그 할 일의 주인과 시작일을 `metadata.todoOwnerId`·`metadata.todoDate`(YYYY-MM-DD)로 더한다. 알림함은 metadata로, push는 payload `routing`으로 같은 값을 받는다(`notificationRoutingSchema`, 1.13.0+). 앱은 펼친 화면에서 목록 pane을 그 사람(친구면 친구 피드)의 그 날짜로 열고 상세 pane에 할 일을 고른다. 할 일이 이미 지워졌으면 더하지 않는다. 이 값이 없는 알림과 이 값을 모르는 앱은 표의 기본 이동을 따른다. `context`는 배포된 DTO 모양이라 늘리지 않는다.
 
-공지(`SYSTEM_NOTICE`·`ADMIN_BROADCAST`·`ADMIN_TARGETED`)는 종류만으로 갈 곳을 정할 수 없어 `DEEP_LINK` url에 앱 경로를 싣는다. 경로는 `@aido/api/vocabulary`의 `NOTICE_DEEP_LINK_PATH`(`/feed`, `/achievements`, `/weather`, `/friends`, `/friends/invite`, `/settings/subscription`, `/settings/notifications`) 중에서만 고른다. 1.13.0 앱은 이 경로만 열고 모르는 경로·쿼리·상세 id 경로는 이동하지 않는다. 이전 앱의 동작과 버전 나눠 보내기는 [관리자 공지 링크와 앱 버전](notifications.md#관리자-공지-링크와-앱-버전)이다. url은 추가 필드라 기존 payload·응답 모양은 바뀌지 않는다.
+공지(`SYSTEM_NOTICE`·`ADMIN_BROADCAST`·`ADMIN_TARGETED`)는 종류만으로 갈 곳을 정할 수 없어 `DEEP_LINK` url에 앱 경로를 싣는다. 경로는 `@aido/api/vocabulary`의 `NOTICE_DEEP_LINK_PATH`(`/feed`, `/achievements`, `/weather`, `/friends`, `/friends/invite`, `/settings/subscription`, `/settings/notifications`) 중에서만 고른다. 1.13.0 앱은 이 경로만 열고 모르는 경로·쿼리·상세 id 경로는 이동하지 않는다. 1.13.0 미만 앱의 동작과 버전 나눠 보내기는 [관리자 공지 링크와 앱 버전](notifications.md#관리자-공지-링크와-앱-버전)이다. url은 optional 추가 필드다.
 
 ### 푸시 navigation
 
@@ -121,7 +121,7 @@ push data의 `navigation`은 알림을 눌렀을 때 열 화면을 `kind`로 판
 | `EXTERNAL_URL`       | `url`(http(s)), `presentation`(`BROWSER`·`WEBVIEW`)                                                                            | `BROWSER`·`WEBVIEW` 액션                                                                                                                                              |
 | 화면만               | —                                                                                                                              | `FEED`, `FRIENDS`, `FRIEND_REQUESTS`, `WEATHER`, `ACHIEVEMENTS`, `REPORTS`, `SUGGESTIONS`, `INVITE`, `SUBSCRIPTION`, `NOTIFICATIONS`, `NOTIFICATION_SETTINGS`, `NONE` |
 
-목적지는 `navigation`을 모르는 구 앱이 `type`·`action`·`context`·`routing`으로 고르는 곳과 같다. 그래서 `type`(`TODO_SHARED` 등 기존 값 포함)·`action`·`context`·`routing`은 구 앱 호환용으로 계속 함께 싣는다. 계약을 통과하지 못하는 값이면 `navigation`을 싣지 않고, 앱 schema도 모양이 틀린 `navigation`만 버려 기존 필드로 이동한다. 알림함 REST 응답(`NotificationListResponseDto`)은 배포 앱 fingerprint에 고정돼 있어 `navigation`을 더하지 않는다.
+목적지는 `navigation`을 모르는 구 앱이 `type`·`action`·`context`·`routing`으로 고르는 곳과 같다. 그래서 `type`(`TODO_SHARED` 등 기존 값 포함)·`action`·`context`·`routing`은 구 앱 호환용으로 함께 싣는다. 계약을 통과하지 못하는 값이면 `navigation`을 싣지 않고, 앱 schema도 모양이 틀린 `navigation`만 버려 기존 필드로 이동한다. 알림함 REST 응답(`NotificationListResponseDto`)은 배포 앱 fingerprint에 고정돼 있어 `navigation`을 더하지 않는다.
 
 | 공지         | url                                                                                           |
 | ------------ | --------------------------------------------------------------------------------------------- |
@@ -145,20 +145,20 @@ push data의 `navigation`은 알림을 눌렀을 때 열 화면을 `kind`로 판
 - `INVITE_QUALIFY_REMINDER`: 정비 작업이 후보(JOINED·미발송·초대한 사람 있음·보상 자격 있음·마감이 지금~3일 안)를 `(expiresAt, id)` keyset으로 500건씩 최대 20묶음 읽고, 할 일을 끝낸 날이 1일인 수락만 초대받은 사람 시간대(미상·UTC는 KST)의 다음 18:00에 `startAfter`로 넣는다(키 `invite-qualify-reminder:<수락>:<발송 시각>`).
   - 보낼 때 수락 행을 잠그고 자격·야간 여부·두 사람이 아직 친구이고 차단이 없는지·초대한 사람이 탈퇴하지 않았는지를 다시 본다. `InviteRedemption.qualifyReminderSentAt`과 알림 기록을 같은 트랜잭션에 남기고 푸시는 커밋 뒤 나간다.
   - 건너뛴 수락은 표시하지 않아 마감 전 다음 정비 실행이 다시 고른다. 참여 목적이라 동의·야간·하루 한도에 걸리면 알림함에만 남는다.
-- 광고성 동의 재확인: 정보통신망법 시행령 제62조의 2년 고지다. `UserConsent`에서 동의(또는 마지막 재확인)가 24개월 전(`marketingReconfirmCutoff`) 이전인 활성 사용자를 userId keyset으로 500명씩 읽고, 100명씩 `UPDATE … SET marketingReconfirmedAt WHERE … 아직 대상 RETURNING`으로 표시를 얻은 사용자만 같은 트랜잭션에 알림을 남긴다. 문구는 "광고성 알림 수신에 동의 중이에요 / 2024.11.09 동의 · 설정에서 바꿀 수 있어요"이고 이동은 `/settings/notifications`다. 이메일 고지는 아직 없다.
+- 광고성 동의 재확인: 정보통신망법 시행령 제62조의 2년 고지다. `UserConsent`에서 동의(또는 마지막 재확인)가 24개월 전(`marketingReconfirmCutoff`) 이전인 활성 사용자를 userId keyset으로 500명씩 읽고, 100명씩 `UPDATE … SET marketingReconfirmedAt WHERE … 아직 대상 RETURNING`으로 표시를 얻은 사용자만 같은 트랜잭션에 알림을 남긴다. 문구는 "광고성 알림 수신에 동의 중이에요 / 2024.11.09 동의 · 설정에서 바꿀 수 있어요"이고 이동은 `/settings/notifications`다. 이메일로는 고지하지 않는다.
 - `INVITE_ENABLED=false`면 두 알림을 보내지 않는다. 활동일·사용 시작과 지급 원장(PENDING)만 기록하고 지급 작업을 멈춘다. 다시 켜면 다음 정비 작업(매일 03:30 KST)이 남은 PENDING·FAILED 지급을 적용하므로 보상은 잃지 않는다.
 
 ## 날씨 알림
 
-`SendWeatherMorningUseCase`·`SendWeatherEveningUseCase`는 앱 날씨 화면과 같은 v2(WeatherKit) 리포트를 weather의 공개 `WeatherReportReaderPort`(notification 쪽 `ReminderWeatherReportReaderPort`)로 읽는다. v1 KMA 격자 예보는 쓰지 않으므로 격자가 없는 해외 위치(1.14.0+)도 날씨 알림을 받는다.
+`SendWeatherMorningUseCase`·`SendWeatherEveningUseCase`는 앱 날씨 화면과 같은 v2(WeatherKit) 리포트를 weather의 공개 `WeatherReportReaderPort`(notification 쪽 `ReminderWeatherReportReaderPort`)로 읽는다. 그래서 KMA 격자가 없는 해외 위치(1.14.0+)도 날씨 알림을 받는다.
 
 1. 대상: 설정 시각이 맞고 날씨 알림을 켠 활성 사용자 중 위치가 있고 오늘 같은 알림을 받지 않은 사용자만. 이 단계 뒤에만 리포트·할 일을 조회하므로 대상이 아닌 사용자로 WeatherKit을 부르지 않는다. 날씨 알림은 야간 예외 타입이다.
-2. 리포트: `GetWeatherReport`와 같은 `WeatherReportReader.readReport`(geohash5 칸 캐시 `weather:v2:report:<칸>:<scope>`, `CacheStorePort.wrap` single-flight, 공급자 예보 만료까지 10~30분, 분 단위 예보가 있는 칸의 곧 강수 10분, 월 예산 절약 중 2시간 TTL → 실패 시 6시간 latest 스냅샷 → 칸별 1분 공급자 실패 캐시)를 쓴다. 같은 칸·언어 요청은 한 번만 읽고 칸은 4개씩 동시에 읽는다. 화면과 캐시를 공유하므로 **리포트용 WeatherKit `weather` 호출은 칸·scope(특보가 있는 칸만 언어별, 나머지는 공유)마다 리포트 TTL당 최대 1회(프로세스별 single-flight)**이며 알림 사용자 수에 비례하지 않는다. 이와 별도로 가용성 조회는 칸마다 7일, 출처 표기(attribution)는 언어마다 7일 캐시하고, 둘 다 실패하면 1분 동안 다시 부르지 않는다(가용성은 기본 dataset, 표기는 로고 없이 진행).
+2. 리포트: `GetWeatherReport`와 같은 `ReadWeatherReport`를 칸마다 부르는 `WeatherReportReaderPort.readReports`(geohash5 칸 캐시 `weather:v2:report:<칸>:<scope>`, `CacheStorePort.wrap` single-flight, 공급자 예보 만료까지 10~30분, 분 단위 예보가 있는 칸의 곧 강수 10분, 월 예산 절약 중 2시간 TTL → 실패 시 6시간 latest 스냅샷 → 칸별 1분 공급자 실패 캐시)를 쓴다. 같은 칸·언어 요청은 한 번만 읽고 칸은 4개씩 동시에 읽는다. 화면과 캐시를 공유하므로 **리포트용 WeatherKit `weather` 호출은 칸·scope(특보가 있는 칸만 언어별, 나머지는 공유)마다 리포트 TTL당 최대 1회(프로세스별 single-flight)**이며 알림 사용자 수에 비례하지 않는다. 이와 별도로 가용성 조회는 칸마다 7일, 출처 표기(attribution)는 언어마다 7일 캐시하고, 둘 다 실패하면 1분 동안 다시 부르지 않는다(가용성은 기본 dataset, 표기는 로고 없이 진행).
 3. 할 일(아침만): planning 조회 포트(`TodoScheduleReaderPort`)로 오늘(알림 시간대) 남은 시각 지정·미완료·종일 아님 할 일을 읽는다(`scheduledTime ∈ [지금, 오늘 자정)`, 어제 이전에 시작해 오늘까지 이어지는 여러 날 할 일은 오늘의 같은 벽시계 시각). 날씨 화면 브리핑과 같은 조회다.
 4. 판단(weather Context의 `weather-notification-briefing.domain-service.ts`. 할 일과 겹친 날씨는 날씨 화면 브리핑과 같은 `planWeatherBriefing`이 정하고, 기준값은 `@aido/api/vocabulary`의 `WEATHER_BRIEFING_RULES`): 시간별 강수 확률 50% 이상 = 비, 낮 체감 33°C 이상 = 더위, `THUNDERSTORMS` = 뇌우, 눈·진눈깨비·우박 = 눈, 최저 10°C 이하 = 쌀쌀. 아침은 할 일과 겹친 비·뇌우·눈 → 할 일과 겹친 더위 → 오늘 늦게 오는 비·눈 → 오늘 요약(상태·최고/최저·강수 확률) 순, 저녁은 내일 비·눈이 시작하는 때(새벽·오전·오후·저녁) 또는 내일 요약에 쌀쌀함을 더한다. 시각과 오늘·내일은 알림 시간대(기기), 일별 예보는 위치 시간대 날짜로 찾는다.
 5. 폴백: 캐시·latest 스냅샷까지 없으면 틀린 날씨 대신 "앱에서 확인" 안내(`weather.*.unavailable`)를 보낸다. KMA로 다시 읽지 않는다.
 
-비·뇌우·더위와 겹친 할 일 알림은 `action: { type: "DEEP_LINK", url: "/weather/reschedule?todoIds=12,15&reason=rain|heat" }`를 싣는다. url은 `@aido/api/vocabulary`의 `buildWeatherRescheduleDeepLink`(경로 `WEATHER_RESCHEDULE_DEEP_LINK`, 이유 `WEATHER_RESCHEDULE_REASONS`)로 만든다. 1.13.x 이하 앱은 날씨 알림을 종류로만 이동하므로 url을 무시하고 지금처럼 `/weather`를 연다. 1.14.0 앱은 이 url을 읽어 옮기기 화면을 바로 열고, 1.15.2 앱은 같은 대상을 `navigation`(`WEATHER_RESCHEDULE`)으로 읽는다.
+비·뇌우·더위와 겹친 할 일 알림은 `action: { type: "DEEP_LINK", url: "/weather/reschedule?todoIds=12,15&reason=rain|heat" }`를 싣는다. url은 `@aido/api/vocabulary`의 `buildWeatherRescheduleDeepLink`(경로 `WEATHER_RESCHEDULE_DEEP_LINK`, 이유 `WEATHER_RESCHEDULE_REASONS`)로 만든다. 1.13.x 이하 앱은 날씨 알림을 종류로만 이동하므로 url을 무시하고 `/weather`를 연다. 1.14.0 앱은 이 url을 읽어 옮기기 화면을 바로 열고, 1.15.2 앱은 같은 대상을 `navigation`(`WEATHER_RESCHEDULE`)으로 읽는다.
 
 ## 문구와 변형 선택
 
@@ -176,13 +176,13 @@ push data의 `navigation`은 알림을 눌렀을 때 열 화면을 `kind`로 판
 
 ## 타임존 처리
 
-배송·야간 자격 경로는 미상/무효 및 저장 기본 UTC를 KST로 해석하는 `resolveDeliveryTimezone`을 사용한다. 일반 날짜 계산의 UTC fallback과 별도 정책이다.
+발송 시각 판단(배송·야간 자격·리마인더 sweep의 현지 시각·리마인더 날짜 세기·날씨 알림의 오늘·내일·AI 제안과 리포트의 발송 창)은 미상/무효 및 UTC와 같은 시간대(`UTC`·`Etc/UTC`·`GMT`)를 KST로 해석하는 `resolveDeliveryTimezone`을 쓴다. 한 사용자의 리마인더 시각과 야간 판정이 같은 시계를 보게 하려는 것이고, 일반 날짜 계산의 UTC fallback(`resolveDateBoundaryTimezone`)과 별도 정책이다. 예외로 retention 단계 SQL은 아직 저장값을 그대로 `AT TIME ZONE`에 넘겨 저장된 UTC를 UTC로 계산한다.
 
 - 푸시 기기 보고의 시간대 처리는 [푸시 발송](push-delivery.md#기기와-토큰)에 있다.
-- 설정 API의 잘못된 IANA 타임존은 `400 SYS_0002`로 거부한다. 유효한 별칭은 런타임의 정규 IANA 이름으로 저장한다.
-- 일반 API에서 누락·오류 타임존 값은 `UTC`로 처리한다.
-- 과거에 잘못 저장된 값은 활성 스케줄 타임존 목록에서 제외하고, 날짜 계산이 필요한 방어 경로에서는 `UTC`로 폴백한다.
-- 과거에 저장된 유효한 IANA 별칭은 원래 저장값으로 스윕해 조회 조건과 일치시킨다. 이를 정규 이름으로만 합치면 기존 별칭 사용자가 누락되므로, 신규 입력부터 점진적으로 정규화한다.
+- 시간대 문자열 해석은 `parseTimezoneName`(Temporal) 하나다. 런타임이 아는 IANA 이름은 대소문자만 맞춰 그대로 저장하고(`Asia/Calcutta`·`US/Pacific` 같은 옛 이름도 다른 이름으로 바꾸지 않는다), 고정 오프셋(`+09:00`)·빈 값·모르는 이름은 유효하지 않다.
+- 설정 API의 모르는 IANA 타임존은 `400 SYS_0002`로 거부한다. 고정 오프셋과 UTC와 같은 이름(기기 보고 규칙)은 오류 없이 시간대만 반영하지 않는다.
+- 활성 스케줄 타임존 목록은 저장값을 그대로 모두 주고 sweep이 발송 시간대 규칙으로 현지 시각을 정한다. 저장된 UTC·잘못된 값의 사용자는 서울 묶음에서 저장값 그대로 조회된다. 일반 API의 누락·오류 값과 날짜 계산이 필요한 방어 경로는 `UTC`로 폴백한다.
+- 서버 푸시 문구의 시각(날씨 브리핑의 할 일·비 시작 시각)은 사용자의 `timeFormat`(12·24시간)을 따른다(ko "오후 3시"·"15시", en "3 PM"·"15:00"). 알림함 다시 렌더링을 위해 `copyFacts.timeFormat`에 남기고 이 값이 없는 옛 사실은 12시간이다.
 - 모든 고정 시각, 로컬 날짜 중복 키, 참여 유도 일일 한도는 IANA 타임존과 DST를 반영한다.
 - 사용자가 고른 아침·저녁 리마인더와 아침·저녁 날씨 알림 시각은 그 분에만 울린다(멈춘 사이 놓친 분은 sweep의 15분 따라잡기가 보낸다). 같은 현지 날짜에는 한 번이다. 봄 DST로 없는 시각(뉴욕 3월 02:30)은 틈 바로 뒤 첫 분(03:00)에, 가을에 두 번 오는 시각(뉴욕 11월 01:30)은 앞의 것에만 보낸다(`reminderTimesDueAt`).
 - 온보딩 Day·윈백 비활성 일수·찔러보기 친구 쉰 날은 시간대 묶음의 현지 달력 날짜로 센다(`localDaysSince`). UTC 자정 기준 24시간 단위로 세지 않는다(가입 시각에 따라 안내가 하루씩 밀린다).
@@ -197,4 +197,4 @@ push data의 `navigation`은 알림을 눌렀을 때 열 화면을 `kind`로 판
 
 새 알림 타입의 최소 앱 버전은 `shared/domain/notification-client-capability.domain-service.ts`의 `NOTIFICATION_MIN_APP_VERSION` 한 곳에서 정한다(`NUDGE_REPLIED`·`NUDGE_THANKED` 1.11.0, `INVITE_JOINED`·`INVITE_REWARDED`·`INVITE_PROGRESS`·`INVITE_QUALIFY_REMINDER`·`PREMIUM_GRANT_ENDING` 1.13.0). 알림함 조회·미읽음 수·전체 읽음과 푸시 토큰 필터가 같은 함수를 쓰므로 그보다 낮은 `X-App-Version`(또는 헤더 없음)에는 해당 알림이 보이지 않고 그 버전 미만 기기로 푸시하지 않는다. 미읽음 수 캐시는 지원 단계(`legacy`·`since-1.11.0`·`all`)마다 나눈다.
 
-소셜 다이제스트 지연 잡은 직전 저녁 리마인더의 알림 생성 대상 사용자 CUID 목록을 함께 저장한다. 배포 전에 생성되어 대상 목록이 없는 구형 지연 잡은 타임존 전체로 확대 발송하지 않고 안전하게 건너뛴다.
+소셜 다이제스트 지연 잡은 직전 저녁 리마인더의 알림 생성 대상 사용자 CUID 목록을 함께 저장한다. 대상 목록이 없는 지연 잡은 타임존 전체로 넓혀 보내지 않고 건너뛴다(`SendSocialDigestUseCase`).

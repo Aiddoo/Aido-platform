@@ -19,8 +19,8 @@ export interface TextAreaProps extends Omit<
   errorMessage?: string;
   /** 오류 문구 줄 오른쪽(글자 수 등). 칸에 함께 넣어야 키보드가 올라올 때 칸과 같이 보인다 */
   counter?: ReactNode;
-  preserveErrorSpace?: boolean;
+  shouldPreserveErrorSpace?: boolean;
   textSize?: TextSize;
-  growsWithContent?: boolean;
+  shouldGrowWithContent?: boolean;
   className?: string;
 }

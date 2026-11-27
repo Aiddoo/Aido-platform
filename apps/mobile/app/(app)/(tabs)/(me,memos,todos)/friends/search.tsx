@@ -1,46 +1,39 @@
 import { FriendSearchList } from '@src/features/social/friend/components/friend-search-list';
 import { useFriendLimitInvite } from '@src/features/social/invite/hooks/use-friend-limit-invite';
+import { useOnOpenTransitionEnd } from '@src/shared/hooks/use-on-open-transition-end';
 import { useTranslation } from '@src/shared/i18n';
 import { IS_IOS_APP_ON_MAC, IS_IPAD } from '@src/shared/infra/device/device-info';
 import { Box, Input, QueryErrorBoundary, Spacing } from '@src/shared/ui';
 import { debounce } from 'es-toolkit';
-import { Stack, useNavigation } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Stack } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
 import type { SearchBarCommands } from 'react-native-screens';
 import { match } from 'ts-pattern';
 
 const SEARCH_DEBOUNCE_MS = 300;
 
 // iPad(iPadOS 26.6에서 확인)·Mac은 UISearchController가 뜰 때 UIKit이 막힌 화면 단위 포커스 API를 불러 앱이 죽는다(Apple 포럼 841090). 네이티브 빌드 없이 피하려 JS 입력칸을 쓴다
-const SEARCH_INPUT = IS_IPAD || IS_IOS_APP_ON_MAC ? 'field' : 'header-bar';
-
-/** 내비게이션 타입이 네이티브 스택의 transitionEnd를 드러내지 않아 쓰는 이벤트만 적는다 */
-interface TransitionNavigation {
-  addListener(
-    event: 'transitionEnd',
-    callback: (event: { data: { closing: boolean } }) => void,
-  ): () => void;
-}
+const SEARCH_INPUT_KIND = IS_IPAD || IS_IOS_APP_ON_MAC ? 'field' : 'header-bar';
 
 export default function SearchFriendScreen() {
   const { t } = useTranslation('friend');
   const [query, setQuery] = useState('');
   const [settledQuery, setSettledQuery] = useState('');
-  const settle = useMemo(() => debounce(setSettledQuery, SEARCH_DEBOUNCE_MS), []);
-  const onFriendLimitInvite = useFriendLimitInvite();
+  const [setSettledQueryDebounced] = useState(() => debounce(setSettledQuery, SEARCH_DEBOUNCE_MS));
+  const openFriendLimitInvite = useFriendLimitInvite();
 
-  useEffect(() => () => settle.cancel(), [settle]);
+  useEffect(() => () => setSettledQueryDebounced.cancel(), [setSettledQueryDebounced]);
 
   const changeQuery = (text: string) => {
     setQuery(text);
-    settle(text);
+    setSettledQueryDebounced(text);
   };
 
   return (
     <>
       <Stack.Screen options={{ title: t('search.title') }} />
 
-      {match(SEARCH_INPUT)
+      {match(SEARCH_INPUT_KIND)
         .with('header-bar', () => <FriendSearchBar onChangeText={changeQuery} />)
         .with('field', () => (
           <>
@@ -60,7 +53,9 @@ export default function SearchFriendScreen() {
         <FriendSearchList
           query={query}
           settledQuery={settledQuery}
-          onFriendLimitInvite={onFriendLimitInvite}
+          renderAction={(user) => (
+            <FriendSearchList.Action user={user} onFriendLimitInvite={openFriendLimitInvite} />
+          )}
         />
       </QueryErrorBoundary>
     </>
@@ -69,17 +64,10 @@ export default function SearchFriendScreen() {
 
 function FriendSearchBar({ onChangeText }: { onChangeText: (text: string) => void }) {
   const { t } = useTranslation('friend');
-  const navigation = useNavigation<TransitionNavigation>();
   const searchBarRef = useRef<SearchBarCommands>(null);
 
-  useEffect(() => {
-    // 네이티브 검색창은 화면 전환이 끝나야 붙어 마운트 직후 ref는 비어 있다. autoFocus는 Android만 받는다
-    return navigation.addListener('transitionEnd', (event) => {
-      if (!event.data.closing) {
-        searchBarRef.current?.focus();
-      }
-    });
-  }, [navigation]);
+  // 네이티브 검색창은 화면 전환이 끝나야 붙어 마운트 직후 ref는 비어 있다. autoFocus는 Android만 받는다
+  useOnOpenTransitionEnd(() => searchBarRef.current?.focus());
 
   return (
     <Stack.SearchBar

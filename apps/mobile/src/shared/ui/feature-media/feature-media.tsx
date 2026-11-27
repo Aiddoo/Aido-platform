@@ -22,10 +22,7 @@ export interface FeatureMediaProps extends Omit<AspectRatioProps, 'children'> {
   fallback?: ReactNode;
 }
 
-/**
- * 비율이 고정된 이미지 자리. 받기 전에 같은 자리에 스켈레톤을 두어 화면이 밀리지 않는다.
- * 디스크·메모리 캐시를 함께 쓰고, 화면 크기에 맞춰 줄여 디코딩한다.
- */
+/** 받기 전에 같은 자리에 스켈레톤을 두어 화면이 밀리지 않는다 */
 export function FeatureMedia({
   source,
   alt,

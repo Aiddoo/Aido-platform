@@ -20,17 +20,14 @@ export const preferenceSchema = z.object({
 });
 export type Preference = z.infer<typeof preferenceSchema>;
 
-/** 오전이나 저녁 중 하나라도 켜져 있으면 날씨 알림을 쓰는 것으로 본다 */
-function isWeatherEnabled(preference: Preference) {
-  return preference.weatherMorningEnabled || preference.weatherEveningEnabled;
-}
-
-/** 푸시가 꺼져 있으면 날씨 알림도 나가지 않는다 */
-function canDeliverWeather(preference: Preference) {
-  return preference.pushEnabled && isWeatherEnabled(preference);
-}
-
 export const PreferencePolicy = {
-  isWeatherEnabled,
-  canDeliverWeather,
-} as const;
+  /** 오전이나 저녁 중 하나라도 켜져 있으면 날씨 알림을 쓰는 것으로 본다 */
+  isWeatherEnabled(preference: Preference): boolean {
+    return preference.weatherMorningEnabled || preference.weatherEveningEnabled;
+  },
+
+  /** 푸시가 꺼져 있으면 날씨 알림도 나가지 않는다 */
+  canDeliverWeather(preference: Preference): boolean {
+    return preference.pushEnabled && this.isWeatherEnabled(preference);
+  },
+};

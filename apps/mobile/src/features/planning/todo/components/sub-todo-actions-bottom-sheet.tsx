@@ -6,8 +6,8 @@ import { range } from 'es-toolkit';
 import { Skeleton } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
-import { useSheetSubTodo } from '../hooks/use-sheet-todo';
-import { useTodoSheetDateKey } from '../hooks/use-todo-sheet-date-key';
+import { useSuspenseSheetSubTodo } from '../hooks/use-suspense-sheet-todo';
+import { useTodoSheetDateKey } from '../hooks/use-todo-params';
 import { useDeleteSubTodoMutationOptions } from '../queries/sub-todo.mutations';
 import { TodoActionRow } from './todo-action-row';
 
@@ -36,7 +36,7 @@ SubTodoActionsBottomSheet.ActionList = function ActionList({ onClose }: SubTodoA
   const { t } = useTranslation('todo');
   const fontScaledSize = useFontScaledSize();
   const [date] = useTodoSheetDateKey();
-  const target = useSheetSubTodo({ onMissing: onClose });
+  const target = useSuspenseSheetSubTodo({ onMissing: onClose });
   const deleteSubTodo = useMutation(useDeleteSubTodoMutationOptions());
   const isDeleting = deleteSubTodo.isPending;
 

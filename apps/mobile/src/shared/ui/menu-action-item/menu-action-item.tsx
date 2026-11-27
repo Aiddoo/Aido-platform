@@ -9,11 +9,11 @@ import { VStack } from '../v-stack/v-stack';
 
 const MENU_ICON_SIZE = 18;
 
-type MenuActionItemProps = Omit<ComponentProps<typeof Menu.Item>, 'children'> & {
+interface MenuActionItemProps extends Omit<ComponentProps<typeof Menu.Item>, 'children'> {
   Icon: StyledIcon;
   title: string;
   description?: string | null;
-};
+}
 
 export function MenuActionItem({
   Icon,

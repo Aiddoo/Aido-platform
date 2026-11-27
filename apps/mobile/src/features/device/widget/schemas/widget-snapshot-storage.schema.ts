@@ -4,14 +4,10 @@ import { completionRateSchema } from '@src/shared/domains/completion-rate.model'
 import { z } from 'zod';
 
 import { WIDGET_TOP_TODOS_LIMIT } from '../constants/widget.constants';
-import { widgetRenderStateSchema } from '../domains/widget-snapshot.model';
+import { widgetSnapshotDaySchema, widgetSnapshotSchema } from '../domains/widget-snapshot.model';
 
-// Persist only display data; isolated widget runtimes cannot access auth or i18n.
-export const widgetDaySnapshotSchema = z.object({
-  /** data: 그날 할 일 있음 · empty: 로그인했으나 그날 할 일 없음 · loggedOut: 비로그인 */
-  state: widgetRenderStateSchema.exclude(['stale']),
-  /** 이 day가 설명하는 로컬 날짜 (YYYY-MM-DD) — 렌더 시점 오늘 key와 비교한다 */
-  date: dateKeySchema,
+// 출시한 위젯이 읽는 저장 모양이다. 칸을 지우거나 이름을 바꾸지 않고, optional은 옛 앱이 쓴 값을 읽으려고 둔다
+export const widgetDayStorageSchema = widgetSnapshotDaySchema.extend({
   totalTodos: z.int().min(0),
   completedTodos: z.int().min(0),
   completionRate: completionRateSchema,
@@ -64,16 +60,16 @@ export const widgetDaySnapshotSchema = z.object({
   }),
 });
 
-/** 내일 day를 함께 저장해 자정이 지나면 앱을 열기 전에도 새 날짜를 보인다. 저장소에서 읽을 때도 쓴다 */
-export const widgetSnapshotSchema = z.object({
+/** 키 `aido_widget_snapshot_v1`에 쓰는 v2 JSON. iOS timeline도 같은 모양을 받는다 */
+export const widgetSnapshotStorageSchema = widgetSnapshotSchema.extend({
   version: z.literal(2),
   updatedAtIso: z.string(),
   days: z.union([
-    z.tuple([widgetDaySnapshotSchema]),
-    z.tuple([widgetDaySnapshotSchema, widgetDaySnapshotSchema]),
+    z.tuple([widgetDayStorageSchema]),
+    z.tuple([widgetDayStorageSchema, widgetDayStorageSchema]),
   ]),
 });
 
-export type WidgetSnapshot = z.infer<typeof widgetSnapshotSchema>;
-export type WidgetDaySnapshot = z.infer<typeof widgetDaySnapshotSchema>;
-export type WidgetSnapshotStrings = WidgetDaySnapshot['strings'];
+export type StoredWidgetSnapshot = z.infer<typeof widgetSnapshotStorageSchema>;
+export type StoredWidgetDay = z.infer<typeof widgetDayStorageSchema>;
+export type StoredWidgetStrings = StoredWidgetDay['strings'];

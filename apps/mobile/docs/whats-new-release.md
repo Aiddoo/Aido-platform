@@ -17,7 +17,7 @@
 
 줄을 지워도 그 id로 남은 `/whats-new?releaseId=…` 링크는 최신 소개를 연다. 지운 출시 id·캠페인 id는 지표(`release_id`·`campaign_id`)와 기기 본 기록 키에 남으므로 다시 쓰지 않고, 이벤트 이름은 바꾸지 않는다.
 
-캠페인 id는 `feature-discovery-<출시 id>`(예 `feature-discovery-1.16.0`)다. 날짜로 짓지 않는다(같은 달의 두 출시가 겹친다). 자동으로 열지 않을 출시 줄에는 `campaignId`를 두지 않아 목록에서만 연다.
+캠페인 id는 `feature-discovery-<출시 id>`(예 `feature-discovery-1.16.0`)다. 날짜로 짓지 않는다(같은 달의 두 출시가 겹친다). 자동으로 열지 않을 출시 줄은 `campaignId: null`이라 목록에서만 연다.
 
 ## 운영이 띄울 소개를 고르는 법
 
@@ -43,11 +43,11 @@
 2. `constants/releases.constants.ts`에 `RELEASE_x_y_z`를 더하고 `RELEASES` 맨 앞에 넣는다. `version`과 `releasedOn`은 [패치 노트](https://aido.kr/ko/patch-notes)에서 그 기능이 나온 버전·날짜를 그대로 쓴다. `id`는 route·지표·stepper 키라 한 번 정하면 바꾸지 않고 버전을 읽어 내지도 않는다(지운 친구 초대 줄은 id `1.14.0`, 버전 `1.13.0`이었다). `cta`는 그 기능을 바로 쓸 화면이다. 자동으로 열 출시에만 `campaignId`(운영 `FEATURE_DISCOVERY_CAMPAIGN_ID` 값)를 둔다. 캠페인 id는 이 한 곳에만 있다. `releases.constants.test.ts`가 버전 순서, 최근 두 출시의 소개, 캠페인 출시의 소개를 확인한다.
 3. `components/release-x-y-z-steps.tsx`를 만들고 `app/(app)/whats-new/index.tsx`의 `match`에 잇는다. `TOUR_RELEASE_IDS`를 바꾸면 `exhaustive()`가 컴파일 에러로 알려 준다.
 4. `app/(app)/(tabs)/(me,memos,todos)/whats-new/releases.tsx`의 맨 위에 `<ReleaseRow />` 한 줄을 더한다.
-5. 장면은 화면 캡처 대신 실제 기능 부품으로 그린 예시다. `WhatsNewStep.Stage`에 기능 컴포넌트를 예시 값으로 올리고, 예시 글은 `whatsNew` 카탈로그(`v{x_y_z}.demo`)에 둔다. 마이크·네트워크·저장은 쓰지 않는다. 스스로 조회하거나 지표를 남기는 컴포넌트는 그대로 올리지 않고 값을 받는 표시 부품을 올린다(1.16.0: `SuggestionsList.Item`, `SuggestionStatus.Message`, 리포트 차트·머리말·코치 카드. 1.17.0: `CalendarSourceList.Item`, `CategoryMappingList.Item`, `TodoImportProgress.Stage`·`Meter`). 대본은 `useDemoScript`로 장면마다 한 번 돌고, 움직임 줄이기면 마지막 장면부터 보인다. 예시 장면은 읽기 도구에서 숨기고 제목·설명이 읽힌다. 계속 도는 움직임은 지금 보이는 단계에만 두고 한 장면에 눈에 띄는 움직임은 하나다.
+5. 장면은 화면 캡처 대신 실제 기능 부품으로 그린 예시다. `WhatsNewStep.Stage`에 기능 컴포넌트를 예시 값으로 올리고, 예시 글은 `whatsNew` 카탈로그(`v{x_y_z}.demo`)에 둔다. 마이크·네트워크·저장은 쓰지 않는다. 스스로 조회하거나 지표를 남기는 컴포넌트는 그대로 올리지 않고 값을 받는 표시 부품을 올린다(1.16.0: `SuggestionsList.Item`, `SuggestionStatus.Message`, 리포트 차트·머리말·코치 카드. 1.17.0: `CalendarSourceList.Item`, `CategoryMappingList.Item`, `TodoImportProgress.Stage`·`Meter`). 대본은 `useDemoScript`로 장면마다 한 번 돌고, 움직임 줄이기면 마지막 장면부터 보인다. 예시 장면은 읽기 도구에서 숨기고 제목·설명이 읽힌다. 계속 도는 움직임은 지금 보이는 단계에만 두고 한 장면에 눈에 띄는 움직임은 하나다. 다른 기능의 `utils/`(표시 함수)는 가져오지 않는다. 장면에 필요한 그림이 조회와 붙어 있으면 그 기능이 값을 받는 공개 부품을 내놓고 진짜 화면과 장면이 함께 쓴다(1.16.0: `ThisWeekRecordChart`, `SuggestionStatus.NextAnalysis`, 요금제 값은 `EntitlementPolicy.getPlanFeatureComparison`). 장면 파일(`components/{기능}-demo.tsx`)은 그 소개만 써서 `scripts/feature-graph.cjs`의 `ALLOWED_LOCAL_ONLY_FILES`에 이름을 더하고, 소개를 지울 때 함께 지운다.
 6. `locales/{ko,en}/whats-new.json`에 문구를 넣는다. 제목 1줄(약 14자), 설명 1~2줄(약 40자)이다.
 7. `constants/whats-new.events.ts`와 측정 문서를 확인한다. CTA 뒤 실제 사용은 `trackAttributedFeatureSuccess`로 잇는다.
-8. 운영 설정 `FEATURE_DISCOVERY_CAMPAIGN_ID`, `MIN_APP_VERSION`, `LAUNCHED_AT`, `AUTO_OPEN`을 바꾼다. 서버를 먼저 배포한다. `LAUNCHED_AT`은 켜면 필수라 계속 채우지만 1.15.0 이하 앱만 읽는다. 1.15.1부터 앱 모델(`WhatsNewCampaignConfig`)에 옮기지 않는다. 시작 체크리스트는 캠페인과 상관없이 가입 7일 동안 보인다.
-9. 지난 캠페인 출시의 `campaignId`를 지워 목록에서만 열리게 한다. 그 캠페인의 본 기록·재진입 키는 다음 시작 때 지워진다.
+8. 운영 설정 `FEATURE_DISCOVERY_CAMPAIGN_ID`, `MIN_APP_VERSION`, `LAUNCHED_AT`, `AUTO_OPEN`을 바꾼다. 서버를 먼저 배포한다. `LAUNCHED_AT`은 켜면 필수라 계속 채우지만 1.15.0 이하 앱만 읽는다. 이 앱은 읽지 않아 앱 모델(`WhatsNewCampaignConfig`)에 두지 않는다. 시작 체크리스트는 캠페인과 상관없이 가입 7일 동안 보인다.
+9. 지난 캠페인 출시의 `campaignId`를 `null`로 바꿔 목록에서만 열리게 한다. 그 캠페인의 본 기록·재진입 키는 다음 시작 때 지워진다.
 
 ## 동작 규칙
 
@@ -69,7 +69,7 @@
 
 피드가 앞에 자리 잡은 뒤(`isStable`) 자동 화면은 한 번에 하나만 연다. 다른 route·시트·overlay가 위에 있으면 피드가 앞에 있지 않아 기다린다.
 
-1. **알림 화면** `/onboarding/notifications`: `(app)/_layout`의 `usePushOnboardingGuard`가 내 정보와 OS 권한을 읽고 정한다. 읽기 전에는 guard 값이 `null`이라 어느 자동 화면도 열지 않는다. 권한을 읽지 못하면 알림 화면을 띄울 수 없으므로 열 차례가 아닌 것(`false`)으로 정한다.
+1. **알림 화면** `/onboarding/notifications`: `(app)/_layout`의 `useMarkPushOnboardingGuardRendered`가 내 정보와 OS 권한을 읽고 정한다. 읽기 전에는 guard 값이 `null`이라 어느 자동 화면도 열지 않는다. 권한을 읽지 못하면 알림 화면을 띄울 수 없으므로 열 차례가 아닌 것(`false`)으로 정한다.
 2. **새로운 기능** `/whats-new`: guard가 `false`로 그려진 뒤에만 연다. 알림 화면에 답하면 guard가 닫혀 화면이 빠지고, 피드가 다시 앞에 자리 잡을 때 연다. 열기 직전에 본 기록을 claim하므로 닫은 뒤 다시 자동으로 열리지 않는다.
 3. **말풍선**: 알림 화면을 열 차례가 아니라고 정해지고, 캠페인 설정을 다 받았고(실패·오프라인이면 열지 않는 것으로 본다), 새로운 기능을 자동으로 열 차례가 아닐 때만 띄운다(`shouldShowCoachmarks`). 450ms 기다림만으로는 설정이 늦게 오면 말풍선이 먼저 뜨고 새로운 기능이 그 위에 열린다. 열 차례가 되면 자리를 처음부터 다시 재므로(`CoachmarkPopover`의 `shouldAutoOpen`), 새로운 기능이 바로 덮으면 열리지 않고 닫고 피드로 돌아온 뒤 열린다. 이미 본 계정은 설정을 받자마자 기다리지 않는다.
 

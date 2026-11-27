@@ -121,7 +121,6 @@ export function useFocusedFieldKeyboardScroll() {
     [caret, footerHeight, input, windowHeight],
   );
 
-  /** fromScroll에서 키보드가 keyboard 높이일 때 칸 전체가 보이는 스크롤 위치 */
   const getTargetScroll = useCallback(
     (fromScroll: number, keyboard: number) => {
       'worklet';

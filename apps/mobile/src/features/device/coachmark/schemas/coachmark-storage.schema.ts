@@ -7,7 +7,7 @@ import type { CoachmarkInput } from '../domains/coachmark.model';
 export const COACHMARK_KEY_PREFIX = 'aido_coachmark_v1';
 
 /** 출시된 키처럼 계정 id를 인코딩하지 않는다 */
-export function toCoachmarkKey({ accountId, kind }: CoachmarkInput): string {
+function toCoachmarkKey({ accountId, kind }: CoachmarkInput): string {
   return `${COACHMARK_KEY_PREFIX}:${accountId}:${kind}`;
 }
 

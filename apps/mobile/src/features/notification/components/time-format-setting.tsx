@@ -11,7 +11,7 @@ type SettingsSectionProps = Omit<ComponentProps<typeof SettingsListGroup>, 'chil
 export function TimeFormatSetting(props: SettingsSectionProps) {
   const { t } = useTranslation('notification');
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
-  const updateMutation = useMutation(useUpdatePreferenceMutationOptions());
+  const updatePreference = useMutation(useUpdatePreferenceMutationOptions());
 
   return (
     <SettingsListGroup {...props}>
@@ -19,11 +19,11 @@ export function TimeFormatSetting(props: SettingsSectionProps) {
         label={t('settings.timeFormat24')}
         isSelected={preference.timeFormat === 'TWENTY_FOUR_HOUR'}
         onSelectedChange={(isEnabled) =>
-          updateMutation.mutate({
+          updatePreference.mutate({
             timeFormat: isEnabled ? 'TWENTY_FOUR_HOUR' : 'TWELVE_HOUR',
           })
         }
-        isDisabled={updateMutation.isPending}
+        isDisabled={updatePreference.isPending}
       />
     </SettingsListGroup>
   );

@@ -33,10 +33,7 @@ function findNextReadDelayMs({
   return remainderMs > 0 ? remainderMs : tickMs;
 }
 
-/**
- * 지금 시각. 백그라운드에서 타이머가 멈췄을 수 있어 앱으로 돌아오면 다시 읽는다.
- * 분 단위로 여러 곳이 함께 쓰는 시각은 `useMinuteNow`다
- */
+/** 백그라운드에서 타이머가 멈췄을 수 있어 앱으로 돌아오면 다시 읽는다. 분 단위로 함께 쓰는 시각은 `useMinuteNow`다 */
 export function useNow({ tickMs, until = null, isEnabled = true }: UseNowOptions = {}): Instant {
   const [now, setNow] = useState(getNowInstant);
   const isPastUntil = until != null && hasInstantPassed(until, now);

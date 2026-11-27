@@ -1,5 +1,5 @@
 import defaultProfileIconImage from '@assets/images/profile-icons/default.webp';
-import { APP_ICONS } from '@src/features/device/app-icon/constants/app-icon.constants';
+import { APP_ICONS } from '@src/shared/constants/app-icons';
 import { keyBy } from 'es-toolkit';
 import type { ImageSourcePropType } from 'react-native';
 

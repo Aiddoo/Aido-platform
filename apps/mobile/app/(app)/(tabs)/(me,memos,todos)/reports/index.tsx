@@ -1,9 +1,13 @@
 import { useFeatureAccess } from '@src/features/billing/subscription/hooks/use-feature-access';
 import { AiConsentNotice } from '@src/features/identity/consent/components/ai-consent-notice';
 import { refreshWeeklyAchievements } from '@src/features/insights/achievement/queries/achievement-cache';
-import { ReportList } from '@src/features/insights/report/components/report-list';
+import {
+  RecentCompletionTrend,
+  ReportList,
+  ThisWeekRecord,
+} from '@src/features/insights/report/components/report-list';
 import { ReportStatusBanner } from '@src/features/insights/report/components/report-status-banner';
-import { useReportType } from '@src/features/insights/report/hooks/use-report-type';
+import { useReportType } from '@src/features/insights/report/hooks/use-report-params';
 import { refreshReports } from '@src/features/insights/report/queries/report-cache';
 import { reportListTypeSchema } from '@src/features/insights/report/schemas/report-params.schema';
 import { getReportTypeLabelKey } from '@src/features/insights/report/utils/report-label.view-model';
@@ -31,7 +35,7 @@ import { Tabs } from 'heroui-native';
 import { Suspense } from 'react';
 import { match } from 'ts-pattern';
 
-const INTRO_MASCOT_SIZE = 64;
+const INTRO_MASCOT_SIZE_PT = 64;
 
 export default function ReportsScreen() {
   const { t } = useTranslation('ai');
@@ -85,7 +89,22 @@ export default function ReportsScreen() {
                   <Box className="px-4">
                     <QueryErrorBoundary fallback={ReportList.Error} resetKeys={[reportType]}>
                       <Suspense fallback={<ReportList.Loading />}>
-                        <ReportList />
+                        <ReportList
+                          trend={
+                            <QueryErrorBoundary fallback={RecentCompletionTrend.Error}>
+                              <Suspense fallback={<RecentCompletionTrend.Loading />}>
+                                <RecentCompletionTrend />
+                              </Suspense>
+                            </QueryErrorBoundary>
+                          }
+                          thisWeekRecord={
+                            <QueryErrorBoundary fallback={ThisWeekRecord.Error}>
+                              <Suspense fallback={<ThisWeekRecord.Loading />}>
+                                <ThisWeekRecord access="premium" />
+                              </Suspense>
+                            </QueryErrorBoundary>
+                          }
+                        />
                       </Suspense>
                     </QueryErrorBoundary>
                   </Box>
@@ -108,7 +127,15 @@ export default function ReportsScreen() {
                 <Spacing size={8} />
 
                 <Box className="px-4">
-                  <ReportList.Free />
+                  <ReportList.Free
+                    thisWeekRecord={
+                      <QueryErrorBoundary fallback={ThisWeekRecord.Error}>
+                        <Suspense fallback={<ThisWeekRecord.Loading />}>
+                          <ThisWeekRecord access="free" />
+                        </Suspense>
+                      </QueryErrorBoundary>
+                    }
+                  />
                 </Box>
 
                 <Spacing size={16} />
@@ -193,7 +220,7 @@ function Intro({ title, description }: IntroProps) {
 Intro.CatTile = function CatTile() {
   return (
     <Box className="h-18 w-24 items-center justify-end overflow-hidden rounded-2xl bg-highlight">
-      <Mascot name="catSuggestion" size={INTRO_MASCOT_SIZE} />
+      <Mascot name="catSuggestion" size={INTRO_MASCOT_SIZE_PT} />
     </Box>
   );
 };

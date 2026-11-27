@@ -2,7 +2,7 @@
   "codeEntry": {
     "title": "초대 코드 입력",
     "headline": "친구에게 받은\n초대 코드를 입력해주세요",
-    "description": "영문과 숫자 6자리예요. 헷갈리는 0·O·1·I·L은 없어요",
+    "description": "영문과 숫자 {{count}}자리예요. 헷갈리는 0·O·1·I·L은 없어요",
     "inputLabel": "초대 코드",
     "submit": "확인",
     "retry": "다시 확인",
@@ -44,7 +44,7 @@
     },
     "disabled": {
       "title": "지금은 초대를 받을 수 없어요",
-      "description": "잠시 후 다시 열어주세요.\n링크는 그대로 쓸 수 있어요"
+      "description": "잠시 뒤 다시 열어주세요.\n링크는 그대로 쓸 수 있어요"
     },
     "loadFailed": {
       "title": "초대 정보를 불러오지 못했어요",
@@ -53,7 +53,7 @@
     "enterCode": "코드 직접 입력하기"
   },
   "errors": {
-    "invalidCode": "초대 코드는 영문과 숫자 6자리예요",
+    "invalidCode": "초대 코드는 영문과 숫자 {{count}}자리예요",
     "offline": "인터넷에 연결되면 초대 코드를 확인할 수 있어요"
   },
   "myInvite": {
@@ -70,7 +70,7 @@
     "rotate": {
       "button": "새 링크 만들기",
       "title": "새 링크를 만들까요?",
-      "description": "새 링크를 만들면 이전 링크는 쓸 수 없어요",
+      "description": "새 링크를 만들면 이전 링크는 쓸 수 없어요.",
       "confirm": "새로 만들기"
     },
     "notice": {
@@ -81,7 +81,7 @@
     },
     "unavailable": {
       "title": "지금은 친구 초대를 쓸 수 없어요",
-      "description": "잠시 후 다시 열어주세요.\n이미 받은 보상은 그대로 남아 있어요"
+      "description": "잠시 뒤 다시 열어주세요.\n이미 받은 보상은 그대로 남아 있어요"
     }
   },
   "pawPrintBoard": {
@@ -112,7 +112,7 @@
   "friendList": {
     "title": "초대한 친구",
     "stamped": "{{date}}에 발자국을 남겼어요",
-    "waiting": "할 일을 시작했어요! {{count}}일만 더 끝내면 발자국이 찍혀요",
+    "waiting": "할 일을 시작했어요. {{count}}일만 더 끝내면 발자국이 찍혀요",
     "excluded": "이번에는 발자국이 찍히지 않았어요",
     "excludedExpired": "가입하고 {{days}}일이 지나서 이번에는 발자국이 찍히지 않았어요",
     "excludedMonthlyCap": "보상 한도를 다 채워서 이번에는 발자국이 찍히지 않았어요",
@@ -151,13 +151,13 @@
   "toast": {
     "linkCopied": "링크를 복사했어요",
     "rotated": "새 초대 링크를 만들었어요",
-    "shareFailed": "공유하지 못했어요. 잠시 후 다시 시도해주세요"
+    "shareFailed": "공유하지 못했어요. 잠시 뒤 다시 시도해주세요"
   },
   "entry": {
     "haveInviteCode": "초대 코드가 있나요?",
     "inviteCodeShort": "초대 코드",
     "inviteFriends": "친구 초대하기",
-    "findByTag": "태그로 찾기",
+    "findByTag": "해시태그로 찾기",
     "friendsEmptyDescription": "링크 하나로 친구를 초대해보세요.\n친구는 가입하면 바로 프리미엄 {{days}}일을 받아요",
     "friendLimitDescription": "지금은 친구를 {{limit}}명까지 추가할 수 있어요.\n초대한 친구가 {{activeDays}}일 동안 할 일을 끝낼 때마다 친구를 1명 더 추가할 수 있어요",
     "growFriendLimit": "친구 초대하고 1명 더 추가하기",
@@ -175,12 +175,12 @@
   "welcome": {
     "friendsTitle": "{{name}}님과 친구가 됐어요",
     "requestedTitle": "{{name}}님에게 친구 요청을 보냈어요",
-    "friendsDescription": "이제 서로의 할 일을 보고 응원할 수 있어요",
-    "requestedDescription": "{{name}}님은 지금 친구를 더 추가할 수 없어요.\n{{name}}님이 수락하면 바로 친구가 돼요",
-    "alreadyClaimedDescription": "이 기기에서는 이미 초대 보상을 받아서 이번에는 친구만 맺었어요",
-    "existingAccountDescription": "이미 아이두를 쓰고 있어서 이번에는 친구만 맺었어요",
-    "requestedAlreadyClaimedDescription": "{{name}}님은 지금 친구를 더 추가할 수 없어요. {{name}}님이 수락하면 친구가 돼요.\n이 기기에서는 이미 초대 보상을 받아서 이번에는 보상이 없어요",
-    "requestedExistingAccountDescription": "{{name}}님은 지금 친구를 더 추가할 수 없어요. {{name}}님이 수락하면 친구가 돼요.\n이미 아이두를 쓰고 있어서 이번에는 보상이 없어요",
+    "friendsDescription": "이제 서로의 할 일을 보고 응원할 수 있어요.",
+    "requestedDescription": "{{name}}님은 지금 친구를 더 추가할 수 없어요.\n{{name}}님이 수락하면 바로 친구가 돼요.",
+    "alreadyClaimedDescription": "이 기기에서는 이미 초대 보상을 받아서 이번에는 친구만 맺었어요.",
+    "existingAccountDescription": "이미 아이두를 쓰고 있어서 이번에는 친구만 맺었어요.",
+    "requestedAlreadyClaimedDescription": "{{name}}님은 지금 친구를 더 추가할 수 없어요. {{name}}님이 수락하면 친구가 돼요.\n이 기기에서는 이미 초대 보상을 받아서 이번에는 보상이 없어요.",
+    "requestedExistingAccountDescription": "{{name}}님은 지금 친구를 더 추가할 수 없어요. {{name}}님이 수락하면 친구가 돼요.\n이미 아이두를 쓰고 있어서 이번에는 보상이 없어요.",
     "rewardTitle": "프리미엄 {{count}}일을 받았어요",
     "rewardDescription": "{{count}}일 동안 모든 기능을 쓸 수 있어요",
     "rewardAfterSubscription": "구독이 끝나면 보상 프리미엄 {{count}}일이 이어서 시작돼요",
@@ -190,6 +190,6 @@
     "notificationOn": "친구 소식 알림을 켰어요",
     "createFirstTodo": "첫 할 일 만들기",
     "openFriendFeed": "{{name}}님 할 일 먼저 보기",
-    "later": "나중에 할게요"
+    "later": "나중에"
   }
 }

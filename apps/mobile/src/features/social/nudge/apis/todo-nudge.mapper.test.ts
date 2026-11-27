@@ -1,12 +1,12 @@
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 
 import { createNudgeCooldownInfoDto } from '../__tests__/todo-nudge.fixtures';
-import { nudgeCooldownInfoSchema } from '../domains/todo-nudge.model';
-import { toNudgeCooldownInfo } from './todo-nudge.mapper';
+import { nudgeCooldownSchema } from '../domains/nudge-cooldown.model';
+import { toNudgeCooldown } from './todo-nudge.mapper';
 
 setupFakeTimersPerTest({ now: new Date('2026-03-08T00:00:00.000Z') });
 
-describe('toNudgeCooldownInfo', () => {
+describe('toNudgeCooldown', () => {
   it('cooldownEndsAt ISO 문자열을 Instant로 바꾼다', () => {
     // Given
     const dto = createNudgeCooldownInfoDto({
@@ -16,7 +16,7 @@ describe('toNudgeCooldownInfo', () => {
     });
 
     // When
-    const result = toNudgeCooldownInfo(dto);
+    const result = toNudgeCooldown(dto);
 
     // Then
     expect(result.canNudge).toBe(false);
@@ -29,7 +29,7 @@ describe('toNudgeCooldownInfo', () => {
     const dto = createNudgeCooldownInfoDto();
 
     // When
-    const result = toNudgeCooldownInfo(dto);
+    const result = toNudgeCooldown(dto);
 
     // Then
     expect(result.cooldownEndsAt).toBeNull();
@@ -47,9 +47,9 @@ describe('계약과 앱 모델', () => {
     });
 
     // When
-    const cooldown = toNudgeCooldownInfo(cooldownDto);
+    const cooldown = toNudgeCooldown(cooldownDto);
 
     // Then
-    expect(nudgeCooldownInfoSchema.parse(cooldown)).toEqual(cooldown);
+    expect(nudgeCooldownSchema.parse(cooldown)).toEqual(cooldown);
   });
 });

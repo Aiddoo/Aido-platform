@@ -4,7 +4,7 @@ import { z } from 'zod';
 import {
   WEATHER_SCENE_MAX_PRECIPITATION_ANGLE,
   getMoonIllumination,
-  toWeatherScene,
+  getWeatherScene,
   type WeatherSceneInput,
 } from './weather-scene.view-model';
 
@@ -32,7 +32,7 @@ const createInput = (overrides: Partial<WeatherSceneInput> = {}): WeatherSceneIn
   ...overrides,
 });
 
-describe('toWeatherScene', () => {
+describe('getWeatherScene', () => {
   describe('날씨 장면 변환', () => {
     it.each(
       WEATHER_CONDITIONS.flatMap((condition) => [
@@ -44,7 +44,7 @@ describe('toWeatherScene', () => {
       const input = createInput({ condition, isDaylight, cloudCover: 50, windSpeed: 4 });
 
       // When
-      const scene = toWeatherScene(input);
+      const scene = getWeatherScene(input);
 
       // Then
       expect(weatherSceneRangeSchema.safeParse(scene).success).toBe(true);
@@ -64,7 +64,7 @@ describe('toWeatherScene', () => {
       const input = createInput({ condition });
 
       // When
-      const scene = toWeatherScene(input);
+      const scene = getWeatherScene(input);
 
       // Then
       expect(scene.precipitation.kind).toBe(kind);
@@ -76,7 +76,7 @@ describe('toWeatherScene', () => {
       const night = createInput({ isDaylight: false });
 
       // When
-      const [dayScene, nightScene] = [day, night].map(toWeatherScene);
+      const [dayScene, nightScene] = [day, night].map(getWeatherScene);
 
       // Then
       expect(dayScene).toMatchObject({
@@ -101,7 +101,7 @@ describe('toWeatherScene', () => {
       const input = createInput({ condition: 'CLOUDY', isDaylight: false, cloudCover: 90 });
 
       // When
-      const scene = toWeatherScene(input);
+      const scene = getWeatherScene(input);
 
       // Then
       expect(scene).toMatchObject({
@@ -120,7 +120,7 @@ describe('toWeatherScene', () => {
 
       // When
       const withLightning = conditions
-        .map(toWeatherScene)
+        .map(getWeatherScene)
         .flatMap((scene, index) => (scene.hasLightning ? [conditions[index]?.condition] : []));
 
       // Then
@@ -132,7 +132,7 @@ describe('toWeatherScene', () => {
       const input = createInput({ condition: 'FOGGY', isDaylight: false, cloudCover: 0 });
 
       // When
-      const scene = toWeatherScene(input);
+      const scene = getWeatherScene(input);
 
       // Then
       expect(scene).toMatchObject({ hasMoon: false, hasStars: false });
@@ -146,8 +146,8 @@ describe('toWeatherScene', () => {
       const firstQuarter = createInput({ isDaylight: false, moonPhase: 'FIRST_QUARTER' });
 
       // When
-      const fullScene = toWeatherScene(full);
-      const firstQuarterScene = toWeatherScene(firstQuarter);
+      const fullScene = getWeatherScene(full);
+      const firstQuarterScene = getWeatherScene(firstQuarter);
 
       // Then
       expect(fullScene.moonPhase).toBe(0.5);
@@ -159,7 +159,7 @@ describe('toWeatherScene', () => {
       const input = createInput({ isDaylight: false, moonPhase: null });
 
       // When
-      const scene = toWeatherScene(input);
+      const scene = getWeatherScene(input);
 
       // Then
       expect(scene.hasMoon).toBe(false);
@@ -179,7 +179,7 @@ describe('toWeatherScene', () => {
       const input = createInput({ isDaylight: false, latitude: -33.9 });
 
       // When
-      const scene = toWeatherScene(input);
+      const scene = getWeatherScene(input);
 
       // Then
       expect(scene.isSouthernHemisphere).toBe(true);

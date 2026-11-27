@@ -78,8 +78,8 @@ ReorderCoachmark.Alert = function Alert({
       accessibilityRole="alert"
       image={
         <InfoIcon
-          width={fontScaledSize(17)}
-          height={fontScaledSize(17)}
+          width={fontScaledSize(16)}
+          height={fontScaledSize(16)}
           colorClassName="text-main"
         />
       }

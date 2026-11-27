@@ -5,9 +5,8 @@ import { PLAN_CATALOG } from '@aido/api/vocabulary';
 import { ok } from '@src/core/errors/result';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { readStoredValue } from '@src/shared/storage/define-stored-value';
-import { Button, OverlayProvider } from '@src/shared/ui';
+import { Button } from '@src/shared/ui';
 import {
   createAnalyticsStub,
   createErrorReporterStub,
@@ -15,6 +14,7 @@ import {
   createMemoryObservableSyncStorage,
   createTestQueryClient,
   createTestDi,
+  getTrackedEvents,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { screen, userEvent, waitFor } from '@testing-library/react-native';
@@ -69,11 +69,7 @@ async function renderGate(snapshot: EntitlementSnapshot, { error }: { error?: un
   queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: ACCOUNT_ID }));
 
   const { unmount } = await renderScreen(
-    <LocalDateProvider>
-      <OverlayProvider>
-        <AiParseGate error={error} onAlternative={onAlternative} />
-      </OverlayProvider>
-    </LocalDateProvider>,
+    <AiParseGate error={error} onAlternative={onAlternative} />,
     {
       di: createTestDi({
         ports: {
@@ -84,6 +80,8 @@ async function renderGate(snapshot: EntitlementSnapshot, { error }: { error?: un
           queryClient,
         },
       }),
+      withLocalDate: true,
+      withOverlay: true,
     },
   );
 
@@ -93,8 +91,6 @@ async function renderGate(snapshot: EntitlementSnapshot, { error }: { error?: un
     onAlternative,
     unmount,
     readDismissals: () => readStoredValue(syncStorage, upsellDismissalStoredValue, ACCOUNT_ID),
-    countEvents: (eventName: string) =>
-      analytics.trackEvent.mock.calls.filter(([name]) => name === eventName).length,
   };
 }
 
@@ -124,7 +120,7 @@ describe('useEntitlementGate', () => {
   it('남은 횟수가 0이면 시작 전에 막힌 기능 시트를 띄우고 precheck로 한 번 기록한다', async () => {
     // Given
     const user = userEvent.setup();
-    const { analytics, countEvents } = await renderGate(createEntitlementSnapshot(USED_UP));
+    const { analytics } = await renderGate(createEntitlementSnapshot(USED_UP));
 
     // When
     await user.press(screen.getByRole('button', { name: '시작' }));
@@ -142,13 +138,13 @@ describe('useEntitlementGate', () => {
       surface: 'add_todo_sheet',
       presentation: 'sheet',
     });
-    expect(countEvents('premium_gate_shown')).toBe(1);
+    expect(getTrackedEvents(analytics, 'premium_gate_shown')).toHaveLength(1);
   });
 
   it('프리미엄 보기를 두 번 눌러도 막힌 기능을 실은 페이월로 한 번만 간다', async () => {
     // Given
     const user = userEvent.setup();
-    const { countEvents } = await renderGate(createEntitlementSnapshot(USED_UP));
+    const { analytics } = await renderGate(createEntitlementSnapshot(USED_UP));
     await user.press(screen.getByRole('button', { name: '시작' }));
     const cta = await screen.findByRole('button', { name: '프리미엄 보기' });
 
@@ -162,20 +158,20 @@ describe('useEntitlementGate', () => {
       pathname: '/paywall',
       params: { feature: 'AI_PARSE' },
     });
-    expect(countEvents('premium_gate_cta_tapped')).toBe(1);
-    expect(countEvents('limit_reached_cta_tapped')).toBe(1);
-    expect(countEvents('premium_upsell_dismissed')).toBe(0);
+    expect(getTrackedEvents(analytics, 'premium_gate_cta_tapped')).toHaveLength(1);
+    expect(getTrackedEvents(analytics, 'limit_reached_cta_tapped')).toHaveLength(1);
+    expect(getTrackedEvents(analytics, 'premium_upsell_dismissed')).toHaveLength(0);
   });
 
   it('나중에를 누르면 오늘 닫은 것으로 남기고 같은 날 다시 막히면 토스트로만 알린다', async () => {
     // Given
     const user = userEvent.setup();
-    const { analytics, countEvents, readDismissals } = await renderGate(
-      createEntitlementSnapshot(USED_UP),
-    );
+    const { analytics, readDismissals } = await renderGate(createEntitlementSnapshot(USED_UP));
     await user.press(screen.getByRole('button', { name: '시작' }));
     await user.press(await screen.findByRole('button', { name: '나중에' }));
-    await waitFor(() => expect(countEvents('premium_upsell_dismissed')).toBe(1));
+    await waitFor(() =>
+      expect(getTrackedEvents(analytics, 'premium_upsell_dismissed')).toHaveLength(1),
+    );
 
     // When
     await user.press(screen.getByRole('button', { name: '시작' }));
@@ -203,13 +199,13 @@ describe('useEntitlementGate', () => {
       surface: 'add_todo_sheet',
       presentation: 'toast',
     });
-    expect(countEvents('premium_upsell_dismissed')).toBe(1);
+    expect(getTrackedEvents(analytics, 'premium_upsell_dismissed')).toHaveLength(1);
   });
 
   it('시트를 띄운 화면이 답 없이 사라지면 닫은 것으로 남기지 않는다', async () => {
     // Given
     const user = userEvent.setup();
-    const { countEvents, readDismissals, unmount } = await renderGate(
+    const { analytics, readDismissals, unmount } = await renderGate(
       createEntitlementSnapshot(USED_UP),
     );
     await user.press(screen.getByRole('button', { name: '시작' }));
@@ -220,16 +216,18 @@ describe('useEntitlementGate', () => {
 
     // Then
     expect(readDismissals().AI_PARSE).toBeUndefined();
-    expect(countEvents('premium_upsell_dismissed')).toBe(0);
+    expect(getTrackedEvents(analytics, 'premium_upsell_dismissed')).toHaveLength(0);
   });
 
   it('무료 대안이 있으면 오늘 닫았어도 대안을 주 버튼으로 둔 시트를 띄운다', async () => {
     // Given
     const user = userEvent.setup();
-    const { onAlternative, countEvents } = await renderGate(createEntitlementSnapshot(USED_UP));
+    const { onAlternative, analytics } = await renderGate(createEntitlementSnapshot(USED_UP));
     await user.press(screen.getByRole('button', { name: '시작' }));
     await user.press(await screen.findByRole('button', { name: '나중에' }));
-    await waitFor(() => expect(countEvents('premium_upsell_dismissed')).toBe(1));
+    await waitFor(() =>
+      expect(getTrackedEvents(analytics, 'premium_upsell_dismissed')).toHaveLength(1),
+    );
 
     // When
     await user.press(screen.getByRole('button', { name: '대안과 함께 시작' }));

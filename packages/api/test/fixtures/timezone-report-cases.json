@@ -1,0 +1,110 @@
+{
+  "deviceReportedTimezone": [
+    {
+      "name": "UTC는 기기 시간대를 못 읽은 출시 앱이 보내는 값이라 보고하지 않은 것이다",
+      "value": "UTC",
+      "reported": null
+    },
+    { "name": "Etc/UTC는 UTC와 같은 이름이다", "value": "Etc/UTC", "reported": null },
+    { "name": "GMT는 UTC와 같은 이름이다", "value": "GMT", "reported": null },
+    { "name": "Etc/GMT는 UTC와 같은 이름이다", "value": "Etc/GMT", "reported": null },
+    { "name": "Zulu는 UTC와 같은 이름이다", "value": "Zulu", "reported": null },
+    { "name": "UCT는 UTC와 같은 이름이다", "value": "UCT", "reported": null },
+    { "name": "Etc/Greenwich는 UTC와 같은 이름이다", "value": "Etc/Greenwich", "reported": null },
+    { "name": "GMT0은 UTC와 같은 이름이다", "value": "GMT0", "reported": null },
+    { "name": "Etc/GMT+0은 UTC와 같은 이름이다", "value": "Etc/GMT+0", "reported": null },
+    { "name": "Etc/GMT-0은 UTC와 같은 이름이다", "value": "Etc/GMT-0", "reported": null },
+    { "name": "Etc/GMT0은 UTC와 같은 이름이다", "value": "Etc/GMT0", "reported": null },
+    { "name": "Etc/UCT는 UTC와 같은 이름이다", "value": "Etc/UCT", "reported": null },
+    { "name": "Etc/Universal은 UTC와 같은 이름이다", "value": "Etc/Universal", "reported": null },
+    { "name": "Etc/Zulu는 UTC와 같은 이름이다", "value": "Etc/Zulu", "reported": null },
+    { "name": "GMT+0은 UTC와 같은 이름이다", "value": "GMT+0", "reported": null },
+    { "name": "GMT-0은 UTC와 같은 이름이다", "value": "GMT-0", "reported": null },
+    { "name": "Greenwich는 UTC와 같은 이름이다", "value": "Greenwich", "reported": null },
+    { "name": "Universal은 UTC와 같은 이름이다", "value": "Universal", "reported": null },
+    { "name": "소문자 utc도 UTC와 같은 이름이다", "value": "utc", "reported": null },
+    { "name": "소문자 etc/utc도 UTC와 같은 이름이다", "value": "etc/utc", "reported": null },
+    { "name": "공백만 있는 값은 보고하지 않은 것이다", "value": "  ", "reported": null },
+    {
+      "name": "고정 오프셋은 IANA 이름이 아니라 받지 않는다",
+      "value": "+09:00",
+      "reported": null
+    },
+    { "name": "음수 고정 오프셋도 받지 않는다", "value": "-05:00", "reported": null },
+    {
+      "name": "기기 설정의 사용자 지정 ID GMT+1은 IANA 이름이 아니라 받지 않는다",
+      "value": "GMT+1",
+      "reported": null
+    },
+    {
+      "name": "사용자 지정 ID GMT+09:00은 받지 않는다",
+      "value": "GMT+09:00",
+      "reported": null
+    },
+    { "name": "사용자 지정 ID UTC+9는 받지 않는다", "value": "UTC+9", "reported": null },
+    { "name": "빈 문자열은 보고하지 않은 것이다", "value": "", "reported": null },
+    { "name": "런타임이 모르는 이름은 받지 않는다", "value": "Mars/Olympus", "reported": null },
+    { "name": "보내지 않은 값은 보고하지 않은 것이다", "value": null, "reported": null },
+    { "name": "서울은 그대로 받는다", "value": "Asia/Seoul", "reported": "Asia/Seoul" },
+    {
+      "name": "서머타임이 있는 LA는 그대로 받는다",
+      "value": "America/Los_Angeles",
+      "reported": "America/Los_Angeles"
+    },
+    {
+      "name": "서머타임이 있는 뉴욕은 그대로 받는다",
+      "value": "America/New_York",
+      "reported": "America/New_York"
+    },
+    {
+      "name": "런던은 겨울 오프셋이 0이어도 UTC가 아닌 지역 이름이다",
+      "value": "Europe/London",
+      "reported": "Europe/London"
+    },
+    {
+      "name": "리스본은 겨울 오프셋이 0이어도 지역 이름이다",
+      "value": "Europe/Lisbon",
+      "reported": "Europe/Lisbon"
+    },
+    {
+      "name": "레이캬비크는 늘 오프셋 0이어도 지역 이름이다",
+      "value": "Atlantic/Reykjavik",
+      "reported": "Atlantic/Reykjavik"
+    },
+    {
+      "name": "아비장은 늘 오프셋 0이어도 지역 이름이다",
+      "value": "Africa/Abidjan",
+      "reported": "Africa/Abidjan"
+    },
+    {
+      "name": "아크라는 늘 오프셋 0이어도 지역 이름이다",
+      "value": "Africa/Accra",
+      "reported": "Africa/Accra"
+    },
+    {
+      "name": "45분 오프셋인 카트만두는 그대로 받는다",
+      "value": "Asia/Kathmandu",
+      "reported": "Asia/Kathmandu"
+    },
+    {
+      "name": "콜카타는 새 이름 그대로 받는다",
+      "value": "Asia/Kolkata",
+      "reported": "Asia/Kolkata"
+    },
+    {
+      "name": "캘커타는 옛 이름도 다른 이름으로 바꾸지 않는다",
+      "value": "Asia/Calcutta",
+      "reported": "Asia/Calcutta"
+    },
+    {
+      "name": "날짜선 서쪽 아피아는 그대로 받는다",
+      "value": "Pacific/Apia",
+      "reported": "Pacific/Apia"
+    },
+    {
+      "name": "기기에서 UTC+9를 고른 Etc/GMT-9는 이름이라 받는다",
+      "value": "Etc/GMT-9",
+      "reported": "Etc/GMT-9"
+    }
+  ]
+}

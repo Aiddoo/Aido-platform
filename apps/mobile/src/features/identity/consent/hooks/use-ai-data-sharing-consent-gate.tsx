@@ -38,7 +38,7 @@ import { useGetConsentQueryOptions } from '../queries/consent.queries';
 const ITEM_ICON_SIZE = 16;
 const PRIVACY_LINK_MIN_HEIGHT = 44;
 
-export interface AiConsentCheck {
+interface AiConsentCheck {
   readonly hasAgreed: boolean;
   readonly wasAsked: boolean;
 }
@@ -48,10 +48,17 @@ interface UseAiDataSharingConsentGateOptions {
   claimRenewalPrompt?: (accountId: string) => boolean;
 }
 
+interface AiDataSharingConsentGateActions {
+  requestAgreementIfNeeded: () => Promise<AiConsentCheck>;
+  requestAgreementBeforeListening: () => Promise<AiConsentCheck>;
+  requestAgreement: (options?: { isRenewal?: boolean }) => Promise<boolean>;
+  isConsentRequired: () => boolean;
+}
+
 /** 시트가 이 훅을 쓴 컴포넌트의 overlay에 뜨므로 답을 기다리는 동안 마운트돼 있는 곳에서 쓴다 */
 export function useAiDataSharingConsentGate({
   claimRenewalPrompt,
-}: UseAiDataSharingConsentGateOptions = {}) {
+}: UseAiDataSharingConsentGateOptions = {}): AiDataSharingConsentGateActions {
   const openSheet = useOpenSheet();
   const queryClient = useQueryClient();
   const logger = useLogger();

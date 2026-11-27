@@ -200,6 +200,53 @@ describe('PurchasesSession 로그인·로그아웃 순서', () => {
   });
 });
 
+describe('PurchasesSession.dispose', () => {
+  it('정리하면 기다리던 로그아웃을 보내지 않고 진행 중인 로그인 뒤 속성도 붙이지 않아 타이머가 남지 않는다', async () => {
+    // Given
+    const { manager, purchases } = createManager();
+    manager.configure();
+    await flushPromises();
+    purchases.setAttributes.mockClear();
+    let finishLogIn = () => {};
+    purchases.logIn.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          finishLogIn = resolve;
+        }),
+    );
+    const loggingIn = manager.logIn('user-1');
+    await flushPromises();
+    const loggingOut = manager.logOut();
+
+    // When
+    manager.dispose();
+    finishLogIn();
+    await Promise.all([loggingIn, loggingOut]);
+
+    // Then
+    expect(purchases.logIn).toHaveBeenCalledTimes(1);
+    expect(purchases.logOut).not.toHaveBeenCalled();
+    expect(purchases.setAttributes).not.toHaveBeenCalled();
+    expect(jest.getTimerCount()).toBe(0);
+  });
+
+  it('정리한 뒤에는 새 요청을 SDK에 보내지 않고 결제도 막는다', async () => {
+    // Given
+    const { manager, purchases } = createManager();
+    manager.configure();
+    await flushPromises();
+
+    // When
+    manager.dispose();
+    await manager.logIn('user-1');
+
+    // Then
+    expect(purchases.logIn).not.toHaveBeenCalled();
+    expect(manager.isConfigured()).toBe(false);
+    expect(jest.getTimerCount()).toBe(0);
+  });
+});
+
 describe('PurchasesSession 결제 계정', () => {
   it('다른 계정 로그인이 끝나기 전에 물으면 끝날 때까지 기다려 그 계정을 돌려준다', async () => {
     // Given

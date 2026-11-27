@@ -56,7 +56,7 @@
   },
   "errorBoundary": {
     "title": "문제가 생겼어요",
-    "description": "잠시 후 다시 시도해주세요. 계속되면 알려주세요",
+    "description": "잠시 뒤 다시 시도해주세요. 계속되면 알려주세요",
     "inquiry": "문의하기",
     "restart": "앱 다시 시작",
     "mailSubject": "[아이두] 오류 문의 ({{code}})",
@@ -69,7 +69,6 @@
     }
   },
   "infiniteList": {
-    "loadMoreFailed": "다시 시도",
     "loadMoreFailedLabel": "더 불러오지 못했어요. 다시 시도"
   },
   "offlineBanner": {
@@ -84,37 +83,36 @@
     "failed": "공유하지 못했어요"
   },
   "permissions": {
-    "cancel": "취소",
-    "openSettings": "설정으로 이동",
+    "openSettings": "설정 열기",
     "microphone": {
       "title": "마이크 권한 필요",
-      "message": "말로 입력하려면 마이크 권한이 필요해요. 설정에서 권한을 허용해주세요.",
-      "denied": "마이크 권한이 필요해요."
+      "message": "말로 입력하려면 설정에서 마이크 권한을 허용해주세요.",
+      "denied": "마이크 권한이 필요해요"
     },
     "speechRecognition": {
       "title": "음성 인식 권한 필요",
-      "message": "말을 글자로 바꾸려면 음성 인식 권한이 필요해요. 설정에서 권한을 허용해주세요.",
-      "denied": "음성 인식 권한이 필요해요."
+      "message": "말을 글자로 바꾸려면 설정에서 음성 인식 권한을 허용해주세요.",
+      "denied": "음성 인식 권한이 필요해요"
     },
     "microphoneAndSpeechRecognition": {
       "title": "마이크·음성 인식 권한 필요",
-      "message": "말로 입력하려면 마이크와 음성 인식 권한이 필요해요. 설정에서 권한을 허용해주세요.",
-      "denied": "마이크와 음성 인식 권한이 필요해요."
+      "message": "말로 입력하려면 설정에서 마이크와 음성 인식 권한을 허용해주세요.",
+      "denied": "마이크와 음성 인식 권한이 필요해요"
     }
   },
   "speechErrors": {
     "no-speech": "말이 들리지 않았어요. 다시 말해주세요.",
     "speech-timeout": "말이 들리지 않아 멈췄어요. 다시 시도해주세요.",
-    "aborted": "듣기를 취소했어요.",
-    "not-allowed": "마이크나 음성 인식 권한이 필요해요. 설정에서 권한을 허용해주세요.",
-    "service-not-allowed": "지금은 말로 입력할 수 없어요.",
-    "busy": "이미 듣고 있어요. 잠시 후 다시 시도해주세요.",
-    "audio-capture": "마이크 연결을 확인해주세요.",
-    "network": "인터넷 연결을 확인해주세요.",
-    "interrupted": "다른 앱에서 마이크를 사용 중이에요. 잠시 후 다시 시도해주세요.",
-    "language-not-supported": "지원하지 않는 언어예요.",
-    "bad-grammar": "음성 인식 설정에 문제가 있어요.",
-    "client": "음성 인식 중에 문제가 생겼어요. 다시 시도해주세요.",
+    "aborted": "말로 입력을 취소했어요",
+    "not-allowed": "설정에서 마이크나 음성 인식 권한을 허용해주세요",
+    "service-not-allowed": "지금은 말로 입력할 수 없어요",
+    "busy": "이미 듣고 있어요. 잠시 뒤 다시 시도해주세요.",
+    "audio-capture": "마이크 연결을 확인해주세요",
+    "network": "인터넷 연결을 확인해주세요",
+    "interrupted": "다른 앱에서 마이크를 사용 중이에요. 잠시 뒤 다시 시도해주세요.",
+    "language-not-supported": "지원하지 않는 언어예요",
+    "bad-grammar": "말로 입력 설정에 문제가 있어요",
+    "client": "말을 글자로 바꾸다가 문제가 생겼어요. 다시 시도해주세요.",
     "unknown": "문제가 생겼어요. 다시 시도해주세요."
   },
   "notFound": {
@@ -123,8 +121,7 @@
   },
   "appError": {
     "title": "문제가 생겼어요",
-    "description": "잠시 후 다시 시도해주세요",
-    "retry": "다시 시도",
+    "description": "잠시 뒤 다시 시도해주세요",
     "logout": "로그아웃"
   },
   "tabs": {
@@ -134,8 +131,8 @@
   },
   "infraErrors": {
     "network": "인터넷 연결을 확인해주세요",
-    "timeout": "응답이 늦어지고 있어요. 잠시 후 다시 시도해주세요",
+    "timeout": "응답이 늦어지고 있어요. 잠시 뒤 다시 시도해주세요",
     "server": "서버에 문제가 생겼어요",
-    "invalidResponse": "문제가 생겼어요. 잠시 후 다시 시도해주세요"
+    "invalidResponse": "문제가 생겼어요. 잠시 뒤 다시 시도해주세요"
   }
 }

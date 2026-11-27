@@ -5,7 +5,7 @@ import { Box, PlusIcon, RefreshIcon, type QueryErrorFallbackProps } from '@src/s
 import { useAppToast } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 
 import { MemoResourceLimitPolicy } from '../domains/memo-resource-limit.model';
@@ -16,6 +16,7 @@ export const MEMO_CREATE_BUTTON_SIZE = 44;
 
 export function MemoCreateButton() {
   const fontScaledSize = useFontScaledSize();
+  const router = useRouter();
   const push = useSingleTap(router.push);
 
   const toast = useAppToast();

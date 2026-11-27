@@ -12,7 +12,7 @@ import {
   initErrorReporting,
   wrapRootComponent,
 } from '@src/shared/infra/observability/error-reporting';
-import { ErrorIllustration } from '@src/shared/ui';
+import { ErrorIllustration, getTouchTargetInset } from '@src/shared/ui';
 
 import '../global.css';
 import '@src/shared/i18n/init';
@@ -24,10 +24,17 @@ import { Pressable, Text, View } from 'react-native';
 
 initErrorReporting();
 
+// 스플래시를 잡아 두지 못해도(이미 내려갔을 때 등) 앱은 그대로 뜬다
 SplashScreen.preventAutoHideAsync().catch(noop);
 
 // 루트 경계는 DI 밖에서 그려질 수 있어 같은 규칙(Sentry/console)으로 직접 만든다
 const rootErrorReporter = createEnvironmentErrorReporter();
+/** 문의 글자 버튼 높이(h-8). 위 버튼과 8 떨어져 위아래로 이만큼만 넓혀도 겹치지 않는다 */
+const INQUIRY_BUTTON_HEIGHT_PT = 32;
+const INQUIRY_HIT_SLOP = {
+  top: getTouchTargetInset(INQUIRY_BUTTON_HEIGHT_PT),
+  bottom: getTouchTargetInset(INQUIRY_BUTTON_HEIGHT_PT),
+};
 
 function AppBootstrapLayout() {
   return (
@@ -50,6 +57,7 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   const { t } = useTranslation('common');
 
   useEffect(() => {
+    // 이미 내려간 스플래시를 다시 내리려다 실패해도 오류 화면은 그대로 보인다
     SplashScreen.hideAsync().catch(noop);
     rootErrorReporter.captureException(error, { feature: 'root_error_boundary' });
   }, [error]);
@@ -99,6 +107,7 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
       <Pressable
         accessibilityRole="button"
         className="mt-2 h-8 items-center justify-center px-3"
+        hitSlop={INQUIRY_HIT_SLOP}
         onPress={openSupportMail}
       >
         <Text allowFontScaling={false} className="text-e1 text-gray-6">

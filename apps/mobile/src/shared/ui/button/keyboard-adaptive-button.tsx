@@ -11,7 +11,6 @@ const ANIMATION_DURATION_MS = 200;
 const CONTAINER_PADDING_X = 16;
 const BUTTON_RADIUS = 12;
 const DEFAULT_BOTTOM_PADDING = 16;
-const STICKY_OFFSET = 0;
 
 /** 모양(둥근 모서리·여백)은 키보드에 맞춰 이 부품이 정하므로 `className`·`style`은 받지 않는다 */
 interface KeyboardAdaptiveButtonProps extends Omit<ButtonProps, 'className' | 'style'> {
@@ -54,7 +53,7 @@ export function KeyboardAdaptiveButton({
   }));
 
   return (
-    <KeyboardStickyView offset={{ closed: STICKY_OFFSET, opened: STICKY_OFFSET }} enabled={enabled}>
+    <KeyboardStickyView enabled={enabled}>
       <Animated.View style={containerStyle}>
         {/* 키보드가 열리면 바깥 여백이 0이 되어 버튼 높이만 키보드 위를 덮는다. 바깥 여백은 애니메이션 중 매 프레임 바뀌므로 버튼만 잰다 */}
         <Animated.View

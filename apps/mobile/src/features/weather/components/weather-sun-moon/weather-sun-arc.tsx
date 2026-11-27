@@ -110,7 +110,7 @@ export function WeatherSunArc({
           {!isNight && <SunPulse />}
           <Box
             className="absolute inset-0 rounded-full bg-on-sky"
-            style={{ borderWidth: SUN_DOT_RING, borderColor: SUN_COLORS.ring }}
+            style={{ borderWidth: SUN_DOT_RING, borderColor: SUN_COLORS.yellow }}
           />
         </Box>
       )}

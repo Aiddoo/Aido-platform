@@ -21,6 +21,7 @@ export const ERROR_REPORT_FEATURES = [
   'friend',
   'inquiry',
   'invite',
+  'keyboard',
   'lifecycle',
   'memo',
   'network_status',
@@ -67,16 +68,14 @@ const BREADCRUMB_CATEGORIES = [
   'ui',
   'widget',
   'invite',
+  'keyboard',
   'network',
   'voice',
   'error',
 ] as const;
 export type BreadcrumbCategory = (typeof BREADCRUMB_CATEGORIES)[number];
 
-/**
- * 로그·breadcrumb `data`와 Sentry extra에 남길 수 있는 키. 목록 밖 키는 타입 오류이고 보낼 때도 지운다.
- * 키를 더할 때는 값이 구조화된 식별자·코드·상태·수인지 확인한다(이메일·이름·사용자 글 금지)
- */
+/** 목록 밖 키는 보낼 때도 지운다. 키를 더할 때는 값이 식별자·코드·상태·수인지 확인한다(이메일·이름·사용자 글 금지) */
 export const TELEMETRY_DATA_KEYS = [
   'action',
   'canAskAgain',
@@ -172,8 +171,5 @@ export const CLEARED_USER_PROPERTIES = {
   premium_source: null,
 } as const satisfies Record<keyof UserPropertyMap, null>;
 
-/**
- * GA 예약 구매 이벤트. 매출 원본은 RevenueCat이 Firebase로 보내는 `purchase`이고,
- * Firebase가 스토어 결제를 자동 수집하는 `in_app_purchase`도 있으므로 앱은 이 이름을 쓰지 않는다.
- */
+/** 매출 원본은 RevenueCat이 보내는 `purchase`이고 Firebase가 자동 수집하는 `in_app_purchase`도 있어 앱은 쓰지 않는다 */
 export type GaReservedPurchaseEventName = 'purchase' | 'in_app_purchase' | 'refund';

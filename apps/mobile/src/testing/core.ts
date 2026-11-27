@@ -1,4 +1,5 @@
 export { createAnalyticsStub } from './ports/analytics.stub';
+export { createApiError } from './api-error';
 export { createAppIconGatewayStub } from './ports/app-icon-gateway.stub';
 export {
   type AppLifecycleGatewayStub,
@@ -9,6 +10,7 @@ export {
   createAppStoreReviewGatewayStub,
 } from './ports/app-store-gateway.stub';
 export { createClipboardGatewayStub } from './ports/clipboard-gateway.stub';
+export { silenceConsole } from './console';
 export { createVendorIdGatewayStub } from './ports/device-identity-gateway.stub';
 export { createErrorReporterStub } from './ports/error-reporter.stub';
 export {
@@ -66,4 +68,8 @@ export { createVoiceNoteStorageFake } from './fakes/voice-note-storage.fake';
 export { createTestQueryClient, deliverQueryNotifications } from './query-client';
 export { runKyAfterResponseHook } from './ky-after-response-hook';
 export { setupFakeTimersPerTest } from './timers';
+export { getTrackedEvents } from './tracked-events';
+export { setupIdleCallbackPerTest } from './idle-callback';
+export { stubInitialUrl } from './initial-url';
+export { setupViewMeasurePerTest } from './view-measure';
 export { stubWindowDimensions } from './window-dimensions';

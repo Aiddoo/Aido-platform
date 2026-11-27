@@ -18,46 +18,39 @@ export function createEmptyPushRegistration(): PushRegistration {
   return { reportedToken: null, releaseRequestedAt: null };
 }
 
-/** 토큰을 못 받아도 서버가 가진 토큰으로 권한·시간대·언어를 보고해 등록을 지킨다. 토큰을 한 번도 못 받은 허용 기기는 null로 보고한다(서버는 허용 상태의 null에 저장된 토큰을 지킨다) */
-function findReportToken(
-  registration: PushRegistration,
-  { permission, issuedToken }: { permission: PushPermission; issuedToken: string | null },
-): string | null {
-  if (!PushPermissionPolicy.isPushDeliverable(permission)) {
-    return null;
-  }
-  return issuedToken ?? registration.reportedToken;
-}
-
-function recordReported(registration: PushRegistration, token: string | null): PushRegistration {
-  return { ...registration, reportedToken: token, releaseRequestedAt: null };
-}
-
-function requestRelease(registration: PushRegistration, requestedAt: Instant): PushRegistration {
-  return { ...registration, releaseRequestedAt: requestedAt };
-}
-
-function hasPendingRelease(registration: PushRegistration): boolean {
-  return registration.releaseRequestedAt != null;
-}
-
-/** 보고한 뒤 토큰이 바뀌었을 수 있어, 서버가 가진 토큰과 지금 토큰을 모두 푼다 */
-function getReleaseTokens(
-  registration: PushRegistration,
-  { currentToken }: { currentToken: string | null },
-): string[] {
-  return uniq(compact([registration.reportedToken, currentToken]));
-}
-
-function recordReleased(registration: PushRegistration): PushRegistration {
-  return { ...registration, reportedToken: null, releaseRequestedAt: null };
-}
-
 export const PushRegistrationPolicy = {
-  findReportToken,
-  recordReported,
-  requestRelease,
-  hasPendingRelease,
-  getReleaseTokens,
-  recordReleased,
-} as const;
+  /** 토큰을 못 받아도 서버가 가진 토큰으로 권한·시간대·언어를 보고해 등록을 지킨다. 토큰을 한 번도 못 받은 허용 기기는 null로 보고한다(서버는 허용 상태의 null에 저장된 토큰을 지킨다) */
+  findReportToken(
+    registration: PushRegistration,
+    { permission, issuedToken }: { permission: PushPermission; issuedToken: string | null },
+  ): string | null {
+    if (!PushPermissionPolicy.isPushDeliverable(permission)) {
+      return null;
+    }
+    return issuedToken ?? registration.reportedToken;
+  },
+
+  recordReported(registration: PushRegistration, token: string | null): PushRegistration {
+    return { ...registration, reportedToken: token, releaseRequestedAt: null };
+  },
+
+  requestRelease(registration: PushRegistration, requestedAt: Instant): PushRegistration {
+    return { ...registration, releaseRequestedAt: requestedAt };
+  },
+
+  hasPendingRelease(registration: PushRegistration): boolean {
+    return registration.releaseRequestedAt != null;
+  },
+
+  /** 보고한 뒤 토큰이 바뀌었을 수 있어, 서버가 가진 토큰과 지금 토큰을 모두 푼다 */
+  getReleaseTokens(
+    registration: PushRegistration,
+    { currentToken }: { currentToken: string | null },
+  ): string[] {
+    return uniq(compact([registration.reportedToken, currentToken]));
+  },
+
+  recordReleased(registration: PushRegistration): PushRegistration {
+    return { ...registration, reportedToken: null, releaseRequestedAt: null };
+  },
+};

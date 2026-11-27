@@ -1,8 +1,8 @@
 import * as Sentry from '@sentry/react-native';
-import { ApiError } from '@src/core/errors/api-error';
 import { ServerError } from '@src/shared/errors/infra-error';
 import { createSentryErrorReporter } from '@src/shared/infra/error-reporter/sentry-error-reporter';
 import { createSentryLogger } from '@src/shared/infra/logger/sentry-logger';
+import { createApiError } from '@src/testing/api-error';
 
 jest.mock('@sentry/react-native', () => ({
   addBreadcrumb: jest.fn(),
@@ -59,7 +59,7 @@ describe('captureError', () => {
 
   it('4xx는 이슈 대신 breadcrumb로 남긴다', () => {
     // Given
-    const error = new ApiError('TODO_0801', '없는 할 일', 404);
+    const error = createApiError('TODO_0801', { message: '없는 할 일' });
 
     // When
     createSentryErrorReporter().captureException(error, { feature: 'todo' });

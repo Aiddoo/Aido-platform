@@ -1,4 +1,5 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
+import { parseStoredJson } from '@src/shared/utils/parse-stored-json';
 
 import {
   createEmptyStoreReviewState,
@@ -25,16 +26,11 @@ function createStoreReviewKey(accountId: string): string {
 
 export function createStoreReviewRepository(storage: SyncStorage): StoreReviewRepository {
   const find = (accountId: string): StoreReviewState | null => {
-    const saved = storage.get(createStoreReviewKey(accountId));
-    if (saved == null) {
-      return null;
-    }
-    try {
-      const current = storeReviewStorageSchema.safeParse(JSON.parse(saved));
-      return current.success ? storeReviewStateSchema.parse(current.data) : null;
-    } catch {
-      return null;
-    }
+    const saved = parseStoredJson(
+      storage.get(createStoreReviewKey(accountId)),
+      storeReviewStorageSchema,
+    );
+    return saved == null ? null : (storeReviewStateSchema.safeParse(saved).data ?? null);
   };
 
   return {

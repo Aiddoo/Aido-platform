@@ -2,6 +2,7 @@ import type { PlanQuotaFeatureKey } from '@aido/api/vocabulary';
 import { useMyPageMenuNavigate } from '@src/features/identity/user/hooks/use-my-page-menu-navigation';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
 import {
   AiFilledIcon,
@@ -28,9 +29,9 @@ import { EntitlementPolicy } from '../domains/entitlement.model';
 import { useFormatReceiptDate } from '../hooks/use-format-receipt-date';
 import { useFormatRefillSentence } from '../hooks/use-format-refill-sentence';
 import { useQuotaStatus } from '../hooks/use-quota-status';
-import { useSubscriptionReceipt } from '../hooks/use-subscription-receipt';
+import { useSuspenseSubscriptionReceipt } from '../hooks/use-suspense-subscription-receipt';
 import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
-import { toDisplayedUsedCount, toPlanSummary } from '../utils/plan-summary.view-model';
+import { getDisplayedUsedCount, getPlanSummary } from '../utils/plan-summary.view-model';
 
 const SUBSCRIPTION_PATHNAME = '/settings/subscription';
 
@@ -50,7 +51,7 @@ export function PlanSummary() {
 PlanSummary.Premium = function Premium() {
   const { t } = useTranslation('subscription');
   const navigate = useMyPageMenuNavigate();
-  const { headline, dateLabel, period, note } = toPlanSummary(useSubscriptionReceipt());
+  const { headline, dateLabel, period, note } = getPlanSummary(useSuspenseSubscriptionReceipt());
   const formatDate = useFormatReceiptDate(dateLabel);
 
   return (
@@ -235,6 +236,7 @@ function QuotaRow({ feature, label, hint }: QuotaRowProps) {
   const { data: snapshot } = useQuery(useGetEntitlementsQueryOptions());
   const { type } = useQuotaStatus(feature);
   const formatRefillSentence = useFormatRefillSentence();
+  const now = useMinuteNow();
 
   if (snapshot == null || type === 'untracked') {
     return null;
@@ -260,13 +262,13 @@ function QuotaRow({ feature, label, hint }: QuotaRowProps) {
           className="tabular-nums"
         >
           {t('upsell.usage', {
-            used: formatCount(toDisplayedUsedCount(used, limit), locale),
+            used: formatCount(getDisplayedUsedCount(used, limit), locale),
             limit: formatCount(limit, locale),
           })}
         </Text>
       }
       meter={{ used, limit }}
-      refill={isUsedUp ? formatRefillSentence(snapshot, feature) : null}
+      refill={isUsedUp ? formatRefillSentence(snapshot, feature, now) : null}
     />
   );
 }

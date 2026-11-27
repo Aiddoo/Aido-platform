@@ -1,4 +1,8 @@
-import { INVITE_QUALIFICATION } from '@aido/api/vocabulary';
+import {
+  INVITE_QUALIFICATION,
+  INVITEE_REWARDS,
+  INVITER_REWARD_MILESTONES,
+} from '@aido/api/vocabulary';
 import { ReceiptBenefitRow } from '@src/features/billing/subscription/components/receipt-benefit-row';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -16,8 +20,9 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { Skeleton } from 'heroui-native';
 
-import { INVITEE_PREMIUM_DAYS, FIRST_INVITER_PREMIUM_DAYS } from '../constants/invite.constants';
 import type { InviteCode } from '../domains/invite-code.model';
+import { InviteMilestonePolicy } from '../domains/invite-milestone.model';
+import { InviteRewardPolicy } from '../domains/invite-reward.model';
 import { useInviteParams } from '../hooks/use-invite-params';
 import { useGetInvitePreviewQueryOptions } from '../queries/invite.queries';
 
@@ -45,7 +50,9 @@ InviteBenefitReceipt.Receipt = function Receipt({ inviteCode }: { inviteCode: In
 
           <VStack gap={2} className="flex-1">
             <Text size="t3" weight="bold" tone="brand">
-              {t('card.receipt.title', { count: INVITEE_PREMIUM_DAYS })}
+              {t('card.receipt.title', {
+                count: InviteRewardPolicy.getPremiumDays(INVITEE_REWARDS),
+              })}
             </Text>
 
             <Text size="b4" shade={7}>
@@ -74,7 +81,7 @@ InviteBenefitReceipt.Receipt = function Receipt({ inviteCode }: { inviteCode: In
           {t('card.receipt.inviterReward', {
             name: inviterName,
             activeDays: INVITE_QUALIFICATION.MIN_ACTIVE_DAYS,
-            days: FIRST_INVITER_PREMIUM_DAYS,
+            days: InviteMilestonePolicy.getPremiumDays(INVITER_REWARD_MILESTONES[0]),
           })}
         </Text>
 

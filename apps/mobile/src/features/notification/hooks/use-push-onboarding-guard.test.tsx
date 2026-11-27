@@ -27,7 +27,10 @@ import {
   createPushOnboardingGuardStore,
   type PushOnboardingGuardState,
 } from '../stores/push-onboarding-guard.store';
-import { usePushOnboardingGuard, usePushOnboardingGuardState } from './use-push-onboarding-guard';
+import {
+  useMarkPushOnboardingGuardRendered,
+  usePushOnboardingGuardState,
+} from './use-push-onboarding-guard';
 
 async function renderGuardState(getPermission: () => Promise<PushPermissionResponse>) {
   const guardStore = createPushOnboardingGuardStore();
@@ -41,7 +44,7 @@ async function renderGuardState(getPermission: () => Promise<PushPermissionRespo
 
   const hook = await renderScreenHook(
     () => {
-      usePushOnboardingGuard();
+      useMarkPushOnboardingGuardRendered();
       return usePushOnboardingGuardState();
     },
     {
@@ -137,7 +140,7 @@ async function renderGuard() {
   const hook = await renderScreenHook(
     () => {
       renderCount += 1;
-      return usePushOnboardingGuard();
+      return useMarkPushOnboardingGuardRendered();
     },
     {
       di: createTestDi({
@@ -154,7 +157,7 @@ async function renderGuard() {
   return { ...hook, appLifecycle, getRenderCount: () => renderCount };
 }
 
-describe('usePushOnboardingGuard — 가입 창', () => {
+describe('useMarkPushOnboardingGuardRendered — 가입 창', () => {
   setupFakeTimersPerTest({ now: NOW });
 
   it('분이 바뀌어도 다시 그리지 않다가 가입 창이 끝나는 순간에 한 번 닫힌다', async () => {
@@ -221,7 +224,7 @@ describe('usePushOnboardingGuardState — 알림 권한을 이미 답한 사용�
       // When
       const { queryClient } = await renderScreenHook(
         () => {
-          usePushOnboardingGuard();
+          useMarkPushOnboardingGuardRendered();
           const state = usePushOnboardingGuardState();
           renderedStates.push(state);
           return state;

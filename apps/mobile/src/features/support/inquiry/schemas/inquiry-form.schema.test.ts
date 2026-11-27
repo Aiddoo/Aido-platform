@@ -9,7 +9,7 @@ function parse(content: string) {
   return inquiryFormSchema.safeParse({ category: INQUIRY_CATEGORY.OTHER, content });
 }
 
-describe('문의 폼 규칙', () => {
+describe('inquiryFormSchema', () => {
   it('공백만 있는 내용은 길이가 채워져도 보내지 않는다', () => {
     // Given
     const content = ' '.repeat(MIN_LENGTH) + '\n'.repeat(MIN_LENGTH);

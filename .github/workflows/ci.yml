@@ -93,6 +93,8 @@ jobs:
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
       # --affected의 비교 기준은 PR base다. main push는 얕은 checkout이라 전체를 변경으로 보고 캐시가 걸러 준다.
       TURBO_SCM_BASE: ${{ github.event.pull_request.base.sha || '' }}
+      # 서버 process(Docker ENV TZ=UTC)와 같은 시간대다. 러너 기본값에 기대지 않는다(서버 vitest.config도 같은 값을 둔다)
+      TZ: UTC
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

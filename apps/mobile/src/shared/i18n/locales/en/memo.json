@@ -18,7 +18,7 @@
     "open": "Open memo"
   },
   "create": {
-    "placeholder": "Write down your ideas freely..."
+    "placeholder": "Write down your ideas freely"
   },
   "detail": {
     "unavailableTitle": "This memo isn't available right now",
@@ -32,7 +32,7 @@
     "more": "More",
     "aiParsing": "Turning into to-dos",
     "deleteConfirmTitle": "Delete this memo?",
-    "deleteConfirmDescription": "This can't be undone"
+    "deleteConfirmDescription": "This can't be undone."
   },
   "toasts": {
     "convertedOne": "Converted your memo to a to-do",

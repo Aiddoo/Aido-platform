@@ -73,7 +73,6 @@ function StepsDot({
   return <Animated.View style={[styles.dot, animatedStyle]} />;
 }
 
-/** 점 뒤 막대가 현재 단계까지 늘어나고, 지난 점은 막대 위에서 밝아진다 */
 export function StepsDots({ index, count, progress, tone = 'default' }: StepsDotsProps) {
   const isReducedMotion = useIsReduceMotionEnabled();
   const toneClassNames = STEPS_DOTS_TONE_CLASS_NAMES[tone];

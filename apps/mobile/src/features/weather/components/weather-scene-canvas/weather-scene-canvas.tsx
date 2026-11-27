@@ -1,18 +1,18 @@
 import { Canvas, Group } from '@shopify/react-native-skia';
+import { useDeviceTraits } from '@src/bootstrap/providers/di-context';
 import { SECOND_MS } from '@src/shared/constants/time-units';
+import { useAppWindow } from '@src/shared/hooks/use-app-window';
 import { useIsAnimationActive } from '@src/shared/hooks/use-is-animation-active';
 import { useLayoutSize } from '@src/shared/hooks/use-layout-size';
-import { DEVICE_TOTAL_MEMORY_BYTES } from '@src/shared/infra/device/device-info';
+import { useToggleableFrameCallback } from '@src/shared/hooks/use-toggleable-frame-callback';
 import { Box } from '@src/shared/ui';
 import { isEqual } from 'es-toolkit';
 import { useCallback, useEffect, useState } from 'react';
-import { StyleSheet, useWindowDimensions } from 'react-native';
+import { StyleSheet } from 'react-native';
 import {
   cancelAnimation,
   Easing,
-  type FrameInfo,
   type SharedValue,
-  useFrameCallback,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
@@ -20,7 +20,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { match } from 'ts-pattern';
 import { useUniwind } from 'uniwind';
 
-import { getCelestialCenter } from '../../utils/weather-scene-particles.view-model';
+import { getCelestialCenter } from '../../utils/weather-scene-particles.geometry';
 import type { WeatherScene } from '../../utils/weather-scene.view-model';
 import { type CloudLight, CloudLayer } from './cloud-layer';
 import { FogBandLayer } from './fog-band-layer';
@@ -40,9 +40,6 @@ import { SkyGradientLayer } from './sky-gradient-layer';
 import { SnowLayer } from './snow-layer';
 import { SunLayer } from './sun-layer';
 
-const LOW_END_MEMORY_BYTES = 3 * 1024 ** 3;
-const IS_LOW_END_DEVICE =
-  DEVICE_TOTAL_MEMORY_BYTES != null && DEVICE_TOTAL_MEMORY_BYTES < LOW_END_MEMORY_BYTES;
 const STATIC_SCENE_SECONDS = 12;
 const MAX_FRAME_STEP_MS = 100;
 const SCENE_FADE = { duration: 900, easing: Easing.inOut(Easing.quad) };
@@ -63,20 +60,21 @@ function useSceneCrossFade(scene: WeatherScene) {
     setOutgoing(current);
     setCurrent({ id: current.id + 1, scene });
   }
+  // 장면 레이어의 사라짐 effect deps라 정체가 바뀌면 사라지던 애니메이션을 다시 건다. 컴파일러 메모에 맡기지 않고 고정한다
   const finishFade = useCallback((id: number) => {
     setOutgoing((previous) => (previous?.id === id ? null : previous));
   }, []);
   return { entries: outgoing == null ? [current] : [outgoing, current], current, finishFade };
 }
 
-type WeatherSceneCanvasProps = {
+interface WeatherSceneCanvasProps {
   scene: WeatherScene;
   /** 투명 헤더 아래 내용이 시작하는 높이. 해·달을 헤더 버튼 아래에 둔다. */
   contentTop: number;
   /** 지명·기온이 놓인 단의 시작과 폭. 넓은 화면에서는 왼쪽 단, 옆 레일이 있으면 레일을 뺀 영역이다. */
   heroLeft: number;
   heroWidth: number;
-};
+}
 
 export function WeatherSceneCanvas({
   scene,
@@ -84,27 +82,23 @@ export function WeatherSceneCanvas({
   heroLeft,
   heroWidth,
 }: WeatherSceneCanvasProps) {
-  const window = useWindowDimensions();
+  const window = useAppWindow();
+  const { isLowMemoryDevice } = useDeviceTraits();
   const [layoutSize, handleLayout] = useLayoutSize();
   const { width, height } = layoutSize ?? window;
   const { theme } = useUniwind();
   const isAnimating = useIsAnimationActive();
   const time = useSharedValue(STATIC_SCENE_SECONDS);
-  const advanceTime = useCallback(
-    (frame: FrameInfo) => {
+  const { entries, current, finishFade } = useSceneCrossFade(scene);
+
+  useToggleableFrameCallback(
+    (frame) => {
       'worklet';
       const step = Math.min(frame.timeSincePreviousFrame ?? 0, MAX_FRAME_STEP_MS);
       time.set(time.get() + step / SECOND_MS);
     },
-    [time],
+    { isActive: isAnimating },
   );
-  const frameClock = useFrameCallback(advanceTime, false);
-  const { entries, current, finishFade } = useSceneCrossFade(scene);
-
-  useEffect(() => {
-    frameClock.setActive(isAnimating);
-    return () => frameClock.setActive(false);
-  }, [frameClock, isAnimating]);
 
   // Skia Canvas는 onLayout을 받지 않아 감싼 View에서 크기를 잰다.
   return (
@@ -115,7 +109,7 @@ export function WeatherSceneCanvas({
       accessible={false}
       importantForAccessibility="no-hide-descendants"
     >
-      <Canvas style={StyleSheet.absoluteFill} opaque highBitDepth={!IS_LOW_END_DEVICE}>
+      <Canvas style={StyleSheet.absoluteFill} opaque highBitDepth={!isLowMemoryDevice}>
         <SkyGradientLayer
           sky={current.scene.sky}
           isDark={theme === 'dark'}
@@ -130,6 +124,7 @@ export function WeatherSceneCanvas({
             isFirst={entry.id === 0}
             isAnimating={isAnimating}
             isDark={theme === 'dark'}
+            isLowMemoryDevice={isLowMemoryDevice}
             contentTop={contentTop}
             heroLeft={heroLeft}
             heroWidth={heroWidth}
@@ -163,9 +158,11 @@ function findCloudLight(
   return scene.hasMoon ? { ...position, rgb: MOON_LIGHT_RGB } : null;
 }
 
-type SceneLayersProps = {
+interface SceneLayersProps {
   entry: SceneEntry;
   isDark: boolean;
+  /** Canvas의 자식은 React context를 받지 못해 DI 훅을 부를 수 없다. 캔버스 밖에서 읽어 내린다 */
+  isLowMemoryDevice: boolean;
   contentTop: number;
   heroLeft: number;
   heroWidth: number;
@@ -175,11 +172,12 @@ type SceneLayersProps = {
   size: SceneSize;
   time: SharedValue<number>;
   onFaded: (id: number) => void;
-};
+}
 
 function SceneLayers({
   entry,
   isDark,
+  isLowMemoryDevice,
   contentTop,
   heroLeft,
   heroWidth,
@@ -210,7 +208,7 @@ function SceneLayers({
 
   const { precipitation } = scene;
   const area = { ...size, time };
-  const particles = { ...area, isLowEndDevice: IS_LOW_END_DEVICE };
+  const particles = { ...area, isLowEndDevice: isLowMemoryDevice };
   const fall = {
     ...particles,
     isDaylight: scene.isDaylight,

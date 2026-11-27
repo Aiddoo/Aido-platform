@@ -1,12 +1,12 @@
-import { toCaptionTextParts } from './voice-caption.view-model';
+import { getCaptionTextParts } from './voice-caption.view-model';
 
-describe('toCaptionTextParts', () => {
+describe('getCaptionTextParts', () => {
   it('단어를 문장 안 순서대로 찾아 조각으로 나눈다', () => {
     // Given
     const text = '수요일까지 시안 두 개 부탁해요';
 
     // When
-    const parts = toCaptionTextParts(text, ['시안', '부탁해요']);
+    const parts = getCaptionTextParts(text, ['시안', '부탁해요']);
 
     // Then
     expect(parts).toEqual([
@@ -22,7 +22,7 @@ describe('toCaptionTextParts', () => {
     const text = '네 네 알겠어요';
 
     // When
-    const parts = toCaptionTextParts(text, ['네', '네']);
+    const parts = getCaptionTextParts(text, ['네', '네']);
 
     // Then
     expect(parts.filter(({ isLowConfidence }) => isLowConfidence)).toHaveLength(2);
@@ -34,7 +34,7 @@ describe('toCaptionTextParts', () => {
     const text = '그대로예요';
 
     // When
-    const parts = toCaptionTextParts(text, []);
+    const parts = getCaptionTextParts(text, []);
 
     // Then
     expect(parts).toEqual([{ text, isLowConfidence: false }]);
@@ -45,7 +45,7 @@ describe('toCaptionTextParts', () => {
     const text = '그대로예요';
 
     // When
-    const parts = toCaptionTextParts(text, ['없는말']);
+    const parts = getCaptionTextParts(text, ['없는말']);
 
     // Then
     expect(parts.map(({ text: part }) => part).join('')).toBe(text);

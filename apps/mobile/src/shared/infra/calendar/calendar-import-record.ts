@@ -98,7 +98,7 @@ function toCanonicalInstant(value: string | Date): Instant {
 }
 
 // iOS는 기기 시간대 자정, Android는 UTC 자정으로 종일 일정을 주므로 어댑터가 플랫폼에 맞는 시간대를 넘긴다
-export function toAllDayTime({
+function toAllDayTime({
   startsAt,
   endsAt,
   timezone,

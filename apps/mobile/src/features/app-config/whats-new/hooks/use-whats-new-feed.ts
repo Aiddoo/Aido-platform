@@ -3,8 +3,8 @@ import { getNowInstant } from '@src/shared/date/clock';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { noop } from 'es-toolkit';
-import { router } from 'expo-router';
-import { useCallback, useEffect, useSyncExternalStore } from 'react';
+import { useRouter } from 'expo-router';
+import { useEffect, useSyncExternalStore } from 'react';
 
 import { shouldShowReentry } from '../domains/whats-new.model';
 import { useWhatsNewAutoOpen } from './use-whats-new-auto-open';
@@ -15,19 +15,24 @@ interface WhatsNewFeedInput {
   isOnboardingSettled: boolean;
 }
 
-/** 서버가 켠 캠페인을 첫 피드에서 계정마다 한 번 자동으로 열고(새 계정 포함), 피드 카드로 다시 열게 한다 */
-export function useWhatsNewFeed({ isStable, isOnboardingSettled }: WhatsNewFeedInput) {
+interface WhatsNewFeedActions {
+  isReentryVisible: boolean;
+  openFromReentry: () => void;
+  dismissReentry: () => void;
+}
+
+export function useWhatsNewFeed({
+  isStable,
+  isOnboardingSettled,
+}: WhatsNewFeedInput): WhatsNewFeedActions {
   const { identity, release, shouldAutoOpen } = useWhatsNewAutoOpen({ isOnboardingSettled });
   const repository = useWhatsNewRepository();
   const now = useMinuteNow();
+  const router = useRouter();
   const push = useSingleTap(router.push);
 
   const reentryOpenedAt = useSyncExternalStore(
-    useCallback(
-      (onChange: () => void) =>
-        identity == null ? noop : repository.subscribe(identity, onChange),
-      [identity, repository],
-    ),
+    (onChange: () => void) => (identity == null ? noop : repository.subscribe(identity, onChange)),
     () => (identity == null ? null : repository.findReentryOpenedAt(identity)),
   );
 

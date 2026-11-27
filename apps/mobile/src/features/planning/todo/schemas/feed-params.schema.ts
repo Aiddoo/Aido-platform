@@ -1,7 +1,7 @@
 import { userIdParamSchema } from '@aido/api/contracts/follow/v1';
 import { todoCommentIdSchema } from '@aido/api/contracts/todo-comment/v1';
 import { TODO_COMMENT_SORT } from '@aido/api/vocabulary';
-import { dateKeySchema } from '@src/shared/date/date-key';
+import { type DateKey, dateKeySchema } from '@src/shared/date/date-key';
 import { routeIdSchema } from '@src/shared/schemas/route-params.schema';
 import { z } from 'zod';
 
@@ -21,7 +21,10 @@ export const feedParamsSchema = z.object({
 
 type FeedParams = z.output<typeof feedParamsSchema>;
 
-export type FeedDateParam = FeedParams['date'];
+/** 없거나 `today`면 오늘을 따라간다. 고른 날짜만 자정이 지나도 그대로 둔다 */
+export function toFeedDateKey(date: FeedParams['date'], todayKey: DateKey): DateKey {
+  return date == null || date === 'today' ? todayKey : date;
+}
 
 /** 고른 할 일에 딸린 URL 값. 할 일이나 친구가 바뀌면 이 값들을 함께 지운다 */
 export const CLEARED_TODO_SELECTION = {

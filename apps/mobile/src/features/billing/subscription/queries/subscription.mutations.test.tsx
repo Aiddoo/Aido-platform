@@ -1,5 +1,6 @@
 import '@src/shared/i18n/init';
 import { ok } from '@src/core/errors/result';
+import { PurchasesGatewayError } from '@src/core/ports/purchases-gateway';
 import { PREMIUM_ME_EXAMPLES } from '@src/features/identity/user/__tests__/premium-access.fixtures';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { toUser } from '@src/features/identity/user/apis/user.mapper';
@@ -8,32 +9,48 @@ import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.q
 import { type CurrentUserResponse } from '@src/features/identity/user/schemas/user-response.schema';
 import { i18n } from '@src/shared/i18n';
 import {
+  createAnalyticsStub,
   createHttpClientStub,
   createPurchasesGatewayStub,
   createTestDi,
   createTestQueryClient,
+  getTrackedEvents,
   setupFakeTimersPerTest,
 } from '@src/testing/core';
 import { renderScreenHook } from '@src/testing/render';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { type QueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import { act, screen, waitFor } from '@testing-library/react-native';
 
 import { type SubscriptionPlan } from '../domains/subscription.model';
-import { usePurchaseMutationOptions, useRestoreMutationOptions } from './subscription.mutations';
+import {
+  syncMeUntilStorePremium,
+  usePurchaseMutationOptions,
+  useRestoreMutationOptions,
+} from './subscription.mutations';
 
 const SYNC_PENDING_TOAST = i18n.t('subscription:toast.purchaseSyncPending');
 
-type PurchasePlan = Pick<SubscriptionPlan, 'identifier' | 'planType' | 'freeTrial'>;
+type PurchasePlan = SubscriptionPlan;
+
+const ANNUAL_STORE_FIELDS = {
+  priceString: '₩68,000',
+  price: 68_000,
+  currencyCode: 'KRW',
+  title: '연간',
+  description: null,
+} as const;
 
 const ANNUAL_TRIAL_PLAN = {
   identifier: 'annual',
   planType: 'annual',
+  ...ANNUAL_STORE_FIELDS,
   freeTrial: { periodUnit: 'week', periodNumberOfUnits: 2 },
 } as const satisfies PurchasePlan;
 
 const ANNUAL_PLAN = {
   identifier: 'annual',
   planType: 'annual',
+  ...ANNUAL_STORE_FIELDS,
   freeTrial: null,
 } as const satisfies PurchasePlan;
 
@@ -188,13 +205,26 @@ async function renderRestore({
   purchases.restore.mockResolvedValue(
     hasStorePurchase ? STORE_ENTITLEMENT_STATUS : NO_ENTITLEMENT_STATUS,
   );
+  return renderRestoreWith({ previousMe, serverMe, purchases });
+}
+
+async function renderRestoreWith({
+  previousMe,
+  serverMe,
+  purchases,
+}: {
+  previousMe: CurrentUserResponse;
+  serverMe: CurrentUserResponse;
+  purchases: ReturnType<typeof createPurchasesGatewayStub>;
+}) {
+  const analytics = createAnalyticsStub();
   const httpClient = createHttpClientStub();
   httpClient.get.mockResolvedValue(ok(serverMe));
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
   });
   queryClient.setQueryData(USER_QUERY_KEYS.me(), toUser(previousMe));
-  const di = createTestDi({ ports: { httpClient, purchases, queryClient } });
+  const di = createTestDi({ ports: { httpClient, purchases, queryClient, analytics } });
   di.purchasesSession.configure();
   // 결제 Provider처럼 결제 SDK에 로그인해 둔다. 로그인 전 결제는 막힌다
   await di.purchasesSession.logIn('user-1');
@@ -210,6 +240,8 @@ async function renderRestore({
   await act(async () => {
     result.current.mutate();
   });
+
+  return { analytics };
 }
 
 describe('구매 복원', () => {
@@ -246,11 +278,151 @@ describe('구매 복원', () => {
     ],
   ] as const)('%s 알린다', async (_case, previousMe, serverMe, hasStorePurchase, toastKey) => {
     // When
-    await renderRestore({ previousMe, serverMe, hasStorePurchase });
+    const { analytics } = await renderRestore({ previousMe, serverMe, hasStorePurchase });
 
     // Then
     expect(
       await screen.findAllByText(i18n.t(toastKey), {}, { timeout: LONGER_THAN_STORE_SYNC_MS }),
     ).not.toHaveLength(0);
+    // 되찾은 스토어 구매가 있을 때만 복원으로 센다
+    expect(getTrackedEvents(analytics, 'subscription_restored')).toHaveLength(
+      hasStorePurchase ? 1 : 0,
+    );
+    expect(getTrackedEvents(analytics, 'subscription_restore_failed')).toEqual([]);
+  });
+
+  it('스토어 연결이 끊겨 복원하지 못하면 복원 실패를 이유와 함께 한 번 남긴다', async () => {
+    // Given
+    const purchases = createPurchasesGatewayStub();
+    purchases.restore.mockRejectedValue(new PurchasesGatewayError('network', null, 'offline'));
+
+    // When
+    const { analytics } = await renderRestoreWith({
+      previousMe: FREE_ME,
+      serverMe: FREE_ME,
+      purchases,
+    });
+
+    // Then
+    await waitFor(() =>
+      expect(getTrackedEvents(analytics, 'subscription_restore_failed')).toEqual([
+        { reason: 'network' },
+      ]),
+    );
+    expect(getTrackedEvents(analytics, 'subscription_restored')).toEqual([]);
+  });
+});
+
+describe('syncMeUntilStorePremium', () => {
+  const FREE_USER = toUser(createCurrentUserDto({ subscriptionStatus: 'FREE' }));
+  const STORE_ME = toUser(
+    createCurrentUserDto({
+      subscriptionStatus: 'ACTIVE',
+      subscriptionExpiresAt: '2026-11-12T05:30:00.000Z',
+      premiumSource: 'STORE',
+      premiumEndsAt: '2026-11-12T05:30:00.000Z',
+      willRenew: true,
+      bankedPremiumDays: 0,
+    }),
+  );
+  const DELAYS_MS = [500, 1_000, 1_500];
+  let queryClient: QueryClient;
+  const wait = jest.fn(async (_ms: number) => {});
+
+  beforeEach(() => {
+    queryClient = createTestQueryClient();
+  });
+
+  async function serveMe(...responses: (typeof FREE_USER)[]) {
+    const fetchMe = jest.fn(async () => responses.shift() ?? FREE_USER);
+    await queryClient.query({ queryKey: USER_QUERY_KEYS.me(), queryFn: fetchMe });
+    return fetchMe;
+  }
+
+  it('웹훅이 반영돼 내 정보가 STORE가 되면 그때 멈추고 true를 반환한다', async () => {
+    // Given
+    // 첫 응답과 첫 재요청은 아직 무료, 두 번째 재요청에서 반영된다
+    const fetchMe = await serveMe(FREE_USER, FREE_USER, STORE_ME);
+
+    // When
+    const isReflected = await syncMeUntilStorePremium(queryClient, { delaysMs: DELAYS_MS, wait });
+
+    // Then
+    expect(isReflected).toBe(true);
+    expect(fetchMe).toHaveBeenCalledTimes(3);
+    expect(wait.mock.calls).toEqual([[500], [1_000]]);
+  });
+
+  it('정해 둔 간격을 다 써도 반영되지 않으면 더 기다리지 않고 false를 반환한다', async () => {
+    // Given
+    const fetchMe = await serveMe(FREE_USER);
+
+    // When
+    const isReflected = await syncMeUntilStorePremium(queryClient, { delaysMs: DELAYS_MS, wait });
+
+    // Then
+    expect(isReflected).toBe(false);
+    expect(fetchMe).toHaveBeenCalledTimes(1 + DELAYS_MS.length);
+  });
+
+  it('내 정보가 없으면(로그아웃 뒤) 다시 불러오지 않고 바로 false를 반환한다', async () => {
+    // When
+    const isReflected = await syncMeUntilStorePremium(queryClient, { delaysMs: DELAYS_MS, wait });
+
+    // Then
+    expect(isReflected).toBe(false);
+    expect(wait).not.toHaveBeenCalled();
+    expect(queryClient.getQueryState(USER_QUERY_KEYS.me())).toBeUndefined();
+  });
+
+  it('이미 STORE면 다시 불러오지 않는다', async () => {
+    // Given
+    const fetchMe = await serveMe(STORE_ME);
+
+    // When
+    const isReflected = await syncMeUntilStorePremium(queryClient, { delaysMs: DELAYS_MS, wait });
+
+    // Then
+    expect(isReflected).toBe(true);
+    expect(fetchMe).toHaveBeenCalledTimes(1);
+    expect(wait).not.toHaveBeenCalled();
+  });
+
+  it('기다리는 동안 로그아웃으로 캐시가 비워지면 더 다시 불러오지 않고 false를 반환한다', async () => {
+    // Given
+    const fetchMe = await serveMe(FREE_USER);
+    const clearDuringWait = jest.fn(async (_ms: number) => {
+      queryClient.clear();
+    });
+
+    // When
+    const isReflected = await syncMeUntilStorePremium(queryClient, {
+      delaysMs: DELAYS_MS,
+      wait: clearDuringWait,
+    });
+
+    // Then
+    expect(isReflected).toBe(false);
+    expect(clearDuringWait).toHaveBeenCalledTimes(1);
+    expect(fetchMe).toHaveBeenCalledTimes(1);
+  });
+
+  it('기다리는 동안 다른 계정으로 바뀌면 그 계정의 내 정보를 다시 불러오지 않고 false를 반환한다', async () => {
+    // Given
+    const fetchMe = await serveMe(FREE_USER);
+    const switchAccount = jest.fn(async (_ms: number) => {
+      queryClient.setQueryData(USER_QUERY_KEYS.me(), { ...FREE_USER, id: 'other-user' });
+    });
+
+    // When
+    const isReflected = await syncMeUntilStorePremium(queryClient, {
+      delaysMs: DELAYS_MS,
+      wait: switchAccount,
+    });
+
+    // Then
+    expect(isReflected).toBe(false);
+    expect(switchAccount).toHaveBeenCalledTimes(1);
+    expect(fetchMe).toHaveBeenCalledTimes(1);
   });
 });

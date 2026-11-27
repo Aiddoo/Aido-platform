@@ -2,6 +2,7 @@ import type { ReminderTimezoneCachePort } from "#api/modules/notification/remind
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { isSameTimezone } from "#api/shared/domain/time/timezone-name";
 
 import type { TodoTimezoneRebaseEnqueuerPort } from "../ports/todo-timezone-rebase-enqueuer.port.js";
 import type { UserPreferenceRepositoryPort } from "../ports/user-preference.repository.port.js";
@@ -13,7 +14,10 @@ export interface RefreshPushTimezoneCommand {
 }
 
 interface RefreshPushTimezoneDependencies {
-  readonly preferenceRepository: Pick<UserPreferenceRepositoryPort, "refreshTimezoneIfChanged">;
+  readonly preferenceRepository: Pick<
+    UserPreferenceRepositoryPort,
+    "findReadModelByUserId" | "refreshTimezoneIfChanged"
+  >;
   readonly cache: Pick<UserSettingsCachePort, "invalidateUserPreference">;
   readonly reminderTimezoneCache: ReminderTimezoneCachePort;
   readonly todoTimezoneRebase: TodoTimezoneRebaseEnqueuerPort;
@@ -31,11 +35,14 @@ export class RefreshPushTimezoneUseCase {
   async execute(input: RefreshPushTimezoneCommand): Promise<void> {
     const { timezone } = input;
     const userId = UserId.reconstitute(input.userId);
+    const { preferenceRepository } = this.#dependencies;
     const changed = await this.#dependencies.unitOfWork.run(async () => {
-      const count = await this.#dependencies.preferenceRepository.refreshTimezoneIfChanged(
-        userId,
-        timezone,
-      );
+      // 설정 변경·기기 보고(UserPreference.changeSettings)와 같이 이름만 다른 같은 시간대는 쓰지 않는다
+      const stored = await preferenceRepository.findReadModelByUserId(userId);
+      if (stored == null || isSameTimezone(stored.timezone, timezone)) {
+        return false;
+      }
+      const count = await preferenceRepository.refreshTimezoneIfChanged(userId, timezone);
       if (count === 0) {
         return false;
       }

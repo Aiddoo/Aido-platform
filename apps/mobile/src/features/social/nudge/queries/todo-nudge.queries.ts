@@ -1,17 +1,23 @@
 import { useTodoNudgeApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
+import type { TodoDetails } from '@src/features/planning/todo/domains/todo-details.model';
 import { DEFAULT_PAGE_SIZE } from '@src/shared/constants/page-size';
 import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time-units';
-import { getNextCursor, selectPageItems } from '@src/shared/domains/cursor-page.model';
+import { getNextCursor, selectPageItems } from '@src/shared/query/cursor-page';
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 
-import type { NudgeThanksCursor } from '../domains/nudge-interaction.model';
+import type { NudgeThanksCursor } from '../domains/nudge-thanks-preview.model';
 import type { NudgeDirection } from '../schemas/nudge-interaction-query-key.schema';
 import { TODO_NUDGE_QUERY_KEYS } from './todo-nudge-query-keys';
 
 const FIRST_PAGE_CURSOR: number | undefined = undefined;
 const FIRST_THANKS_PREVIEW_CURSOR: NudgeThanksCursor | undefined = undefined;
 const NUDGE_STALE_TIME_MS = 30 * SECOND_MS;
+
+/** 할 일 상세에서 감사를 보낼 수 있는지만 고른다. 서버가 상세 권한(canThank)으로 정한다 */
+export function selectCanThank(details: TodoDetails) {
+  return details.permissions.canThank;
+}
 
 export function useGetNudgeInteractionAvailabilityQueryOptions() {
   const todoNudgeApi = useTodoNudgeApi();

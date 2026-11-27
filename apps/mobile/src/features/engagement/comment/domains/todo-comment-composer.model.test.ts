@@ -1,166 +1,190 @@
 import { createTodoComment } from '../__tests__/todo-comment.fixtures';
-import { TodoCommentComposerPolicy } from './todo-comment-composer.model';
+import {
+  getTrimmedContent,
+  isBlankContent,
+  TodoCommentComposerPolicy,
+} from './todo-comment-composer.model';
 
-describe('canChain', () => {
-  it('수정은 이어 쓸 수 없다', () => {
-    // Given
-    const target = createTodoComment();
-
+describe('getTrimmedContent', () => {
+  it('보낼 글은 앞뒤 공백과 줄바꿈을 지우고 가운데는 그대로 둔다', () => {
     // When
-    const result = TodoCommentComposerPolicy.canChain({ type: 'edit', target }, 1);
+    const content = getTrimmedContent('  하나 둘\n');
 
     // Then
-    expect(result).toBe(false);
-  });
-
-  it('답글은 상한 전까지 이어 쓴다', () => {
-    // Given
-    const target = createTodoComment();
-
-    // When
-    const result = TodoCommentComposerPolicy.canChain({ type: 'reply', target }, 4);
-
-    // Then
-    expect(result).toBe(true);
-  });
-
-  it('새 글도 상한(5개)에 닿으면 더 이어 쓸 수 없다', () => {
-    // When
-    const result = TodoCommentComposerPolicy.canChain({ type: 'new' }, 5);
-
-    // Then
-    expect(result).toBe(false);
+    expect(content).toBe('하나 둘');
   });
 });
 
-describe('findReplyParentId', () => {
-  it('답글은 누른 글에 답한다', () => {
-    // Given
-    const target = createTodoComment({ id: 'reply-target' });
-
+describe('isBlankContent', () => {
+  it.each([
+    ['빈 글', '', true],
+    ['공백과 줄바꿈뿐인 글', '  \n', true],
+    ['쓴 글', ' 쓰던 글 ', false],
+  ])('%s은 빈 칸인지가 %s다', (_label, content, expected) => {
     // When
-    const parentId = TodoCommentComposerPolicy.findReplyParentId({ type: 'reply', target });
+    const result = isBlankContent(content);
 
     // Then
-    expect(parentId).toBe('reply-target');
-  });
-
-  it('새 댓글은 답할 글이 없다', () => {
-    // When
-    const parentId = TodoCommentComposerPolicy.findReplyParentId({ type: 'new' });
-
-    // Then
-    expect(parentId).toBeNull();
-  });
-
-  it('수정은 답글이 아니므로 답할 글이 없다', () => {
-    // Given
-    const target = createTodoComment();
-
-    // When
-    const parentId = TodoCommentComposerPolicy.findReplyParentId({ type: 'edit', target });
-
-    // Then
-    expect(parentId).toBeNull();
+    expect(result).toBe(expected);
   });
 });
 
-describe('prepareSubmission', () => {
-  function createIdSequence() {
-    let count = 0;
+describe('TodoCommentComposerPolicy', () => {
+  describe('findTarget', () => {
+    it('새 글이면 대상이 없다', () => {
+      // When
+      const target = TodoCommentComposerPolicy.findTarget({ type: 'new' });
 
-    return () => {
-      count += 1;
-      return `id-${count}`;
-    };
-  }
-
-  it('같은 글을 다시 보내면 처음 발급한 멱등 키를 다시 쓴다', () => {
-    // Given
-    const createClientRequestId = createIdSequence();
-    const first = TodoCommentComposerPolicy.prepareSubmission({
-      previousSubmission: null,
-      todoId: 1,
-      parentId: null,
-      contents: ['안녕'],
-      createClientRequestId,
+      // Then
+      expect(target).toBeNull();
     });
 
-    // When
-    const retried = TodoCommentComposerPolicy.prepareSubmission({
-      previousSubmission: first,
-      todoId: 1,
-      parentId: null,
-      contents: ['안녕'],
-      createClientRequestId,
-    });
+    it('답글과 수정은 고른 글을 대상으로 한다', () => {
+      // Given
+      const comment = createTodoComment();
 
-    // Then
-    expect(retried).toBe(first);
+      // When
+      const targets = [
+        TodoCommentComposerPolicy.findTarget({ type: 'reply', target: comment }),
+        TodoCommentComposerPolicy.findTarget({ type: 'edit', target: comment }),
+      ];
+
+      // Then
+      expect(targets).toEqual([comment, comment]);
+    });
   });
 
-  it('글이 바뀌면 새 멱등 키를 발급한다', () => {
-    // Given
-    const createClientRequestId = createIdSequence();
-    const first = TodoCommentComposerPolicy.prepareSubmission({
-      previousSubmission: null,
-      todoId: 1,
-      parentId: null,
-      contents: ['안녕'],
-      createClientRequestId,
+  describe('findReplyParentId', () => {
+    it('답글은 누른 글에 답한다', () => {
+      // Given
+      const target = createTodoComment({ id: 'reply-target' });
+
+      // When
+      const parentId = TodoCommentComposerPolicy.findReplyParentId({ type: 'reply', target });
+
+      // Then
+      expect(parentId).toBe('reply-target');
     });
 
-    // When
-    const changed = TodoCommentComposerPolicy.prepareSubmission({
-      previousSubmission: first,
-      todoId: 1,
-      parentId: null,
-      contents: ['바뀐 글'],
-      createClientRequestId,
+    it('새 댓글은 답할 글이 없다', () => {
+      // When
+      const parentId = TodoCommentComposerPolicy.findReplyParentId({ type: 'new' });
+
+      // Then
+      expect(parentId).toBeNull();
     });
 
-    // Then
-    expect(changed.input.items[0]?.clientRequestId).toBe('id-2');
+    it('수정은 답글이 아니므로 답할 글이 없다', () => {
+      // Given
+      const target = createTodoComment();
+
+      // When
+      const parentId = TodoCommentComposerPolicy.findReplyParentId({ type: 'edit', target });
+
+      // Then
+      expect(parentId).toBeNull();
+    });
   });
 
-  it('이어 쓴 글마다 서로 다른 멱등 키를 발급한다', () => {
-    // Given
-    const createClientRequestId = createIdSequence();
+  describe('canChain', () => {
+    it('수정은 이어 쓸 수 없다', () => {
+      // Given
+      const target = createTodoComment();
 
-    // When
-    const submission = TodoCommentComposerPolicy.prepareSubmission({
-      previousSubmission: null,
-      todoId: 1,
-      parentId: null,
-      contents: ['하나', '둘'],
-      createClientRequestId,
+      // When
+      const result = TodoCommentComposerPolicy.canChain({ type: 'edit', target }, 1);
+
+      // Then
+      expect(result).toBe(false);
     });
 
-    // Then
-    expect(submission.input.items.map((item) => item.clientRequestId)).toEqual(['id-1', 'id-2']);
+    it('답글은 상한 전까지 이어 쓴다', () => {
+      // Given
+      const target = createTodoComment();
+
+      // When
+      const result = TodoCommentComposerPolicy.canChain({ type: 'reply', target }, 4);
+
+      // Then
+      expect(result).toBe(true);
+    });
+
+    it('새 글도 상한(5개)에 닿으면 더 이어 쓸 수 없다', () => {
+      // When
+      const result = TodoCommentComposerPolicy.canChain({ type: 'new' }, 5);
+
+      // Then
+      expect(result).toBe(false);
+    });
   });
-});
 
-describe('isSameAsOriginal', () => {
-  it('공백을 지운 글이 원래 글과 같으면 수정할 것이 없다', () => {
-    // Given
-    const target = createTodoComment({ content: '원래 글' });
+  describe('isUnchanged', () => {
+    it('공백을 지운 글이 원래 글과 같으면 수정할 것이 없다', () => {
+      // Given
+      const target = createTodoComment({ content: '원래 글' });
 
-    // When
-    const result = TodoCommentComposerPolicy.isSameAsOriginal(target, '원래 글');
+      // When
+      const result = TodoCommentComposerPolicy.isUnchanged({ type: 'edit', target }, '원래 글');
 
-    // Then
-    expect(result).toBe(true);
+      // Then
+      expect(result).toBe(true);
+    });
+
+    it('글이 바뀌었으면 수정할 것이 있다', () => {
+      // Given
+      const target = createTodoComment({ content: '원래 글' });
+
+      // When
+      const result = TodoCommentComposerPolicy.isUnchanged({ type: 'edit', target }, '바뀐 글');
+
+      // Then
+      expect(result).toBe(false);
+    });
+
+    it('답글은 대상 글과 같은 글을 써도 새로 보낼 글이다', () => {
+      // Given
+      const target = createTodoComment({ content: '원래 글' });
+
+      // When
+      const result = TodoCommentComposerPolicy.isUnchanged({ type: 'reply', target }, '원래 글');
+
+      // Then
+      expect(result).toBe(false);
+    });
   });
 
-  it('글이 바뀌었으면 수정할 것이 있다', () => {
-    // Given
-    const target = createTodoComment({ content: '원래 글' });
+  describe('getBackAction', () => {
+    it.each(['reply', 'edit'] as const)('%s 중이면 화면보다 작성기를 먼저 닫는다', (type) => {
+      // Given
+      const composer = { type, target: createTodoComment() };
 
-    // When
-    const result = TodoCommentComposerPolicy.isSameAsOriginal(target, '바뀐 글');
+      // When
+      const action = TodoCommentComposerPolicy.getBackAction(composer, { isSubmitting: false });
 
-    // Then
-    expect(result).toBe(false);
+      // Then
+      expect(action).toBe('closeComposer');
+    });
+
+    it('새 댓글을 쓰는 중이면 화면을 닫는 기본 동작에 맡긴다', () => {
+      // When
+      const action = TodoCommentComposerPolicy.getBackAction(
+        { type: 'new' },
+        { isSubmitting: false },
+      );
+
+      // Then
+      expect(action).toBe('native');
+    });
+
+    it('보내는 중에는 초안을 지키려고 뒤로가기를 막는다', () => {
+      // When
+      const action = TodoCommentComposerPolicy.getBackAction(
+        { type: 'new' },
+        { isSubmitting: true },
+      );
+
+      // Then
+      expect(action).toBe('blocked');
+    });
   });
 });

@@ -1,0 +1,52 @@
+appId: ${MAESTRO_APP_ID}
+name: 메모를 만들고 내용을 고쳐 저장하면 목록과 서버에 바뀐 내용이 보인다
+tags:
+  - smoke
+  - memo
+onFlowStart:
+  - runFlow: ../../subflows/app/load-helpers.yaml
+  - evalScript: ${output.main = output.api.signIn('main')}
+  - evalScript: ${output.memoText = 'E2E memo ' + output.config.runId}
+  - evalScript: ${output.editedText = 'E2E memo edited ' + output.config.runId}
+  - runFlow: ../../subflows/app/launch-fresh.yaml
+onFlowComplete:
+  - evalScript: ${output.main && output.main.removeMemosContaining('E2E memo')}
+---
+# Given: 로그인했다
+- runFlow:
+    file: ../../subflows/auth/sign-in.yaml
+    env:
+      EMAIL: ${output.main.email}
+      PASSWORD: ${output.main.password}
+
+# When: 새 메모를 저장한다
+- runFlow:
+    file: ../../subflows/memo/write-new.yaml
+    env:
+      MEMO_TEXT: ${output.memoText}
+# 헤더 저장 버튼은 네이티브 툴바라 testID를 받지 않는다
+- tapOn: ${output.labels.header.save}
+- extendedWaitUntil:
+    # 메모 카드는 접근성 요소 하나로 묶여 라벨이 "본문, 날짜"라 부분 일치로 찾는다
+    visible: ${'.*' + output.memoText + '.*'}
+    timeout: 10000
+# Then: 서버에 저장된다
+- evalScript: ${output.memo = output.main.waitForMemo(output.memoText)}
+
+# When: 그 메모를 열어 내용을 바꿔 저장한다
+- tapOn:
+    id: ${output.ids.memo.item(output.memo.id)}
+- tapOn:
+    id: ${output.ids.memo.editorInput}
+- eraseText: 200
+- inputText: ${output.editedText}
+- tapOn: ${output.labels.header.save}
+- extendedWaitUntil:
+    notVisible: ${output.labels.header.save}
+    timeout: 10000
+# Then: 서버와 메모 목록에 바뀐 내용이 보인다
+- evalScript: ${output.main.waitForMemo(output.editedText)}
+- openLink: ${output.config.appScheme}://memo
+- extendedWaitUntil:
+    visible: ${'.*' + output.editedText + '.*'}
+    timeout: 10000

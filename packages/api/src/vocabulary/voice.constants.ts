@@ -24,3 +24,24 @@ export const IDEMPOTENCY_KEY_MAX_LENGTH = 128;
 
 /** 행동 key는 앱이 선택·편집 상태를 묶는 값이다. */
 export const PLANNED_ACTION_KEY_MAX_LENGTH = 64;
+
+/** 앱이 기기 음성 인식을 맡기는 언어. 서버에는 오지 않고 앱의 인식기 포트와 말로 메모 모델이 함께 쓴다. */
+export const SPEECH_LOCALES = ["ko-KR", "en-US"] as const;
+
+/** 기기 음성 인식기가 내는 오류 코드. 인식기 포트와 빠른 말하기 실패 이유가 같은 목록을 쓴다. */
+export const SPEECH_ERROR_CODES = [
+  "aborted",
+  "audio-capture",
+  "interrupted",
+  "bad-grammar",
+  "language-not-supported",
+  "network",
+  "no-speech",
+  "not-allowed",
+  "service-not-allowed",
+  "busy",
+  "client",
+  "speech-timeout",
+  "too-many-requests",
+  "unknown",
+] as const;

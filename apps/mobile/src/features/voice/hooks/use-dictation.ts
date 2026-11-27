@@ -1,5 +1,6 @@
 import { useSpeechRecognizer } from '@src/bootstrap/providers/di-context';
 import type { SpeechErrorCode } from '@src/core/ports/speech-recognizer';
+import { useIsUnmountedRef } from '@src/shared/hooks/use-is-unmounted-ref';
 import { useLocaleContext } from '@src/shared/hooks/use-locale-context';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { tDynamic } from '@src/shared/i18n';
@@ -8,8 +9,8 @@ import { noop } from 'es-toolkit';
 import { useEffect, useRef, useState } from 'react';
 import { match } from 'ts-pattern';
 
+import { toSpeechStartOptions } from '../apis/speech-hint.mapper';
 import { COMMON_SPEECH_HINTS } from '../constants/speech-hints.constants';
-import { getRecognizerStartOptions } from '../domains/speech-context.model';
 import { useEnsureMicrophonePermission } from './use-ensure-microphone-permission';
 import { useSpeechEvent } from './use-speech-event';
 
@@ -24,15 +25,22 @@ function getSpeechErrorMessage(code: SpeechErrorCode) {
   return tDynamic('common', `speechErrors.${code}`, tDynamic('common', 'speechErrors.unknown'));
 }
 
+interface DictationActions {
+  isListening: boolean;
+  start: () => Promise<void>;
+  stop: () => void;
+}
+
 /** 인식기 이벤트는 앱 전체에 하나라 이 훅이 시작한 세션만 받고, 화면이 내려가면 듣던 세션을 끊는다 */
-export function useDictation({ onResult, onEnd }: UseDictationOptions) {
+export function useDictation({ onResult, onEnd }: UseDictationOptions): DictationActions {
   const speechRecognizer = useSpeechRecognizer();
   const ensureMicrophonePermission = useEnsureMicrophonePermission();
   const toast = useAppToast();
   const reportUnexpectedError = useReportUnexpectedError('voice');
   const { speechLocale } = useLocaleContext();
   const [isListening, setIsListening] = useState(false);
-  const isMountedRef = useRef(false);
+  // 내려갈 때 세션을 끊는 effect보다 먼저 불러 정리도 먼저 돈다
+  const isUnmountedRef = useIsUnmountedRef();
   const isSessionOwnerRef = useRef(false);
   const hasFailedRef = useRef(false);
   const isStopRequestedRef = useRef(false);
@@ -84,16 +92,29 @@ export function useDictation({ onResult, onEnd }: UseDictationOptions) {
   });
 
   useEffect(() => {
-    isMountedRef.current = true;
-
     return () => {
-      isMountedRef.current = false;
       if (isSessionOwnerRef.current) {
         isSessionOwnerRef.current = false;
         speechRecognizer.abort();
       }
     };
   }, [speechRecognizer]);
+
+  const beginListening = async () => {
+    const locale = speechLocale;
+    const isGranted = await ensureMicrophonePermission('dictation', locale);
+    if (!isGranted || isUnmountedRef.current) {
+      isStartingRef.current = false;
+      return;
+    }
+    isSessionOwnerRef.current = true;
+    speechRecognizer.start(
+      toSpeechStartOptions(
+        { locale, mode: 'dictation', hintWords: [], isOnDevice: false, recordingDirectory: null },
+        COMMON_SPEECH_HINTS[locale],
+      ),
+    );
+  };
 
   const start = async () => {
     if (isStartingRef.current) {
@@ -102,26 +123,13 @@ export function useDictation({ onResult, onEnd }: UseDictationOptions) {
     isStartingRef.current = true;
     hasFailedRef.current = false;
     isStopRequestedRef.current = false;
-    try {
-      const locale = speechLocale;
-      const isGranted = await ensureMicrophonePermission('dictation', locale);
-      if (!isGranted || !isMountedRef.current) {
-        isStartingRef.current = false;
-        return;
-      }
-      isSessionOwnerRef.current = true;
-      speechRecognizer.start(
-        getRecognizerStartOptions(
-          { locale, mode: 'dictation', hintWords: [], isOnDevice: false, recordingDirectory: null },
-          COMMON_SPEECH_HINTS[locale],
-        ),
-      );
-    } catch (error) {
+    // 조건이 든 try는 React Compiler가 이 훅을 건너뛰게 해 실패를 Promise로 받는다
+    await beginListening().catch((error: unknown) => {
       isStartingRef.current = false;
       isSessionOwnerRef.current = false;
       reportUnexpectedError(error);
       toast.error(getSpeechErrorMessage('unknown'));
-    }
+    });
   };
 
   const stop = () => {

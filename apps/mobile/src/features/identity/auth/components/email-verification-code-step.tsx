@@ -8,12 +8,12 @@ import { HStack, Text, TextButton, VStack, FormStepLayout, Box } from '@src/shar
 import { cn } from '@src/shared/utils/cn';
 import { range } from 'es-toolkit';
 import { InputOTP, type InputOTPRef } from 'heroui-native';
-import { type ComponentProps, useCallback, useRef, useState } from 'react';
+import { type ComponentProps, useRef, useState } from 'react';
 
 import { findResendCooldown } from '../domains/auth.error';
 import { isVerificationCode } from '../domains/auth.model';
 import { getRemainingCooldownSeconds } from '../utils/cooldown.view-model';
-import { maskEmail } from '../utils/email.view-model';
+import { formatMaskedEmail } from '../utils/email.view-model';
 
 interface EmailVerificationCodeStepProps extends Pick<
   ComponentProps<typeof VerificationCodeInput>,
@@ -51,7 +51,7 @@ export function EmailVerificationCodeStep({
     inputOTPRef.current?.clear();
   };
 
-  const handleComplete = async (completedCode: string) => {
+  const handleComplete = (completedCode: string) => {
     if (!isVerificationCode(completedCode)) {
       setIsInvalid(true);
       clearCode();
@@ -59,35 +59,34 @@ export function EmailVerificationCodeStep({
     }
 
     setIsInvalid(false);
-    try {
-      await onComplete(completedCode);
-    } catch {
+    onComplete(completedCode).catch(() => {
       setIsInvalid(true);
       clearCode();
-    }
+    });
   };
 
-  const handleResend = async () => {
+  const handleResend = () => {
     if (cooldown > 0 || isResending) {
       return;
     }
 
-    try {
-      const { retryAfterSeconds } = await onResend();
-      startCooldown(retryAfterSeconds ?? VERIFICATION_CODE.RESEND_COOLDOWN_SECONDS);
-      setIsInvalid(false);
-      clearCode();
-    } catch (error) {
-      const remainingSeconds = findResendCooldown(error);
-      if (remainingSeconds != null) {
-        startCooldown(remainingSeconds);
-      }
-    }
+    onResend()
+      .then(({ retryAfterSeconds }) => {
+        startCooldown(retryAfterSeconds ?? VERIFICATION_CODE.RESEND_COOLDOWN_SECONDS);
+        setIsInvalid(false);
+        clearCode();
+      })
+      .catch((error: unknown) => {
+        const remainingSeconds = findResendCooldown(error);
+        if (remainingSeconds != null) {
+          startCooldown(remainingSeconds);
+        }
+      });
   };
 
   return (
     <Box className="flex-1">
-      <FormStepLayout title={t('verification.codeSentTo', { email: maskEmail(email) })}>
+      <FormStepLayout title={t('verification.codeSentTo', { email: formatMaskedEmail(email) })}>
         <VStack gap={32} align="center">
           <VerificationCodeInput
             ref={inputOTPRef}
@@ -132,7 +131,6 @@ interface VerificationCodeInputProps extends Omit<
   isSeparated?: boolean;
 }
 
-/** 서버 인증 코드 길이만큼 칸을 만드는 인증 코드 입력 */
 function VerificationCodeInput({ isSeparated = false, ...props }: VerificationCodeInputProps) {
   const half = Math.ceil(VERIFICATION_CODE.LENGTH / 2);
 
@@ -173,9 +171,9 @@ function useCooldown() {
   });
   const cooldown = getRemainingCooldownSeconds(deadlineMs, toEpochMs(now));
 
-  const startCooldown = useCallback((seconds: number) => {
+  const startCooldown = (seconds: number) => {
     setDeadlineMs(toEpochMs(getNowInstant()) + seconds * SECOND_MS);
-  }, []);
+  };
 
   return [cooldown, startCooldown] as const;
 }

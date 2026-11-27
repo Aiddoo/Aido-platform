@@ -80,10 +80,63 @@ tester.run('my-page-menu-navigation', rules['my-page-menu-navigation'], {
 });
 
 tester.run('no-inline-query-options', rules['no-inline-query-options'], {
-  valid: ['useSuspenseQuery(useGetTodoQueryOptions(todoId));'],
+  valid: [
+    'useSuspenseQuery(useGetTodoQueryOptions(todoId));',
+    'useQuery({ ...useGetTodoOverviewQueryOptions(), select: selectHasActiveRepeat });',
+    'useSuspenseQuery({ ...options, select: TodoOverviewSelect.hasActiveRepeat });',
+    'useQuery({ ...useGetMeQueryOptions(), enabled: isAuthenticated });',
+    'useMutation({ ...useUpdateTodoMutationOptions(), onSuccess: close });',
+  ],
   invalid: [
     { code: 'useQuery({ queryKey, queryFn });', errors: 1 },
     { code: 'ReactQuery.useMutation({ mutationFn });', errors: 1 },
+    { code: "useMutation({ networkMode: 'always', mutationFn: share });", errors: 1 },
+    {
+      code: 'useQuery({ ...options, select: (overview) => overview.hasActiveRepeat });',
+      errors: 1,
+    },
+    { code: 'useSuspenseInfiniteQuery({ ...options, queryFn: fetchPage });', errors: 1 },
+  ],
+});
+
+tester.run('no-module-router', rules['no-module-router'], {
+  valid: [
+    "import { useRouter } from 'expo-router';",
+    "import type { Router } from 'expo-router';",
+    "import { type router } from 'expo-router';",
+    "import { router } from './router';",
+  ],
+  invalid: [
+    { code: "import { router } from 'expo-router';", errors: 1 },
+    { code: "import { Link, router as navigation } from 'expo-router';", errors: 1 },
+  ],
+});
+
+tester.run('form-owner', rules['form-owner'], {
+  valid: [
+    'interface CategoryFieldsProps { value: string; onChange: (value: string) => void; errorMessage?: string }',
+    "import type { UseFormReturn } from 'react-hook-form';\nexport function Sheet() { const form = useForm({ defaultValues }); return <Fields form={form} />; }\nfunction Fields({ form }: { form: UseFormReturn<Values> }) { return null; }",
+    "import type { Control } from './control';\ninterface Props { control: Control }",
+    'const name = useWatch({ control, name: "title" });',
+    'const subscription = store.watch(listener);',
+  ],
+  invalid: [
+    {
+      code: "import type { UseFormReturn } from 'react-hook-form';\ninterface SignUpFormProps { form: UseFormReturn<SignUpFormValues> }",
+      errors: 1,
+    },
+    {
+      code: "import type { Control as FormControl } from 'react-hook-form';\nexport function Fields({ control }: { control: FormControl<Values> }) { return null; }",
+      errors: 1,
+    },
+    {
+      code: "import type { UseFormReturn } from 'react-hook-form';\ninterface ButtonProps { form: Pick<UseFormReturn<Values>, 'handleSubmit'> }",
+      errors: 1,
+    },
+    { code: 'const form = useFormContext();', errors: 1 },
+    { code: '<FormProvider {...form}><Fields /></FormProvider>;', errors: 1 },
+    { code: 'const title = form.watch("title");', errors: 1 },
+    { code: 'const values = memoForm.watch();', errors: 1 },
   ],
 });
 

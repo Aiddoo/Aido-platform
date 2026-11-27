@@ -1,3 +1,4 @@
+import { PremiumAccessPolicy } from '@src/features/identity/user/domains/premium-access.model';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { PUSH_PERMISSION_STEP } from '@src/features/notification/constants/notification.constants';
 import { PushPermissionPolicy } from '@src/features/notification/domains/push-permission.model';
@@ -48,7 +49,6 @@ import { match } from 'ts-pattern';
 
 import { InviteRedemptionPolicy } from '../domains/invite-redemption.model';
 import type { RedemptionResult } from '../domains/invite-redemption.model';
-import { InviteePremiumAccessPolicy } from '../domains/invitee-premium-access.model';
 import { useGetRedemptionResultQueryOptions } from '../queries/invite.queries';
 import { inviteWelcomeParamsSchema } from '../schemas/invite-params.schema';
 
@@ -59,7 +59,6 @@ type InviteWelcomeBottomSheetProps = Omit<
   'children' | 'isOpen' | 'onOpenChange'
 >;
 
-/** 초대를 수락한 뒤 누구와 친구가 됐는지, 무엇을 받았는지 보여 주고 첫 할 일로 이끈다 */
 export function InviteWelcomeBottomSheet(props: InviteWelcomeBottomSheetProps) {
   const [{ friendId }] = useRouteParams(inviteWelcomeParamsSchema);
   const sheet = useSheetRoute('/feed');
@@ -199,7 +198,7 @@ InviteWelcomeBottomSheet.Welcome = function Welcome({ redemption }: WelcomeProps
               lineBreakStrategyIOS="hangul-word"
               textBreakStrategy="highQuality"
             >
-              {match(InviteePremiumAccessPolicy.getRewardStart(me.premiumAccess))
+              {match(PremiumAccessPolicy.getInviteRewardStart(me.premiumAccess))
                 .with('now', () => t('welcome.rewardDescription', { count: premiumDays }))
                 .with('after-subscription', () =>
                   t('welcome.rewardAfterSubscription', { count: premiumDays }),
@@ -264,8 +263,7 @@ function WelcomeNotificationPrompt({ className }: { className?: string }) {
   const isTurnedOn =
     hasAsked && permission != null && PushPermissionPolicy.isPushDeliverable(permission);
 
-  // 권한을 확인하기 전에는 그리지 않아 이미 켠 사용자에게 잠깐 보였다 사라지지 않게 한다.
-  // 시스템 창을 다시 띄울 수 없으면 버튼이 아무 일도 하지 않으므로 보여 주지 않는다
+  // 권한 확인 전에는 그리지 않아 잠깐 보였다 사라지지 않게 하고, 시스템 창을 다시 띄울 수 없으면 버튼이 할 일이 없어 숨긴다
   if (
     !isTurnedOn &&
     (permission == null || !PushPermissionPolicy.canRequestSystemDialog(permission))

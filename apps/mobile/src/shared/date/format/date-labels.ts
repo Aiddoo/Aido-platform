@@ -36,13 +36,6 @@ export function getDayOfWeekLabel(day: DayOfWeek, language: string): string {
   return t(`common:daysOfWeek.${day}`, { lng: language });
 }
 
-/** `language`가 없으면 React Compiler가 첫 언어의 결과를 계속 쓴다 */
-export function getWeekdayLabels(language?: string): string[] {
-  return (['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'] as const).map((day) =>
-    t(`common:daysOfWeek.${day}`, { lng: language }),
-  );
-}
-
 interface WeekHeaderLabelInput {
   /** 라벨의 달은 이 날의 달이다 */
   monthDateKey: DateKey;

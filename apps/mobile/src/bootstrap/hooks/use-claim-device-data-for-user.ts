@@ -13,10 +13,7 @@ import { toEpochMs } from '@src/shared/date/instant';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 
-/**
- * 로그인한 계정을 기기에 저장된 초안, 조회 캐시, 음성 메모의 주인으로 정하고 다른 계정의 것은 지운다.
- * 복원한 조회 캐시의 내 정보는 지난 실행의 다른 계정일 수 있어 이 마운트 뒤에 받은 내 정보로만 정한다
- */
+/** 복원한 조회 캐시의 내 정보는 지난 실행의 다른 계정일 수 있어 이 마운트 뒤에 받은 내 정보로만 주인을 정한다 */
 export function useClaimDeviceDataForUser(): void {
   const status = useAuthStatus();
   const draftService = useDraftService();

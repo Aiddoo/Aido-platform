@@ -28,7 +28,7 @@ describe('MemoCreateButton', () => {
 
     // Then
     expect(await screen.findAllByText('메모는 20개까지 쓸 수 있어요')).not.toHaveLength(0);
-    expect(screen.getAllByText('안 쓰는 메모를 지우면 새로 쓸 수 있어요')).not.toHaveLength(0);
+    expect(screen.getAllByText('안 쓰는 메모를 삭제하면 새로 쓸 수 있어요')).not.toHaveLength(0);
     expect(router.push).not.toHaveBeenCalled();
   });
 });

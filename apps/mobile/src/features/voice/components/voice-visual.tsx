@@ -15,6 +15,8 @@ import { useIsAnimationActive } from '@src/shared/hooks/use-is-animation-active'
 import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { useRebuiltPath } from '@src/shared/hooks/use-rebuilt-path';
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
+import { useSkiaDensityScale } from '@src/shared/hooks/use-skia-density-scale';
+import { useToggleableFrameCallback } from '@src/shared/hooks/use-toggleable-frame-callback';
 import { Box } from '@src/shared/ui';
 import { range } from 'es-toolkit';
 import { useEffect, useState } from 'react';
@@ -30,16 +32,66 @@ import {
 import { scheduleOnRN } from 'react-native-worklets';
 import { useUniwind } from 'uniwind';
 
-import {
-  VOICE_GRADIENT_COLORS,
-  VOICE_LIGHT_ORB,
-  VOICE_VISUAL,
-  VOICE_VISUAL_BARS,
-} from '../constants/voice.constants';
-import { useSkiaDensityScale } from '../hooks/use-skia-density-scale';
-import { useToggleableFrameCallback } from '../hooks/use-toggleable-frame-callback';
-import { addFrameTime, shouldUseLightOrb } from '../utils/voice-frame-budget.view-model';
+import { VOICE_GRADIENT_COLORS } from '../constants/voice.constants';
 import { followLevel } from '../utils/waveform.geometry';
+
+const VOICE_VISUAL = {
+  height: 84,
+  orbSize: 72,
+  attackMs: 70,
+  releaseMs: 520,
+  maxFrameMs: 50,
+  settleMs: 400,
+} as const;
+
+const VOICE_VISUAL_BARS = {
+  /** 560pt 시트의 한쪽을 채우는 칸 수 */
+  maxCount: 40,
+  width: 3,
+  step: 6,
+  startOffset: 38,
+  minHeight: 3,
+  heightMargin: 22,
+  falloff: 0.45,
+  intervalMs: 70,
+  followMs: 37,
+  reducedMotionLevel: 0.12,
+  edgeOpacity: 0.35,
+} as const;
+
+const VOICE_LIGHT_ORB = {
+  radius: 22,
+  growRatio: 0.22,
+  /** 하이라이트 중심이 구 중심에서 왼쪽 위로 벗어나는 반지름 비율 */
+  highlightOffsetX: 0.35,
+  highlightOffsetY: 0.4,
+  /** 하이라이트 그라데이션이 퍼지는 반지름 배수와 색 경계 */
+  highlightRadiusRatio: 1.8,
+  gradientStops: [0, 0.55, 1],
+};
+
+const VOICE_FRAME_BUDGET = {
+  /** 30fps 아래 */
+  slowFrameMs: 34,
+  sustainedSlowMs: 2_000,
+  /** 앱을 다녀오면 프레임이 크게 벌어진다. 기기 성능이 아니므로 세지 않는다 */
+  ignoreFrameMs: 500,
+} as const;
+
+function addFrameTime(slowMs: number, frameMs: number): number {
+  'worklet';
+  if (frameMs >= VOICE_FRAME_BUDGET.ignoreFrameMs) {
+    return slowMs;
+  }
+  return frameMs > VOICE_FRAME_BUDGET.slowFrameMs
+    ? slowMs + frameMs
+    : Math.max(0, slowMs - frameMs);
+}
+
+function shouldUseLightOrb(slowMs: number): boolean {
+  'worklet';
+  return slowMs >= VOICE_FRAME_BUDGET.sustainedSlowMs;
+}
 
 /** SkSL 출력은 곱셈 알파다 */
 const ORB_SHADER = Skia.RuntimeEffect.Make(`
@@ -91,9 +143,10 @@ function getBarCount(width: number) {
 interface VoiceVisualProps {
   level: SharedValue<number>;
   isActive: boolean;
+  className?: string;
 }
 
-export function VoiceVisual({ level, isActive }: VoiceVisualProps) {
+export function VoiceVisual({ level, isActive, className }: VoiceVisualProps) {
   const isReducedMotion = useIsReduceMotionEnabled();
   const { theme } = useUniwind();
   const mainColor = useResolvedColor('text-main');
@@ -236,7 +289,7 @@ export function VoiceVisual({ level, isActive }: VoiceVisualProps) {
   return (
     <Box
       pointerEvents="none"
-      className="self-stretch"
+      className={className}
       style={{ height: VOICE_VISUAL.height }}
       onLayout={handleLayout}
     >

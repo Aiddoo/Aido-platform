@@ -1,25 +1,18 @@
-import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
 import { CategoryHeaderPill } from '@src/features/planning/category/components/category-header-pill';
+import { TodoDetailSchedule } from '@src/features/planning/todo/components/todo-detail-schedule';
 import { TodoRow } from '@src/features/planning/todo/components/todo-row';
 import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
-import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
+import { useToggleTodoWithReviewMutationOptions } from '@src/features/planning/todo/hooks/use-toggle-todo-with-review-mutation-options';
 import { useToggleSubTodoMutationOptions } from '@src/features/planning/todo/queries/sub-todo.mutations';
-import { useToggleTodoMutationOptions } from '@src/features/planning/todo/queries/todo.mutations';
-import {
-  useGetTodoDetailsQueryOptions,
-  useGetTodosByDateQueryOptions,
-} from '@src/features/planning/todo/queries/todo.queries';
-import { formatTodoPeriod } from '@src/features/planning/todo/utils/todo-period.view-model';
-import { formatRepeatSummary } from '@src/features/planning/todo/utils/todo-repeat-summary.view-model';
-import { formatTodoTime } from '@src/features/planning/todo/utils/todo-time.view-model';
+import { getOptimisticListDate } from '@src/features/planning/todo/queries/todo-cache';
+import { useGetTodoDetailsQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { ThanksSummaryRow } from '@src/features/social/nudge/components/thanks-summary-row';
 import { TodoNudgeButton } from '@src/features/social/nudge/components/todo-nudge-button';
-import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
 import {
@@ -33,16 +26,18 @@ import {
   TodoIllustration,
   VStack,
 } from '@src/shared/ui';
+import { getTouchTargetInset } from '@src/shared/ui';
 import { formatCompactCount } from '@src/shared/utils/number-format';
-import { useMutation, useQuery, useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { useRouter } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { type ReactNode, Suspense } from 'react';
 
 /** 제목(t3) 한 줄 높이. 여러 줄 제목에서도 체크박스를 첫 줄 가운데에 맞춘다 */
 const TITLE_LINE_HEIGHT = 28;
-/** 24 크기 체크박스의 눌리는 영역을 44로 넓힌다 */
-const CHECKBOX_HIT_SLOP = 10;
+/** 체크박스 칸(size-6) */
+const CHECKBOX_SIZE = 24;
+const CHECKBOX_HIT_SLOP = getTouchTargetInset(CHECKBOX_SIZE);
 
 export function TodoDetailSummary() {
   return (
@@ -52,7 +47,7 @@ export function TodoDetailSummary() {
       <TodoDetailSummary.Task />
 
       <VStack className="ms-9 gap-2.5">
-        <TodoDetailSummary.Schedule />
+        <TodoDetailSchedule />
 
         <TodoDetailSummary.SubTodos />
 
@@ -87,7 +82,7 @@ TodoDetailSummary.Owner = function Owner() {
 TodoDetailSummary.Task = function Task() {
   const [todoId] = useTodoId();
   const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
-  const toggleTodo = useMutation(useToggleTodoMutationOptions());
+  const toggleTodo = useMutation(useToggleTodoWithReviewMutationOptions());
   const todayKey = useTodayKey();
   const fontScaledSize = useFontScaledSize();
   const { todo } = detail;
@@ -108,7 +103,7 @@ TodoDetailSummary.Task = function Task() {
                   toggleTodo.mutate({
                     todoId,
                     body: { completed: !todo.completed },
-                    date: TodoPolicy.getOptimisticListDate(todo, todayKey),
+                    date: getOptimisticListDate(todo, todayKey),
                   })
               : undefined
           }
@@ -125,53 +120,6 @@ TodoDetailSummary.Task = function Task() {
         {todo.title}
       </Text>
     </HStack>
-  );
-};
-
-TodoDetailSummary.Schedule = function Schedule() {
-  const { t } = useTranslation('todo');
-  const [todoId] = useTodoId();
-  const [{ data: detail }, { data: preference }] = useSuspenseQueries({
-    queries: [useGetTodoDetailsQueryOptions({ todoId }), useGetPreferenceQueryOptions()],
-  });
-  const dateFormatContext = useDateFormatContext();
-  const todayKey = useTodayKey();
-  const { todo } = detail;
-  const timeLabel = formatTodoTime(todo, preference.timeFormat, dateFormatContext);
-  const isRecurring = TodoPolicy.isRecurringTodo(todo);
-  const dateLabel = formatTodoPeriod(todo, todayKey, dateFormatContext);
-
-  return (
-    <VStack gap={6}>
-      {(timeLabel != null || isRecurring) && (
-        <HStack gap={4} align="center" wrap="wrap">
-          {timeLabel != null && (
-            <Text size="b4" shade={6}>
-              {timeLabel}
-            </Text>
-          )}
-          {timeLabel != null && isRecurring && (
-            <Text size="b4" shade={6}>
-              ·
-            </Text>
-          )}
-          {isRecurring &&
-            (detail.permissions.canEdit ? (
-              <OwnRepeatLabel />
-            ) : (
-              <Text size="b4" shade={6}>
-                {t('chip.repeat')}
-              </Text>
-            ))}
-        </HStack>
-      )}
-      <HStack gap={8} align="center" wrap="wrap">
-        <CategoryHeaderPill label={todo.category.name} color={todo.category.color} />
-        <Text size="e1" shade={6}>
-          {dateLabel}
-        </Text>
-      </HStack>
-    </VStack>
   );
 };
 
@@ -207,7 +155,7 @@ TodoDetailSummary.SubTodos = function SubTodos() {
                           todoId,
                           subTodoId: subTodo.id,
                           isCompleted: !subTodo.completed,
-                          date: TodoPolicy.getOptimisticListDate(todo, todayKey),
+                          date: getOptimisticListDate(todo, todayKey),
                         })
                     : undefined
                 }
@@ -255,6 +203,7 @@ TodoDetailSummary.Metrics = function Metrics() {
 TodoDetailSummary.Thanks = function Thanks() {
   const [todoId] = useTodoId();
   const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
+  const router = useRouter();
   const push = useSingleTap(router.push);
 
   if (!detail.permissions.canThank) {
@@ -290,7 +239,7 @@ TodoDetailSummary.Loading = function Loading() {
       <VStack className="ms-9 gap-2.5">
         <VStack gap={6}>
           <HStack gap={8} align="center">
-            <CategoryHeaderPill.Loading />
+            <CategoryHeaderPill.Loading className="self-start" />
             <TextSkeleton size="e1" className="w-14" />
           </HStack>
         </VStack>
@@ -331,23 +280,6 @@ TodoDetailSummary.Unavailable = function Unavailable({ onClose }: { onClose: () 
     </Box>
   );
 };
-
-/** 상세 응답에는 반복 규칙이 없어 시작일 목록에서 읽는다. 받기 전이나 실패하면 반복이라고만 보인다 */
-function OwnRepeatLabel() {
-  const { t } = useTranslation('todo');
-  const [todoId] = useTodoId();
-  const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
-  const { data: list } = useQuery(useGetTodosByDateQueryOptions({ date: detail.todo.startDate }));
-  const dateFormatContext = useDateFormatContext();
-  const todayKey = useTodayKey();
-  const repeat = list?.todos.find((todo) => todo.id === todoId)?.repeat;
-
-  return (
-    <Text size="b4" shade={6} className="shrink">
-      {repeat == null ? t('chip.repeat') : formatRepeatSummary(repeat, todayKey, dateFormatContext)}
-    </Text>
-  );
-}
 
 function Metric({ icon, count }: { icon: ReactNode; count: number }) {
   const { resolvedLanguage } = useLanguage();

@@ -13,10 +13,7 @@ export interface ConfirmDialogOptions {
   confirmTestID?: string;
   /** 지울 수 없는 대상처럼 안내만 하고 확인을 막을 때 */
   isConfirmDisabled?: boolean;
-  /**
-   * 확인을 누르면 다이얼로그를 연 채 실행하고 끝나면 닫는다. 도는 동안 확인 버튼이 진행 중이고 닫을 수 없다.
-   * 던지면 다이얼로그를 남겨 다시 누르거나 취소할 수 있다. 실패 토스트는 mutation의 `meta.errorFeedback`이 한 번 띄운다.
-   */
+  /** 도는 동안 다이얼로그를 닫을 수 없고, 던지면 남겨 다시 누를 수 있다. 실패 토스트는 `meta.errorFeedback`이 띄운다 */
   onConfirm?: () => unknown;
 }
 

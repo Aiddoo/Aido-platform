@@ -10,8 +10,8 @@ import {
   cancelPreference,
   getCachedPreference,
   invalidatePreference,
+  settlePreferenceWrite,
   setPreferenceInCache,
-  updatePreferenceInCache,
 } from './preference-cache';
 import { PREFERENCE_MUTATION_KEYS } from './preference-mutation-keys';
 
@@ -32,12 +32,13 @@ export function useUpdatePreferenceMutationOptions() {
     mutationFn: async ({ trackAs: _trackAs, ...change }: UpdatePreferenceVariables) =>
       unwrap(await preferenceApi.updatePreference(change)),
     onMutate: async ({ trackAs: _trackAs, ...change }) => {
+      const startedWithOthers = !isLastMutation(queryClient, PREFERENCE_MUTATION_KEYS.writes());
       await cancelPreference(queryClient);
       const previousData = getCachedPreference(queryClient);
-      updatePreferenceInCache(queryClient, (preference) => ({ ...preference, ...change }));
-      return { previousData };
+      setPreferenceInCache(queryClient, (preference) => ({ ...preference, ...change }));
+      return { previousData, startedWithOthers };
     },
-    onSuccess: (data, { trackAs, ...change }) => {
+    onSuccess: (data, { trackAs, ...change }, { startedWithOthers }) => {
       if (trackAs != null) {
         trackEvent('settings_changed', { setting: trackAs.setting, value: `${trackAs.value}` });
       } else {
@@ -48,17 +49,15 @@ export function useUpdatePreferenceMutationOptions() {
           }
         }
       }
-      // invalidate 대신 응답을 직접 써 깜빡임을 막되, 다른 저장이 진행 중이면 그 변경이 없어 마지막 응답이 맞춘다
-      if (isLastMutation(queryClient, PREFERENCE_MUTATION_KEYS.writes())) {
-        setPreferenceInCache(queryClient, data);
-      }
+      // 혼자 끝난 저장은 응답을 바로 써 깜빡임을 막는다. 겹쳤으면 응답이 서버 처리 순서와 달라 다시 받는다
+      settlePreferenceWrite(queryClient, { saved: data, startedWithOthers });
     },
     // 서버가 거절한 값(PREFERENCE_1701 프리미엄 전용 시각, 1702 시간 범위)은 전역 피드백이 카탈로그 문구로 알린다
     onError: (_error, { trackAs: _trackAs, ...change }, context) => {
       // 스냅샷을 통째로 덮으면 함께 진행 중인 다른 토글을 지운다. 이 저장이 바꾼 필드만 되돌린다
       const previousData = context?.previousData;
       if (previousData != null) {
-        updatePreferenceInCache(queryClient, (preference) => ({
+        setPreferenceInCache(queryClient, (preference) => ({
           ...preference,
           ...pickBy(previousData, (_value, key) => key in change),
         }));

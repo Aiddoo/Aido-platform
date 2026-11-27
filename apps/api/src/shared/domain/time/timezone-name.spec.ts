@@ -1,53 +1,209 @@
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+
+import { UTC_EQUIVALENT_TIMEZONE_NAMES } from "@aido/api/vocabulary";
+import { z } from "zod";
+
 import {
-  DEFAULT_DELIVERY_TIMEZONE,
+  isSameTimezone,
+  isUtcOffsetTimezone,
   localDateIn,
-  normalizeIanaTimezone,
+  parseDeviceReportedTimezone,
+  parseTimezoneName,
+  resolveDateBoundaryTimezone,
   resolveDeliveryTimezone,
-  resolveTimezone,
   resolveWallClockTimezone,
 } from "./timezone-name.js";
 
+/** 기기가 보고한 시간대를 읽는 규칙. 서버와 앱이 같은 답을 내야 하는 표다 */
+const SHARED_TIMEZONE_REPORT_CASES = z
+  .object({
+    deviceReportedTimezone: z.array(
+      z.object({
+        name: z.string(),
+        value: z.string().nullable(),
+        reported: z.string().nullable(),
+      }),
+    ),
+  })
+  .parse(
+    JSON.parse(
+      readFileSync(
+        new URL(
+          "../../../../../../packages/api/test/fixtures/timezone-report-cases.json",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+    ),
+  );
+
+const SYSTEM_ZONEINFO_PATH = "/usr/share/zoneinfo";
+
+// 바깥 시간대 입력 하나를 해석 함수와 세 대체 정책에 넣은 결과. 바뀌면 사용자 시각이 바뀌므로 표 전체를 고정한다
+const TIMEZONE_INPUT_CASES = [
+  {
+    raw: "Asia/Seoul",
+    parsed: "Asia/Seoul",
+    dateBoundary: "Asia/Seoul",
+    delivery: "Asia/Seoul",
+    wallClock: "Asia/Seoul",
+  },
+  {
+    raw: "asia/seoul",
+    parsed: "Asia/Seoul",
+    dateBoundary: "Asia/Seoul",
+    delivery: "Asia/Seoul",
+    wallClock: "Asia/Seoul",
+  },
+  {
+    raw: "Asia/Kolkata",
+    parsed: "Asia/Kolkata",
+    dateBoundary: "Asia/Kolkata",
+    delivery: "Asia/Kolkata",
+    wallClock: "Asia/Kolkata",
+  },
+  {
+    raw: "Asia/Calcutta",
+    parsed: "Asia/Calcutta",
+    dateBoundary: "Asia/Calcutta",
+    delivery: "Asia/Calcutta",
+    wallClock: "Asia/Calcutta",
+  },
+  {
+    raw: "US/Pacific",
+    parsed: "US/Pacific",
+    dateBoundary: "US/Pacific",
+    delivery: "US/Pacific",
+    wallClock: "US/Pacific",
+  },
+  { raw: "UTC", parsed: "UTC", dateBoundary: "UTC", delivery: "Asia/Seoul", wallClock: "UTC" },
+  {
+    raw: "Etc/UTC",
+    parsed: "Etc/UTC",
+    dateBoundary: "Etc/UTC",
+    delivery: "Asia/Seoul",
+    wallClock: "Etc/UTC",
+  },
+  { raw: "GMT", parsed: "GMT", dateBoundary: "GMT", delivery: "Asia/Seoul", wallClock: "GMT" },
+  {
+    raw: "+09:00",
+    parsed: null,
+    dateBoundary: "UTC",
+    delivery: "Asia/Seoul",
+    wallClock: "Asia/Seoul",
+  },
+  {
+    raw: "-05:00",
+    parsed: null,
+    dateBoundary: "UTC",
+    delivery: "Asia/Seoul",
+    wallClock: "Asia/Seoul",
+  },
+  { raw: "", parsed: null, dateBoundary: "UTC", delivery: "Asia/Seoul", wallClock: "Asia/Seoul" },
+  { raw: "  ", parsed: null, dateBoundary: "UTC", delivery: "Asia/Seoul", wallClock: "Asia/Seoul" },
+  {
+    raw: "Mars/Olympus",
+    parsed: null,
+    dateBoundary: "UTC",
+    delivery: "Asia/Seoul",
+    wallClock: "Asia/Seoul",
+  },
+  { raw: null, parsed: null, dateBoundary: "UTC", delivery: "Asia/Seoul", wallClock: "Asia/Seoul" },
+  { raw: 900, parsed: null, dateBoundary: "UTC", delivery: "Asia/Seoul", wallClock: "Asia/Seoul" },
+] as const;
+
 describe("시간대 이름 해석", () => {
+  it.each(TIMEZONE_INPUT_CASES)(
+    "$raw: 해석 $parsed, 날짜 경계 $dateBoundary, 발송 $delivery, 벽시계 $wallClock",
+    ({ raw, parsed, dateBoundary, delivery, wallClock }) => {
+      // When
+      const resolved = {
+        parsed: parseTimezoneName(raw),
+        dateBoundary: resolveDateBoundaryTimezone(raw),
+        delivery: resolveDeliveryTimezone(raw),
+        wallClock: resolveWallClockTimezone(raw),
+      };
+
+      // Then
+      expect(resolved).toEqual({ parsed, dateBoundary, delivery, wallClock });
+    },
+  );
+
   it.each([
-    { raw: "Asia/Seoul", expected: "Asia/Seoul" },
-    { raw: "America/Los_Angeles", expected: "America/Los_Angeles" },
-    { raw: "Mars/Olympus", expected: null },
-    { raw: "  ", expected: null },
-    { raw: 900, expected: null },
-  ])("normalizeIanaTimezone($raw)는 $expected다", ({ raw, expected }) => {
+    { raw: "+09:00", expected: true },
+    { raw: "+0900", expected: true },
+    { raw: "Asia/Seoul", expected: false },
+    { raw: "Mars/Olympus", expected: false },
+    { raw: null, expected: false },
+  ])("isUtcOffsetTimezone($raw)는 $expected다", ({ raw, expected }) => {
     // When
-    const normalized = normalizeIanaTimezone(raw);
+    const isOffset = isUtcOffsetTimezone(raw);
 
     // Then
-    expect(normalized).toBe(expected);
+    expect(isOffset).toBe(expected);
   });
 
-  it("날짜 경계용 해석은 잘못된 값을 UTC로 본다", () => {
+  it.each([
+    { left: "Asia/Calcutta", right: "Asia/Kolkata", expected: true },
+    { left: "Europe/Kiev", right: "Europe/Kyiv", expected: true },
+    { left: "asia/seoul", right: "Asia/Seoul", expected: true },
+    { left: "Asia/Seoul", right: "Asia/Tokyo", expected: false },
+    { left: "Mars/Olympus", right: "Asia/Seoul", expected: false },
+    { left: "+09:00", right: "Asia/Seoul", expected: false },
+    { left: null, right: "Asia/Seoul", expected: false },
+  ])("isSameTimezone($left, $right)는 $expected다", ({ left, right, expected }) => {
+    // When
+    const isSame = isSameTimezone(left, right);
+
+    // Then
+    expect(isSame).toBe(expected);
+  });
+
+  it.each(SHARED_TIMEZONE_REPORT_CASES.deviceReportedTimezone)(
+    "기기 보고 시간대 표: $name",
+    ({ value, reported }) => {
+      // When
+      const timezone = parseDeviceReportedTimezone(value);
+
+      // Then
+      expect(timezone).toBe(reported);
+    },
+  );
+
+  it.each(UTC_EQUIVALENT_TIMEZONE_NAMES)(
+    "앱과 공유하는 UTC 계열 이름 %s는 서버 판정으로도 UTC와 같아 보고하지 않은 것이다",
+    (name) => {
+      // When
+      const isUtc = isSameTimezone(name, "UTC");
+      const reported = parseDeviceReportedTimezone(name);
+
+      // Then
+      expect(isUtc).toBe(true);
+      expect(reported).toBeNull();
+    },
+  );
+
+  it("런타임이 아는 이름 가운데 UTC와 같은데 앱과 공유하는 목록에 없는 이름이 없다", () => {
     // Given
-    const stored = "Mars/Olympus";
+    // supportedValuesOf는 대표 이름만 준다. 옛 별칭(Etc/Zulu 등)은 시스템 tzdata 파일 이름을 후보로 더한다
+    const zoneinfoNames = existsSync(SYSTEM_ZONEINFO_PATH)
+      ? readdirSync(SYSTEM_ZONEINFO_PATH, { recursive: true, encoding: "utf8" })
+      : [];
+    const candidates = [...Intl.supportedValuesOf("timeZone"), ...zoneinfoNames];
+    const listed = new Set<string>(UTC_EQUIVALENT_TIMEZONE_NAMES);
+    // 별칭 후보가 없으면(tzdata 없는 환경) 아래 검사가 빈 검사가 되므로 먼저 실패시킨다
+    expect(candidates).toContain("Etc/UTC");
 
     // When
-    const timezone = resolveTimezone(stored);
+    const missing = candidates.filter((name) => !listed.has(name) && isSameTimezone(name, "UTC"));
 
     // Then
-    expect(timezone).toBe("UTC");
-  });
-
-  it.each([
-    { raw: "UTC", expected: DEFAULT_DELIVERY_TIMEZONE },
-    { raw: null, expected: DEFAULT_DELIVERY_TIMEZONE },
-    { raw: "America/Los_Angeles", expected: "America/Los_Angeles" },
-  ])("발송용 해석은 $raw를 $expected로 본다", ({ raw, expected }) => {
-    // When
-    const timezone = resolveDeliveryTimezone(raw);
-
-    // Then
-    expect(timezone).toBe(expected);
+    expect(missing).toEqual([]);
   });
 
   it("벽시계용 해석은 앞선 유효 후보를 쓰고 저장된 UTC를 그대로 둔다", () => {
     // Given
-    const requested = "invalid";
+    const requested = "+09:00";
     const stored = "UTC";
 
     // When
@@ -55,7 +211,7 @@ describe("시간대 이름 해석", () => {
 
     // Then
     expect(timezone).toBe("UTC");
-    expect(resolveWallClockTimezone(undefined, null)).toBe(DEFAULT_DELIVERY_TIMEZONE);
+    expect(resolveWallClockTimezone(undefined, null)).toBe("Asia/Seoul");
   });
 
   it.each([
@@ -77,6 +233,12 @@ describe("시간대 이름 해석", () => {
       label: "잘못된 시간대는 UTC",
       at: "2026-11-09T20:00:00.000Z",
       zone: "Mars/Olympus",
+      date: "2026-11-09",
+    },
+    {
+      label: "고정 오프셋은 UTC",
+      at: "2026-11-09T20:00:00.000Z",
+      zone: "+09:00",
       date: "2026-11-09",
     },
   ])("localDateIn: $label", ({ at, zone, date }) => {

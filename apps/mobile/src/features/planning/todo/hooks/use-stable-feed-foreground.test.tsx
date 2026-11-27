@@ -5,12 +5,15 @@ import {
   createAppLifecycleGatewayStub,
   createIncomingLinkGatewayStub,
   createTestDi,
+  setupIdleCallbackPerTest,
+  silenceConsole,
   type TestDi,
 } from '@src/testing/core';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 import { type IKeyboardState, useKeyboardState } from 'react-native-keyboard-controller';
 
+import { isStableFeedForeground } from '../utils/feed-foreground.view-model';
 import { useStableFeedForeground } from './use-stable-feed-foreground';
 
 let incomingLink: ReturnType<typeof createIncomingLinkGatewayStub>;
@@ -60,19 +63,17 @@ describe('useStableFeedForeground', () => {
       return () => {};
     });
     di = createTestDi({ ports: { incomingLink, appLifecycle } });
-    jest.spyOn(console, 'warn').mockImplementation(() => undefined);
-    Object.defineProperty(globalThis, 'requestIdleCallback', {
-      configurable: true,
-      value: jest.fn((callback: IdleRequestCallback) => {
-        idleCallbacks.push(() => callback({ didTimeout: false, timeRemaining: () => 10 }));
-        return idleCallbacks.length;
-      }),
-    });
-    Object.defineProperty(globalThis, 'cancelIdleCallback', {
-      configurable: true,
-      value: jest.fn(),
-    });
+    silenceConsole('warn');
   });
+
+  // 한가해지는 때를 테스트가 정한다. 받은 콜백은 쌓아 두고 테스트가 하나씩 부른다
+  setupIdleCallbackPerTest(() => ({
+    request: jest.fn((callback: IdleRequestCallback) => {
+      idleCallbacks.push(() => callback({ didTimeout: false, timeRemaining: () => 10 }));
+      return idleCallbacks.length;
+    }),
+    cancel: jest.fn(),
+  }));
 
   it('딥링크 라우팅 상호작용이 끝나면 같은 focus에서도 대기 상태를 해제한다', async () => {
     // Given
@@ -132,5 +133,43 @@ describe('useStableFeedForeground', () => {
 
     // Then
     expect(globalThis.cancelIdleCallback).toHaveBeenCalledWith(1);
+  });
+});
+
+const stableInput: Parameters<typeof isStableFeedForeground>[0] = {
+  authStatus: 'authenticated',
+  isFocused: true,
+  isAppActive: true,
+  isKeyboardVisible: false,
+  hasActiveOverlay: false,
+  hasPendingDeepLink: false,
+  hasPendingNavigation: false,
+};
+
+describe('isStableFeedForeground', () => {
+  it('인증된 피드가 포그라운드에서 방해 요소 없이 포커스되면 true를 반환한다', () => {
+    // When
+    const result = isStableFeedForeground(stableInput);
+
+    // Then
+    expect(result).toBe(true);
+  });
+
+  it.each<{ label: string; overrides: Partial<typeof stableInput> }>([
+    { label: '로그인 전', overrides: { authStatus: 'unauthenticated' } },
+    { label: '로그인 판정 전', overrides: { authStatus: 'loading' } },
+    { label: '키체인 잠김', overrides: { authStatus: 'locked' } },
+    { label: '다른 화면', overrides: { isFocused: false } },
+    { label: '백그라운드', overrides: { isAppActive: false } },
+    { label: '키보드', overrides: { isKeyboardVisible: true } },
+    { label: '피드 폼 또는 다른 오버레이', overrides: { hasActiveOverlay: true } },
+    { label: '딥 링크', overrides: { hasPendingDeepLink: true } },
+    { label: '눌린 푸시 처리 중', overrides: { hasPendingNavigation: true } },
+  ])('$label 상태에서는 false를 반환한다', ({ overrides }) => {
+    // When
+    const result = isStableFeedForeground({ ...stableInput, ...overrides });
+
+    // Then
+    expect(result).toBe(false);
   });
 });

@@ -1,11 +1,11 @@
 import { match } from 'ts-pattern';
 
 import {
+  getSubscriptionDiagnosticCode,
+  getSubscriptionFailure,
   type StoreUnavailable,
-  type SubscriptionFailureCause,
-  SubscriptionFailurePolicy,
-} from '../domains/subscription-failure.model';
-import { getSubscriptionDiagnosticCode } from '../domains/subscription.error';
+  type SubscriptionFailure,
+} from '../domains/subscription.error';
 
 export type SubscriptionLoadTarget = 'receipt' | 'plans';
 export type SubscriptionActionTarget = 'purchase' | 'restore';
@@ -43,7 +43,7 @@ export type SubscriptionActionFailure =
   | { type: 'paymentPending' }
   | ({ type: 'contactSupport' } & SubscriptionSupportFailure);
 
-function toDescriptionKey(cause: SubscriptionFailureCause): FailureDescriptionKey {
+function toDescriptionKey(cause: SubscriptionFailure): FailureDescriptionKey {
   return match(cause)
     .with('network', () => 'subscription:failure.description.network' as const)
     .with('store', () => 'subscription:failure.description.store' as const)
@@ -64,13 +64,13 @@ function toSupportFailure(
 ): SubscriptionSupportFailure {
   return {
     titleKey: FAILURE_TITLE_KEYS[target],
-    descriptionKey: toDescriptionKey(SubscriptionFailurePolicy.getFailureCause(error)),
+    descriptionKey: toDescriptionKey(getSubscriptionFailure(error)),
     diagnosticCode: getSubscriptionDiagnosticCode(error),
   };
 }
 
 /** 영수증·요금제를 불러오지 못하면 늘 다시 시도와 문의를 함께 보여 준다 */
-export function toSubscriptionLoadFailure(
+export function getSubscriptionLoadFailure(
   target: SubscriptionLoadTarget,
   error: unknown,
 ): SubscriptionSupportFailure {
@@ -78,11 +78,11 @@ export function toSubscriptionLoadFailure(
 }
 
 /** 결제·복원이 실패했을 때 조용히 넘길지, 승인 대기를 알릴지, 문의로 안내할지 정한다 */
-export function toSubscriptionActionFailure(
+export function getSubscriptionActionFailure(
   target: SubscriptionActionTarget,
   error: unknown,
 ): SubscriptionActionFailure {
-  return match(SubscriptionFailurePolicy.getFailureCause(error))
+  return match(getSubscriptionFailure(error))
     .with('purchaseCancelled', () => ({ type: 'cancelled' as const }))
     .with('paymentPending', () => ({ type: 'paymentPending' as const }))
     .with('network', 'server', 'store', 'purchaseFailed', 'restoreFailed', () => ({
@@ -92,7 +92,7 @@ export function toSubscriptionActionFailure(
     .exhaustive();
 }
 
-export function toSubscriptionStoreUnavailableFailure({
+export function getSubscriptionStoreUnavailableFailure({
   kind,
   diagnosticCode,
 }: StoreUnavailable): SubscriptionSupportFailure {

@@ -52,6 +52,8 @@ import {
 } from "../../../e2e/helpers/e2e-app-factory.js";
 
 const AT = new Date("2026-11-02T00:00:00.000Z");
+// 요청 시간대 "UTC"는 보고하지 않은 것으로 읽혀 저장값으로 대체된다. 오프셋이 0이고 서머타임이 없는 이름을 쓴다
+const ZERO_OFFSET_TIMEZONE = "Atlantic/Reykjavik";
 const DAILY_NEVER: TodoRepeat = { frequency: "DAILY", end: { type: "NEVER" } };
 const WEEKLY_MON: TodoRepeat = {
   frequency: "WEEKLY",
@@ -159,7 +161,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
   ) {
     return context.module
       .get(EditTodoUseCase)
-      .execute({ id, userId, timezone: "UTC", data: {}, ...change });
+      .execute({ id, userId, timezone: ZERO_OFFSET_TIMEZONE, data: {}, ...change });
   }
 
   async function seedActiveSeries(count: number) {
@@ -172,7 +174,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
           userId,
           categoryId,
           title: "규칙",
-          timezone: "UTC",
+          timezone: ZERO_OFFSET_TIMEZONE,
           repeatFrequency: "DAILY" as const,
           startDate: plainDateFromDate(AT),
           nextOccurrenceDate: plainDateFromDate(AT),
@@ -207,7 +209,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       await context.module.get(UpdateTodoUseCase).execute({
         id: moved?.id ?? 0,
         userId,
-        timezone: "UTC",
+        timezone: ZERO_OFFSET_TIMEZONE,
         scope: "THIS_ONLY",
         data: { startDate: Temporal.PlainDate.from("2026-11-20"), title: "이것만" },
       });
@@ -282,7 +284,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         categoryId: TodoCategoryId.reconstitute(categoryId),
         title: "먼 과거",
         startDate: Temporal.PlainDate.from("2000-01-01"),
-        timezone: "UTC",
+        timezone: ZERO_OFFSET_TIMEZONE,
         repeat: DAILY_NEVER,
       });
       // Then
@@ -302,7 +304,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         categoryId: TodoCategoryId.reconstitute(categoryId),
         title: "1년 전 시작",
         startDate,
-        timezone: "UTC",
+        timezone: ZERO_OFFSET_TIMEZONE,
         repeat: DAILY_NEVER,
       });
       vi.setSystemTime(new Date("2026-11-03T00:00:00.000Z"));
@@ -320,7 +322,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         categoryId: TodoCategoryId.reconstitute(categoryId),
         title: "옛 앱",
         startDate: Temporal.PlainDate.from("2000-01-03"),
-        timezone: "UTC",
+        timezone: ZERO_OFFSET_TIMEZONE,
         repeat: {
           frequency: "WEEKLY",
           interval: 1,
@@ -633,7 +635,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         categoryId: TodoCategoryId.reconstitute(categoryId),
         title: "단일",
         startDate: plainDateFromDate(AT),
-        timezone: "UTC",
+        timezone: ZERO_OFFSET_TIMEZONE,
       });
       // When
       const outcome = stop(todos[0]?.id ?? 0);
@@ -717,7 +719,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         categoryId: TodoCategoryId.reconstitute(otherCategory?.id ?? 0),
         title: "남의 반복",
         startDate: plainDateFromDate(AT),
-        timezone: "UTC",
+        timezone: ZERO_OFFSET_TIMEZONE,
         repeat: { frequency: "DAILY", end: { type: "COUNT", count: 2 } },
       });
       const { todos } = await start();
@@ -756,7 +758,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
           categoryId: TodoCategoryId.reconstitute(categoryId),
           title: "단일",
           startDate: plainDateFromDate(AT),
-          timezone: "UTC",
+          timezone: ZERO_OFFSET_TIMEZONE,
         });
         // When
         const outcome = context.module
@@ -1229,7 +1231,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         categoryId: TodoCategoryId.reconstitute(categoryId),
         title: "전환",
         startDate: plainDateFromDate(AT),
-        timezone: "UTC",
+        timezone: ZERO_OFFSET_TIMEZONE,
       });
       // When
       const response = await edit(todos[0]?.id ?? 0, {
@@ -1239,7 +1241,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
           weekdays: ["FRI"],
           end: { type: "COUNT", count: 2 },
         },
-        timezone: "UTC",
+        timezone: ZERO_OFFSET_TIMEZONE,
       });
       // Then
       expect(response.startDate).toBe("2026-11-06");
@@ -1254,7 +1256,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         title: "전환",
         startDate: plainDateFromDate(AT),
         scheduledTime: "09:00",
-        timezone: "UTC",
+        timezone: ZERO_OFFSET_TIMEZONE,
       });
       const todoId = todos[0]?.id ?? 0;
       const reminders = watchReminderJobs();
@@ -1266,7 +1268,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
           weekdays: ["FRI"],
           end: { type: "COUNT", count: 1 },
         },
-        timezone: "UTC",
+        timezone: ZERO_OFFSET_TIMEZONE,
       });
       // Then
       expect(reminders.cancelledKeys()).toContain(`reminder_${todoId}_60min`);
@@ -1286,7 +1288,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         title: "전환",
         startDate: plainDateFromDate(AT),
         scheduledTime: "09:00",
-        timezone: "UTC",
+        timezone: ZERO_OFFSET_TIMEZONE,
       });
       const todoId = todos[0]?.id ?? 0;
       const reminders = watchReminderJobs();
@@ -1318,7 +1320,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         categoryId: TodoCategoryId.reconstitute(categoryId),
         title: "원래 제목",
         startDate: plainDateFromDate(AT),
-        timezone: "UTC",
+        timezone: ZERO_OFFSET_TIMEZONE,
       });
       const todoId = todos[0]?.id ?? 0;
       await seedActiveSeries(TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER);
@@ -1360,7 +1362,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         categoryId: TodoCategoryId.reconstitute(categoryId),
         title: "오래된 할 일",
         startDate: Temporal.PlainDate.from("2000-01-01"),
-        timezone: "UTC",
+        timezone: ZERO_OFFSET_TIMEZONE,
       });
       // When
       const outcome = edit(todos[0]?.id ?? 0, { repeat: DAILY_NEVER });
@@ -1378,7 +1380,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       // When
       const outcome = edit(todos[0]?.id ?? 0, {
         repeat: DAILY_NEVER,
-        timezone: "UTC",
+        timezone: ZERO_OFFSET_TIMEZONE,
       });
       // Then
       await expect(outcome).rejects.toMatchObject({

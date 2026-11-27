@@ -10,7 +10,7 @@
 | 위치 등록      | `RegisterUserLocationUseCase`                                          | 좌표를 검증하고 칸 중심 시간대와 (한국 예보 범위면) 예보 격자를 함께 저장한다                                         |
 | 좌표           | `Coordinate`(VO)                                                       | 유한한 WGS84 위도·경도. 범위 밖이면 `SYS_0002`다                                                                      |
 | 칸             | `GeoCell`(VO)                                                          | geohash 정밀도 5(약 4.9km) 칸. 공급자에는 칸 중심 좌표만 보내고 같은 칸 사용자는 캐시를 나눈다                        |
-| 위치 시간대    | `timezone`, `TimezoneResolverPort`                                     | 칸 중심 좌표의 IANA 시간대. v2 이전에 저장한 위치는 null이다                                                          |
+| 위치 시간대    | `timezone`, `TimezoneResolverPort`                                     | 칸 중심 좌표의 IANA 시간대. 시간대 없이 저장된 위치는 null이다                                                        |
 | 한국 예보 범위 | `isKoreanWeatherCovered`·`assertKoreanWeatherCovered`                  | `LATITUDE_RANGE`·`LONGITUDE_RANGE` 안. 예보 격자와 대기질은 이 범위에서만 쓴다                                        |
 | 예보 격자      | `GridCoordinate`(VO), `WeatherGridResolverPort`, `requireForecastGrid` | 한국 예보 범위 좌표에만 저장하는 v1 예보 격자. 없는 위치로 v1을 부르면 위치 없음과 같은 `WEATHER_1902`다              |
 | 위치 조각      | `userCoordinates`, `hasUserLocation`                                   | 다른 Context가 사람 id 칸 옆에 저장한 위도·경도를 붙이거나 위치가 있는지 거르는 조각(`weather-user-locations.public`) |

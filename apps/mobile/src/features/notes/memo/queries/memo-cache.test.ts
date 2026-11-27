@@ -3,7 +3,7 @@ import type { InfiniteData } from '@tanstack/react-query';
 
 import { createMemo } from '../__tests__/memo.fixtures';
 import type { MemoPage } from '../domains/memo.model';
-import { refreshMemos, replaceMemoInList } from './memo-cache';
+import { refreshMemos, setMemoListItemInCache } from './memo-cache';
 import { MEMO_QUERY_KEYS } from './memo-query-keys';
 
 function createMemoList(): InfiniteData<MemoPage, number | undefined> {
@@ -22,7 +22,7 @@ function createMemoList(): InfiniteData<MemoPage, number | undefined> {
   };
 }
 
-describe('replaceMemoInList', () => {
+describe('setMemoListItemInCache', () => {
   it('해당 메모만 바꾸고 나머지 항목과 쪽은 참조를 유지한다', () => {
     // Given
     const client = createTestQueryClient();
@@ -31,7 +31,7 @@ describe('replaceMemoInList', () => {
     const saved = createMemo({ id: 2, content: '새 글' });
 
     // When
-    replaceMemoInList(client, saved);
+    setMemoListItemInCache(client, saved);
 
     // Then
     const after = client.getQueryData(MEMO_QUERY_KEYS.list());
@@ -48,7 +48,7 @@ describe('replaceMemoInList', () => {
     client.setQueryData(MEMO_QUERY_KEYS.list(), before);
 
     // When
-    replaceMemoInList(client, createMemo({ id: 9 }));
+    setMemoListItemInCache(client, createMemo({ id: 9 }));
 
     // Then
     expect(client.getQueryData(MEMO_QUERY_KEYS.list())).toBe(before);
@@ -59,7 +59,7 @@ describe('replaceMemoInList', () => {
     const client = createTestQueryClient();
 
     // When
-    replaceMemoInList(client, createMemo({ id: 2 }));
+    setMemoListItemInCache(client, createMemo({ id: 2 }));
 
     // Then
     expect(client.getQueryState(MEMO_QUERY_KEYS.list())).toBeUndefined();

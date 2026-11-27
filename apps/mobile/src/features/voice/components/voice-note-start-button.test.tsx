@@ -4,8 +4,6 @@ import { createConsent } from '@src/features/identity/consent/__tests__/consent.
 import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/queries/consent-query-keys';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { OverlayProvider } from '@src/shared/ui';
 import {
   createHttpClientStub,
   createRouteParamsFake,
@@ -35,14 +33,11 @@ async function renderButton(routeParams: Record<string, string>) {
   // 아직 AI 데이터 이용에 답하지 않은 계정
   queryClient.setQueryData(CONSENT_QUERY_KEYS.detail(), createConsent());
 
-  await renderScreen(
-    <LocalDateProvider>
-      <OverlayProvider>
-        <VoiceNoteStartButton coachmarkPlacement="bottom" />
-      </OverlayProvider>
-    </LocalDateProvider>,
-    { di: createTestDi({ ports: { httpClient, syncStorage, speechRecognizer, queryClient } }) },
-  );
+  await renderScreen(<VoiceNoteStartButton coachmarkPlacement="bottom" />, {
+    di: createTestDi({ ports: { httpClient, syncStorage, speechRecognizer, queryClient } }),
+    withLocalDate: true,
+    withOverlay: true,
+  });
 
   return { speechRecognizer };
 }

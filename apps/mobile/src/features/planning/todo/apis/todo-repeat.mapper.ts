@@ -4,12 +4,13 @@ import type {
 } from '@aido/api/contracts/todo/v1';
 import { DAYS_OF_WEEK } from '@aido/api/vocabulary';
 import { type DateKey, dateKeySchema } from '@src/shared/date/date-key';
-import { getDateKeyDayOfWeek } from '@src/shared/date/day-of-week';
 import { match } from 'ts-pattern';
 
-import { TODO_REPEAT_DEFAULT_COUNT } from '../constants/todo-repeat.constants';
 import type { TodoRepeat, TodoRepeatEnd } from '../domains/todo-repeat.model';
-import type { TodoRepeatFormValues } from '../schemas/todo-repeat-form.schema';
+import {
+  createTodoRepeatFormValues,
+  type TodoRepeatFormValues,
+} from '../schemas/todo-repeat-form.schema';
 
 function toRepeatEnd(end: TodoRepeatEndDto): TodoRepeatEnd {
   return match(end)
@@ -69,17 +70,7 @@ export function toTodoRepeatFormValues(
   startDate: DateKey,
   repeat: TodoRepeat | null,
 ): TodoRepeatFormValues {
-  const startWeekday = [getDateKeyDayOfWeek(startDate)];
-  const base = {
-    startDate,
-    weekdays: startWeekday,
-    interval: 1 as const,
-    isMonthly: false,
-    monthDay: null,
-    endType: 'UNTIL' as const,
-    untilDate: null,
-    count: TODO_REPEAT_DEFAULT_COUNT,
-  };
+  const base = createTodoRepeatFormValues(startDate);
 
   if (repeat == null) {
     return base;

@@ -29,6 +29,15 @@ function escapeCharacterClass(characters: string): string {
   return characters.replaceAll(/[\\\]^-]/g, "\\$&");
 }
 
+/** 이메일 길이 한도. 요청 검증과 앱 입력 안내가 같은 값을 쓴다 */
+export const EMAIL_MAX_LENGTH = 255;
+
+/** 프로필 입력 한도. 요청 검증·DB 칸·소셜 가입 이름 자르기가 같은 값을 쓴다 */
+export const USER_PROFILE_LIMITS = {
+  NAME_MAX_LENGTH: 20,
+  IMAGE_URL_MAX_LENGTH: 500,
+} as const;
+
 export const VERIFICATION_CODE = {
   LENGTH: 6,
   EXPIRY_MINUTES: 10,

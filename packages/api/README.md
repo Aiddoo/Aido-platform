@@ -17,19 +17,21 @@
 
 - `src/contracts/<feature>/v<n>/`는 `<feature>.request.ts`, `<feature>.response.ts`, 필요하면 `<feature>.common.ts`로 나누고 공개 진입 파일 `index.ts`를 둔다. 버전 폴더는 출시 앱 계약이 갈라질 때만 더한다. 버전은 경로에만 두고 이름에 `V2`를 붙이지 않는다.
 - 서버·앱이 함께 아는 값 목록(상태·종류·언어·한도)은 `src/vocabulary/`의 `as const` 튜플 한 곳에 둔다. vocabulary에는 Zod를 넣지 않는다.
+- 앱의 모델과 포트가 함께 쓰는 값도 서버에 오지 않아도 vocabulary에 둔다(음성 인식 언어·오류 코드). 앱 모델은 포트를, 포트는 앱 `shared`를 import하지 못해 둘이 함께 보는 자리가 여기뿐이다.
 - 저장소 Entity나 ORM row를 공유 REST 타입으로 쓰지 않는다. HTTP 검증과 날짜 변환은 서버 presentation이 맡는다.
 - PATCH에서 빠진 필드는 기존 값을 유지하고, nullable 필드의 `null`은 값을 비운다. `false`와 `0`은 유효한 값이다([nullish](../../docs/conventions/nullish.md#4-계약-aidoapi-zod)).
 - 설명은 `.meta({ description })`, 정수는 `z.int()`로 쓴다. 스키마를 옮길 때 required/optional/nullish/default, 검증 메시지, 설명, 날짜 표현을 바꾸지 않는다. 배포된 앱의 OpenAPI fixture는 현재 스키마로 재생성하지 않는다.
 - 서버와 앱이 각자 구현한 규칙은 `test/fixtures/`의 표를 양쪽 테스트가 읽어 맞춘다(`repeat-occurrence-cases.json`·`repeat-last-occurrence-cases.json`: 서버 `RepeatRule`, 앱 `TodoRepeatPolicy`). `test/`는 `dist`와 패키지 `files` 밖이라 번들에 들어가지 않는다.
 
-상세: [HTTP 계약](../../apps/api/docs/http-contracts.md), [호환](../../docs/conventions/compatibility.md), [오류](../../docs/conventions/errors.md)
+상세: [HTTP 계약](../../apps/api/docs/architecture/http-contracts.md), [호환](../../docs/conventions/compatibility.md), [오류](../../docs/conventions/errors.md)
 
 ## 명령어
 
-`pnpm install`의 `postinstall`이 이 패키지를 먼저 빌드한다. 서버·앱은 `dist` 타입을 읽으므로 스키마를 바꾸면 다시 빌드하고 서버 계약 테스트로 공개 계약을 확인한다.
+`pnpm install`의 `postinstall`이 이 패키지를 먼저 빌드한다. 서버·앱은 `dist`를 읽으므로 스키마를 바꾸면 다시 빌드하고 서버 계약 테스트로 공개 계약을 확인한다. 루트 `pnpm dev`는 이 패키지의 `dev`(`tsc --build --watch`)도 함께 돌려 `dist`를 다시 만든다.
 
 ```sh
 pnpm --filter @aido/api build          # tsc --build → dist/
+pnpm --filter @aido/api dev            # tsc --build --watch
 pnpm --filter @aido/api test           # Vitest
 pnpm --filter @aido/server test:contract
 ```

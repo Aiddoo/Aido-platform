@@ -3,9 +3,9 @@ import { Surface } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import { StyleSheet } from 'react-native';
 
-type SurfaceCardProps = Omit<ComponentProps<typeof Surface>, 'variant'> & {
+interface SurfaceCardProps extends Omit<ComponentProps<typeof Surface>, 'variant'> {
   surface?: keyof typeof SURFACE_CLASS_NAMES;
-};
+}
 
 const SURFACE_CLASS_NAMES = {
   screen: '',

@@ -1,7 +1,7 @@
 import { readMockPath } from '@src/testing/mocks/react-native-skia';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, renderHook } from '@testing-library/react-native';
-import { StrictMode } from 'react';
+import { Activity, type PropsWithChildren } from 'react';
 import { makeMutable, type SharedValue } from 'react-native-reanimated';
 
 import { useRebuiltPath } from './use-rebuilt-path';
@@ -29,6 +29,12 @@ function useWindowPath({ time, width }: WindowPathProps) {
   );
 }
 
+let activityMode: 'visible' | 'hidden' = 'visible';
+
+function ActivityWrapper({ children }: PropsWithChildren) {
+  return <Activity mode={activityMode}>{children}</Activity>;
+}
+
 async function nextFrames() {
   await act(async () => {
     jest.advanceTimersByTime(FRAMES_MS);
@@ -37,6 +43,10 @@ async function nextFrames() {
 
 describe('useRebuiltPath', () => {
   setupFakeTimersPerTest();
+
+  beforeEach(() => {
+    activityMode = 'visible';
+  });
 
   it('시계가 바뀌어도 읽은 구간이 같으면 경로를 다시 만들지 않고, 구간이 바뀌면 새로 그린 뒤 앞 경로를 놓는다', async () => {
     // Given
@@ -77,10 +87,17 @@ describe('useRebuiltPath', () => {
   it('StrictMode처럼 effect만 다시 돌아도 놓은 빌더로 그리지 않고 계속 그린다', async () => {
     // Given
     const time = makeMutable(0);
-    const { result } = await renderHook(useWindowPath, {
+    const { result, rerender } = await renderHook(useWindowPath, {
       initialProps: { time, width: 100 },
-      wrapper: StrictMode,
+      wrapper: ActivityWrapper,
     });
+    await nextFrames();
+    // 이 테스트 렌더러는 StrictMode의 effect 재실행을 하지 않아, 같은 일을 하는 Activity로 effect를 정리했다 다시 건다
+    activityMode = 'hidden';
+    await rerender({ time, width: 100 });
+    await nextFrames();
+    activityMode = 'visible';
+    await rerender({ time, width: 100 });
     await nextFrames();
 
     // When

@@ -1,6 +1,6 @@
 # 구조
 
-기능을 어디에 두고, 기능 폴더에 무엇을 두고, 무엇이 무엇을 import하는지 정한다. 모델은 [model](./model.md), Api·저장소·쿼리·폼은 [data](./data.md), 상태·route는 [state-and-routing](./state-and-routing.md)이 원본이다. 아직 이 모양이 아닌 코드는 [다음 버전 후보 이슈(#1785)](https://github.com/Aiddoo/Aido-platform/issues/1785)에 있다. 지금 걸린 검사와 규칙 이름은 [guardrails](./guardrails.md)다.
+기능을 어디에 두고, 기능 폴더에 무엇을 두고, 무엇이 무엇을 import하는지 정한다. 모델은 [model](./model.md), Api·저장소·쿼리는 [data](./data.md), 폼은 [forms](./forms.md), 상태·route는 [state-and-routing](./state-and-routing.md)이 원본이다. 아직 이 모양이 아닌 코드는 [다음 버전 후보 이슈(#1785)](https://github.com/Aiddoo/Aido-platform/issues/1785)에 있다. 지금 걸린 검사와 규칙 이름은 [guardrails](./guardrails.md)다.
 
 ## 앱 폴더
 
@@ -10,7 +10,7 @@ src/
 ├── bootstrap/               앱 조립. 낱개 파일 없이 폴더로 모은다
 │   ├── auth/  hooks/        시작 인증 판정(순수), 앱 시작 때 한 번 도는 훅
 │   ├── navigation/          인증 게이트 레이아웃, 콜드 스타트 링크, 두 route가 함께 쓰는 조립
-│   ├── providers/           composition-root, create-device-ports, create-app-container, di-provider, di-context
+│   ├── providers/           composition-root, create-device-ports, create-app-container, di-provider, di-context, 위젯 헤드리스 진입점
 │   └── query/  startup/     QueryClient·캐시 복원, 시작 때 한 번 하는 정리
 ├── core/                    ports(앱의 말), errors(Result·ApiError), events, observability, session
 ├── features/{area}/{feature}/
@@ -56,8 +56,8 @@ src/
 
 ```text
 features/{area}/{feature}/
-├── domains/        {entity}.model.ts        Zod 클라이언트 모델 + Filter·OrderBy 타입 + 이름 있는 순수 함수 + {Entity}Policy (업무 규칙만)
-│                   {feature}.error.ts       기능 오류 코드, 칸 오류 매핑
+├── domains/        {entity}.model.ts        Zod 모델 + Filter·OrderBy 타입 + 원시 인자 순수 함수 + {Entity}Policy(메서드 + this). 업무 규칙만
+│                   {feature}.error.ts       기능 오류 코드, 칸 오류 매핑(순수)
 ├── schemas/        {name}-{form|params|request|response|payload|storage|draft|query-key|entry}.schema.ts
 │                   (-storage.schema.ts에 저장 값 정의 defineStoredValue를 둔다)
 ├── apis/           {entity}.api.ts          서버 호출 클래스(HttpClient만, Result)
@@ -66,45 +66,44 @@ features/{area}/{feature}/
 │                   {name}.session.ts        타이머·구독을 가진 수명 객체(dispose)
 ├── repositories/   {name}.repository.ts     저장 값 정의로 안 되는 것만(SecureStore 비동기, 파일, 접두사 열거·이주, 헤드리스 위젯)
 ├── stores/         {name}.store.ts          메모리 상태 기계(getSnapshot·subscribe)
-├── queries/        {feature}-query-keys.ts  쿼리 키 팩토리(쿼리 옵션·cache helper와 함께 바뀐다)
-│                   {feature}-mutation-keys.ts  mutation 키
-│                   {entity}.queries.ts      useGet{X}QueryOptions (+ select)
+├── queries/        {feature}-query-keys.ts  쿼리 키 팩토리(쿼리 옵션·cache helper와 함께 바뀐다). 모든 기능에 둔다
+│                   {feature}-mutation-keys.ts  mutation 키. 모든 기능에 둔다
+│                   {entity}.queries.ts      useGet{X}QueryOptions + select{X} + 폴링·staleTime 지역 표
 │                   {entity}.mutations.ts    use{Verb}{X}MutationOptions (캐시 효과·확정 추적)
 │                   {feature}-cache.ts       queryClient를 만지는 유일한 곳(무효화·갱신·refresh{Feature})
 ├── constants/      일반 상수만: {feature}.constants.ts(시간·한도·id), {entity}.events.ts(분석), {entity}-log-events.ts(로그 키)
-├── components/     {역할}.tsx (네임스페이스 부속은 부모 파일 안, 부모 이름의 큰 묶음(파일 3개 이상)만 하위 폴더)
-├── hooks/          use-{name}.ts (여러 파일이 쓰거나 app/·bootstrap이 쓰는 공개 훅)
+├── components/     {역할}.tsx: X + X.Loading·X.Error·X.Empty·X.Item. 레이아웃을 모른다(부속은 부모 파일 안, 부모 이름의 큰 묶음(파일 3개 이상)만 하위 폴더)
+├── hooks/          use-{name}.ts (여러 파일이 쓰거나 app/·bootstrap이 쓰는 훅. Suspense로 멈추면 useSuspense{X})
 ├── utils/          {name}.view-model.ts(표시 값), {name}.geometry.ts(좌표), {feature}-draft.ts, {feature}-analytics.ts만(함수 이름 파일은 맞는 층으로)
 └── __tests__/      {entity}.fixtures.ts(defineFixture), {route}-screen.test.tsx, {feature}.test-utils.tsx
 ```
 
 - mapper는 `apis/`에만, 엔티티당 하나다. OS 권한과 서버 기기 DTO처럼 엔티티가 다르면 파일을 나눈다.
 - 통과만 하는 repository와 service를 만들지 않는다. 저장 값 정의와 Policy로 충분하다.
-- 쿼리 키는 `queries/`에 둔다. `constants/`는 일반 상수(시간·한도·id, 장면 팔레트 같은 고정 값)·이벤트·로그 키만 두고 `domains/`를 import하지 않는다. 업무 규칙 표는 모델에, 라벨 키는 view-model에, 저장 키는 `*-storage.schema.ts`에 둔다.
-- 파일 이름은 kebab-case, 접두사는 다루는 엔티티 이름, 접미사는 위 골격의 역할 이름이다(역할 폴더별 접미사는 ls-lint). 기능 이름이 엔티티를 줄인 것이면 엔티티 이름을 쓴다(`social/nudge`의 `todo-nudge-query-keys.ts`). `helpers`·`utils`·`common` 같은 파일 이름을 쓰지 않는다.
-- 캐시 모양만 다루는 순수 함수(무한 목록 페이지 고치기·cursor)는 `queries/{entity}-pages-cache.ts`에 둔다(`todo-comment-pages-cache.ts`). `queryClient`는 만지지 않고 `-cache.ts` helper가 부른다.
-- `utils/`의 예외는 `store-review/utils/wait-for-settled-screen.ts` 하나다. 앱 상태 포트·타이머·abort로 화면이 가라앉기를 기다리는 한 번짜리 함수라 Session(수명 객체)이 아니고, 훅이 화면 판정(`isScreenReady`)을 넘겨 테스트가 시트·키보드·백그라운드 갈래를 모두 돈다.
+- 쿼리 키는 `queries/`에 둔다. `constants/`는 일반 상수(시간·한도·id, 장면 팔레트 같은 고정 값)·이벤트·로그 키만 두고 `domains/`를 import하지 않는다. 업무 규칙 표는 모델에, 라벨 키는 view-model에, 저장 키는 `*-storage.schema.ts`에 둔다. `constants/`에 두는 것은 여러 파일이 함께 읽는 값(단위 붙은 시간·한도, 이벤트·로그 키, 한 장면의 팔레트)뿐이고, 한 파일만 쓰는 UI 표·데모 값·조회 시간은 쓰는 파일 안의 지역 상수다.
+- 파일 이름은 kebab-case, 접두사는 다루는 엔티티 이름, 접미사는 위 골격의 역할 이름이다(역할 폴더별 접미사는 ls-lint). 기능 이름이 엔티티를 줄인 것이면 엔티티 이름을 쓴다(`social/nudge`의 `todo-nudge-query-keys.ts`). `helpers`·`utils`·`common` 같은 파일 이름을 쓰지 않는다. Context Provider와 그것을 읽는 훅은 한 파일 `hooks/use-{name}.tsx`다(`use-todo-comment-form.tsx`의 `TodoCommentFormProvider`·`useTodoCommentForm`).
+- 캐시 모양만 다루는 순수 함수(무한 목록 페이지 고치기·cursor)는 `queries/{entity}-pages-cache.ts`에 둔다(`todo-comment-pages-cache.ts`, `friend-pages-cache.ts`). `queryClient`는 만지지 않고 `-cache.ts` helper가 부른다.
 
 ## 층별 역할과 책임
 
 층마다 변경 이유가 하나다. 상세 모양은 [model](./model.md)과 [data](./data.md), 컴포넌트·스크린은 [ui](./ui.md)에 있다.
 
-| 층               | 하는 일                                                                     | 의존해도 되는 것                                                             | 하지 않는 것                                               | 모양                                                                                               |
-| ---------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| Model            | 업무 규칙: `can/should/is/has`, `calculate`, `filterBy`/`orderBy`, `with`   | zod, `@aido/api/vocabulary`·`common`·`errors`, `shared/date`(순수)           | 계약 import, i18n·색·배치·표시 방식, 시계 읽기, React      | `xSchema` + `type X` + 모듈 `function` + `XPolicy = { … } as const`(첫 인자 모델 전체)             |
-| Server API       | 한 서버 모듈의 엔드포인트: 요청 → `parseApiResponse` → mapper               | `HttpClient`, mapper, AppLogger(응답 진단만)                                 | 저장소·OS 포트, 다른 api, 추적·Sentry                      | class, 화살표 필드, `#`. `Promise<Result<T, ApiError>>`, GET은 `signal`                            |
-| Mapper           | 바깥 값 ↔ 모델의 유일한 변환                                                | domains, 계약 타입, 순수 날짜 도구                                           | 포트, 시계, 로그                                           | `to{Model}(dto)`, `to{X}Request(values)`, `to{X}FormValues(model)`, `parse{X}(unknown): X \| null` |
-| Device Service   | 여러 포트·api·저장소를 엮는 유스케이스(푸시 등록, 소셜 로그인, 위젯 동기화) | 포트, `Pick<XApi, …>`, 저장 값 함수, Policy, AppLogger, `now: () => Instant` | `HttpClient` 직접, 추적·Sentry, 저장소만 통과시키는 메서드 | class. 결과 유니온                                                                                 |
-| Session          | 타이머·구독 수명 객체                                                       | 포트                                                                         | 추적                                                       | 메서드 + `dispose()`                                                                               |
-| Repository       | 저장 값 정의로 안 되는 저장소                                               | 저장 포트, storage schema, AppLogger                                         | Policy 판단, 시계, HTTP                                    | `create{Name}Repository(storage)`, `find*`→`T \| null`, `save/remove`, `subscribe`                 |
-| Store            | 메모리 상태 기계(알림 진입, 인증 세션, 온보딩 가드)                         | Policy                                                                       | 포트, 영속                                                 | `create{Name}Store()` → `getSnapshot`·`subscribe`·이름 있는 동작                                   |
-| Query options    | 캐시 키, `queryFn`(api + `unwrap`), `select`로 화면별 모양                  | api 훅, keys, model                                                          | 표시 문자열                                                | `useGet{X}QueryOptions({ filters, orderBy, limit, … })`                                            |
-| Mutation options | 변경, 낙관적 갱신, 캐시 효과, 서버가 확정한 결과의 추적, 오류 메타          | api 훅, cache helper, `useTrack`                                             | 화면 이동                                                  | `use{Verb}{X}MutationOptions()` → `mutationOptions`. 변수는 `*Variables`                           |
-| Cache helper     | `queryClient`를 만지는 유일한 곳                                            | keys, model                                                                  | 이벤트·보고·api                                            | `invalidate{X}`, `set{X}InCache`, `refresh{Feature}`                                               |
-| View-model       | 모델 → 표시 값(i18n 키, 포맷, 색 토큰)                                      | model, 날짜 포맷                                                             | 거르기·묶기(그건 `select`), 업무 판정                      | `get{X}LabelKey`, `format{X}`                                                                      |
-| Hook             | 상태·구독·route를 묶은 한 책임                                              | 위 전부                                                                      | 포괄 훅, 위치 불리언 인자                                  | 상태·route는 튜플                                                                                  |
-| Component        | 자기 데이터 조회, 표시, 동작                                                | 위 전부                                                                      | 바깥 레이아웃, 화면 id prop                                | `X` + 부모 없이 의미 없는 부속은 `X.Part`                                                          |
-| Screen           | 배치·간격·경계·화면 문구·`match(view)`                                      | 컴포넌트, route 훅                                                           | 데이터 변환, 긴 effect, 폼 제출                            | 위에서 아래로 읽힌다                                                                               |
+| 층               | 하는 일                                                                                                               | 의존해도 되는 것                                                                                             | 하지 않는 것                                                                           | 모양                                                                                                            |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Model            | 업무 규칙: `can/should/is/has`, `calculate`, `filterBy`/`orderBy`, `with`, 의미 값                                    | zod, `@aido/api/vocabulary`·`common`·`errors`, `shared/date`(순수), `shared/constants/time-units`, 다른 모델 | 계약·포트·`schemas/`·`constants/` import, i18n·색·배치·노출 시간, 시계, React·TanStack | `xSchema` + `type X` + 원시 인자 `function` + `XPolicy = { method(x) { … } }`(첫 인자 모델 전체, `this`로 조합) |
+| Server API       | 한 서버 모듈의 엔드포인트: 요청 → `parseApiResponse` → mapper                                                         | `HttpClient`, mapper, AppLogger(응답 진단만)                                                                 | 저장소·OS 포트, 다른 api, 추적·Sentry                                                  | class, 화살표 필드, `#`. `Promise<Result<T, ApiError>>`, GET은 `signal`                                         |
+| Mapper           | 바깥 값 ↔ 모델의 유일한 변환, 폼 값 → 요청, 바깥 값 파싱                                                              | domains, 계약 타입, 포트의 타입, 순수 날짜 도구                                                              | 포트 호출, 시계, 로그, 표시 문자열, 업무 결정                                          | `to{Model}(dto)`, `to{X}Request(values)`, `to{X}FormValues(model)`, `parse{X}(unknown): X \| null`              |
+| Device Service   | 여러 포트·api·저장소를 엮는 유스케이스(푸시 등록, 소셜 로그인, 위젯 동기화)                                           | 포트, `Pick<XApi, …>`, 저장 값 함수, Policy, AppLogger, `now: () => Instant`                                 | `HttpClient` 직접, 추적·Sentry, 저장소만 통과시키는 메서드                             | class. 결과 유니온                                                                                              |
+| Session          | 타이머·구독 수명 객체                                                                                                 | 포트, 이름 있는 콜백                                                                                         | 추적                                                                                   | 메서드 + `dispose()`                                                                                            |
+| Repository       | 저장 값 정의로 안 되는 저장소                                                                                         | 저장 포트, storage schema, AppLogger                                                                         | Policy 판단, 시계, HTTP                                                                | `create{Name}Repository(storage)`, `find*`→`T \| null`, `save/remove`, `subscribe`                              |
+| Store            | 메모리 상태 기계(알림 진입, 인증 세션, 온보딩 가드)                                                                   | Policy                                                                                                       | 포트, 영속                                                                             | `create{Name}Store()` → `getSnapshot`·`subscribe`·이름 있는 동작                                                |
+| Query options    | 캐시 키, `queryFn`(api + `unwrap`), `select`로 화면별 모양, 폴링 표                                                   | api 훅, keys, model                                                                                          | 표시 문자열, 토스트·햅틱·이동, 훅·`utils/`·`services/` import                          | `useGet{X}QueryOptions({ filters, orderBy, limit, … })`, 모듈 함수 `select{X}`                                  |
+| Mutation options | 변경, 낙관적 갱신, 캐시 효과, 서버가 확정한 결과의 추적, 오류 메타                                                    | api 훅, cache helper, `useTrack`                                                                             | 화면 이동                                                                              | `use{Verb}{X}MutationOptions()` → `mutationOptions`. 변수는 `*Variables`                                        |
+| Cache helper     | `queryClient`를 만지는 유일한 곳                                                                                      | keys, model                                                                                                  | 이벤트·보고·api                                                                        | `invalidate{X}`, `set{X}InCache`, `refresh{Feature}`                                                            |
+| View-model       | 모델 → 라벨 키·포맷·색 토큰                                                                                           | model, 날짜 포맷                                                                                             | 파싱, 업무 판정, 쿼리 데이터 묶기(그건 `select`)                                       | `get{X}LabelKey`, `format{X}`                                                                                   |
+| Hook             | 상태·구독·route를 묶은 한 책임                                                                                        | 위 전부                                                                                                      | 포괄 훅, 라이브러리 훅 감싸기만, 진행 상태 재구현                                      | 상태·route는 튜플([hooks](./hooks.md))                                                                          |
+| Component        | 자기 데이터 조회, 표시, 동작(mutation·오류 판별·시트 열기)                                                            | 위 전부                                                                                                      | 바깥 여백·safe area, route id·폼·단계 props, 숨은 경계, 화면 문구                      | `X` + `X.Part`, 입력은 `value`/`onChange`, 원본 Props 확장([ui](./ui.md))                                       |
+| Screen(route)    | 단계·경계·`Spacing`·문구·`match(view)`, 폼(`useForm`·칸 연결·`handleSubmit`·`setError`), 화면만 쓰는 지역 훅·컴포넌트 | 컴포넌트, route 훅, 기능의 스키마·mapper·mutation 옵션·오류 판별                                             | 조회 값 가공, 규칙 계산, 요청 만들기, 오류 판별, 시트 열기                             | 위에서 아래로 읽힌다([ui](./ui.md#스크린), [forms](./forms.md))                                                 |
 
 ## 층과 의존
 
@@ -129,7 +128,7 @@ features/{area}/{feature}/
 - `di-context`의 `use{X}` 훅은 돌려주는 값의 주인 기능을 import한 것으로 센다.
 - `device/*`는 묶음일 뿐 한 층이 아니다. 실제로 보는 대상에 맞춰 둔다(`activation`은 할 일·알림·초대를 읽어 4층, `app-icon`은 1층).
 - 다른 기능의 `apis/`는 가져오지 않는다. 순수 변환인 `planning/todo/apis/todo-repeat.mapper.ts`, `planning/todo/apis/todo.mapper.ts`(메모 옮기기의 `toCreateTodoRequest`, 할 일 고치기 시트의 `toTodoFormValues`), `billing/subscription/apis/entitlement.mapper.ts`만 예외다.
-- `app/` 파일은 모두 route라 공용 파일을 옆에 둘 수 없다. 두 route가 같은 조립을 쓰면 route에서 export하지 않고 컴포넌트로 둔다. 한 기능의 조각만 조립하면 그 기능의 `components/`(`notification/components/weather-notification-settings/weather-notification-settings.tsx`), 여러 기능을 조립하면 `bootstrap/navigation/`(`my-page-stack.tsx`, `subscription-checkout.tsx`)이다.
+- `app/` 파일은 모두 route라 공용 파일을 옆에 둘 수 없다. 두 route가 같은 조립을 쓰면 route에서 export하지 않고 컴포넌트로 둔다. 한 기능의 조각만 조립하면 그 기능의 `components/`(`notification/components/weather-notification-settings.tsx`), 여러 기능을 조립하면 `bootstrap/navigation/`(`my-page-stack.tsx`, `subscription-checkout.tsx`)이다.
 - 테스트 도구(`src/testing/`)는 조립을 위해 위층을 볼 수 있다. 층 규칙은 운영 코드에만 걸린다.
 
 위 층이 필요하면 아래 넷 중 하나로 끊는다. 새 방법을 더하지 않는다.
@@ -154,7 +153,7 @@ composition-root(프로세스 수명) → DIProvider: createAppContainer(ports)(
 - **SDK는 `shared/infra`에서만 import한다.** 어댑터는 `shared/infra/{영역}/{공급자}-{포트 파일 이름}.ts`이고 포트 하나에 파일 하나다(`expo-clipboard-gateway.ts` → `expoClipboardGateway`). 플랫폼·OS 버전 차이는 어댑터 안에 숨긴다. 어댑터의 상태는 인스턴스 필드나 어댑터 팩토리의 클로저 변수에 두고, `logger`·`errorReporter`는 팩토리 인자로 받는다.
 - **조립은 `createAppContainer(ports)` 한 함수다.** 운영은 기기 어댑터, 테스트는 stub 포트를 넘긴다. 객체만 만들고 SDK import, 구독, 타이머, 전역 값 변경, 저장소 쓰기를 하지 않는다. 연결은 쓰는 Provider·훅의 effect가 맡는다.
 - **컨테이너에는 화면이 꺼내는 것만 둔다.** Api·service를 만드는 데만 쓰는 포트(`KeyValueStorage`, `PurchasesGateway`, HTTP 클라이언트, 토큰 갱신기)는 `AppContainerPorts`에만 있다. mapper·Policy·view-model은 순수 함수라 DI에 넣지 않고 직접 import한다.
-- **꺼내는 입구는 `bootstrap/providers/di-context.tsx` 하나다.** DI 훅은 `use{Entity}Api`, `use{Name}Service`, `use{Name}Repository`, `use{Name}Store`이고 훅 이름은 컨테이너 필드 이름과 같다. 포트는 필드·훅 모두 역할 이름이고 `Gateway`를 붙이지 않는다(`haptics`·`useHaptics`, `purchases`, `socialShare`). 공개·인증 HTTP 짝은 어디서나 `publicHttpClient`·`authHttpClient`이고, 생성자 의존 객체 타입은 `{X}Ports`다. `shared/di/shared-di-context.tsx`는 `shared`만 쓰고 `di-context`가 다시 내보낸다. `DIContainer`·`createAppContainer`의 반환·di-context 훅은 같은 순서다(포트 → 기능 층 표 1→4, 기능마다 빈 줄). 훅이 없는 필드는 시작·세션 정리만 쓰는 저장소(`coachmarkRepository`)뿐이다.
+- **꺼내는 입구는 `bootstrap/providers/di-context.tsx` 하나다.** DI 훅은 `use{Entity}Api`, `use{Name}Service`, `use{Name}Repository`, `use{Name}Store`이고 훅 이름은 컨테이너 필드 이름과 같다. 포트는 필드·훅 모두 역할 이름이고 `Gateway`를 붙이지 않는다(`haptics`·`useHaptics`, `purchases`, `socialShare`). 공개·인증 HTTP 짝은 어디서나 `publicHttpClient`·`authHttpClient`이고, 생성자 의존 객체 타입은 `{X}Ports`다. `shared/di/shared-di-context.tsx`는 `shared`만 쓰고 `di-context`가 그 훅 10개(`useAnalytics`·`useAppLifecycle`·`useDraftService`·`useErrorReporter`·`useExternalLink`·`useFeatureAttribution`·`useHaptics`·`useIncomingLink`·`useLogger`·`useSystemShare`)를 모두 다시 내보낸다. 다시 내보내는 것은 이 훅들뿐이다. `DIContainer`·`createAppContainer`의 반환·di-context 훅은 같은 순서다(포트 → 기능 층 표 1→4, 기능마다 빈 줄). 훅이 없는 필드는 시작·세션 정리만 쓰는 저장소(`coachmarkRepository`)뿐이다.
 - **라이브러리 교체는 어댑터 하나와 `create-device-ports` 한 줄이다.** 어댑터 밖이 바뀌면 포트 설계가 틀린 것이다. 새 포트는 `core/ports` → 어댑터 → `create-device-ports` → `createTestPorts` stub 기본값을 함께 더한다.
 
 | 수명     | 무엇                                                                                                                                                                                                                                  | 만드는 곳                                             |
@@ -162,16 +161,17 @@ composition-root(프로세스 수명) → DIProvider: createAppContainer(ports)(
 | 프로세스 | `AppLogger`·`Analytics`·`ErrorReporter`, `QueryClient`, 보안·암호화 저장소, `TokenStore`·토큰 갱신기, HTTP 클라이언트, 결제 SDK 게이트웨이, 그 밖의 기기 어댑터, 루트 "다시 시도"를 넘어 기억할 메모리 store(`inviteLinkOpenedStore`) | `composition-root.ts`가 한 번                         |
 | 마운트   | Api, service, repository, store                                                                                                                                                                                                       | `DIProvider`가 마운트마다 `createAppContainer(ports)` |
 
-- 프로세스 수명 객체를 담는 모듈 수준 값은 `composition-root.ts`에만 둔다. 그 밖의 모듈 전역 상태는 DI store(`pushOnboardingGuardStore`, `myPagePaneLayoutStore`, `myPageDetailRootStore`, 프로세스 수명 포트의 `inviteLinkOpenedStore`)나 어댑터 팩토리의 클로저 변수(푸시 게이트웨이의 앞 알림 표시 판단)로 옮긴다. DI보다 먼저 있거나 DI 밖에서 읽어 옮길 수 없는 것만 남기고 늘리지 않는다.
+- 프로세스 수명 객체를 담는 모듈 수준 값은 `composition-root.ts`에만 둔다. 그 밖의 모듈 전역 상태는 DI store(`pushOnboardingGuardStore`, `myPagePaneLayoutStore`, 프로세스 수명 포트의 `inviteLinkOpenedStore`)나 어댑터 팩토리의 클로저 변수(푸시 게이트웨이의 앞 알림 표시 판단)로 옮긴다. DI보다 먼저 있거나 DI 밖에서 읽어 옮길 수 없는 것만 남기고 늘리지 않는다.
   - `bootstrap/navigation/cold-start-link`: 앱 트리·DI보다 먼저 받은 첫 URL을 Index가 한 번 읽는다
   - `shared/ui/bottom-sheet/keyboard-bottom-sheet`의 열린 시트 수: 키보드 컨트롤러가 네이티브 전역 하나라 수도 그 수명을 따른다
-  - `shared/infra/logger/global-logger`: DI 밖(루트 오류 화면, 접근성 설정 store, 위젯 진입점)이 쓰는 로거. `composition-root`가 한 번 정한다
+  - `shared/infra/logger/global-logger`: DI 밖(루트 오류 화면의 문의 메일 `bootstrap/navigation/open-support-mail.ts`, 접근성 설정 store, 위젯 진입점, 빌드 설정 `shared/config/env.ts`, DI 밖 `createAppQueryClient`가 만드는 캐시의 `bootstrap/query/mutation-error-feedback-cache.ts`·`query-cache-persistence.ts`)이 쓰는 로거. `composition-root`가 한 번 정한다
   - `core/events/*`의 이벤트 채널 리스너와 `event-channel`의 리스너 오류 보고기: `core`는 DI를 모른다. 구독은 해제 함수를 돌려주고 보고기는 `DIProvider`가 마운트 때 건다
-  - 접근성 설정 store(`shared/hooks/use-is-reduce-motion-enabled`, `features/weather/hooks/use-is-reduce-transparency-enabled`): OS 설정 하나를 구독 하나로 나눠 읽는다. 모션 줄이기는 DI 밖(루트 오류 화면)에서도 그리는 `shared/ui`가 읽는다
-  - `shared/infra/storage/widget-storage.android`, `shared/infra/app-lifecycle/react-native-app-lifecycle-gateway`, `features/device/widget/bridge/android-widgets.bridge`의 스냅숏·이동 저장소와 렌더러: 위젯만 깨어난 헤드리스 프로세스에는 앱 트리·DI가 없다. 앱의 조립은 `create-device-ports`가 같은 값을 넘긴다
-  - `features/billing/subscription/hooks/use-report-store-unavailable`의 보고한 진단 코드(`WeakMap<ErrorReporter, Set<string>>`): 같은 스토어 설정 문제를 앱 실행마다 한 번만 남긴다. 마운트 수명 DI store는 루트 "다시 시도"마다 새로 만들어져 다시 보낸다. 키가 프로세스 수명 `ErrorReporter`라 그 수명을 따른다
+  - 접근성 설정 store(`shared/hooks/use-is-reduce-motion-enabled`, `shared/hooks/use-is-reduce-transparency-enabled`): OS 설정 하나를 구독 하나로 나눠 읽는다. 모션 줄이기는 DI 밖(루트 오류 화면)에서도 그리는 `shared/ui`가 읽는다
+  - `shared/infra/storage/widget-storage.android`, `shared/infra/app-lifecycle/react-native-app-lifecycle-gateway`: 위젯만 깨어난 헤드리스 프로세스에는 앱 트리·DI가 없다. 그 진입점(`bootstrap/providers/register-widget-task-handler`)과 앱 조립(`bootstrap/providers/create-widget-bridge`)이 같은 저장소로 `AndroidWidgetService`를 만든다
+  - `features/billing/subscription/components/plan-picker`의 보고한 스토어 진단 코드(`WeakMap<ErrorReporter, Set<string>>`): 같은 스토어 설정 문제를 앱 실행마다 한 번만 남긴다. 마운트 수명 DI store는 루트 "다시 시도"마다 새로 만들어져 다시 보낸다. 키가 프로세스 수명 `ErrorReporter`라 그 수명을 따른다
   - React 밖 cache helper가 부르는 `shared/utils/create-optimistic-id`(프로세스 안에서 겹치지 않아야 한다)와 `features/planning/todo/queries/todo-cache`의 쓰기 순번(`WeakMap<QueryClient, number>`, 먼저 시작해 늦게 끝난 쓰기 사이를 센다. `QueryClient` 수명을 따른다)
-  - `shared/date/format/intl-formatter`의 포매터 캐시, `shared/utils/number-format`의 퍼센트 포매터(많아야 4개): 상태가 아닌 순수 캐시다
+  - `shared/date/format/intl-formatter`의 포매터 캐시, `shared/date/timezone`의 `isSupportedTimezone` 결과(`memoize`, 런타임이 아는 이름은 바뀌지 않는다), `shared/utils/number-format`의 퍼센트 포매터(많아야 4개): 상태가 아닌 순수 캐시다
+  - `shared/infra/localization/app-timezone`의 정해 둔 앱 시간대: 화면의 오늘(`LocalDateProvider`)과 DI 밖에서 붙는 요청 헤더·위젯이 한 순간에 같은 값을 읽어야 한다. `refreshAppTimezone`(Provider 재평가와 헤드리스 위젯 진입점)만 바꾸고 `getAppTimezone`은 읽기만 한다. 테스트는 기기 달력 mock을 되돌린 뒤 `refreshAppTimezone`을 다시 불러 초기화한다
   - `shared/infra/storage/device-sync-storage`의 MMKV 인스턴스: DI보다 먼저 그리는 설정 Provider(테마·언어·글꼴)와 `i18n/init`이 읽는다
   - `shared/infra/observability/capture-error`의 보고한 오류 `WeakSet`: DI 밖(루트 경계·전역 로거)과 안의 보고가 같은 오류를 두 번 보내지 않게 하는 한 곳이고 오류 객체와 함께 사라진다
   - `bootstrap/query/{mutation-error-feedback,query-error-report}-cache`의 구독자 표: 캐시 `onError`는 DI 밖 `createAppQueryClient`에서 만들어진다. 표는 캐시를 키로 한 `WeakMap`이라 캐시마다 따로이고 캐시와 함께 사라진다
@@ -180,21 +180,21 @@ composition-root(프로세스 수명) → DIProvider: createAppContainer(ports)(
 - 루트 "다시 시도"는 마운트 수명 컨테이너만 새로 만든다. 로그인·결제 설정·보고는 그대로 남는다.
 - 언마운트·로그아웃 뒤에 도는 일이 없어야 한다. await 뒤 상태 변경·이동은 막고, 핸들러가 건 rAF·타이머는 지우고, 리스너 세트 대신 `subscribe`가 해제 함수를 돌려주는 관찰 가능한 저장소를 쓴다. 화면 밖에서 늦게 오는 쓰기(초안 자동 저장의 마지막 저장, 늦은 녹음 파일)는 로그아웃·탈퇴 세대(`SignOutEpoch`)와 비교해 로그아웃·탈퇴 뒤에는 쓰지 않는다(`DraftService.createSessionSave`, `VoiceRecordingIntakeSession`). 세션 만료는 같은 사람이 돌아와 이어 쓰므로 막지 않는다. 결제 SDK 로그인·로그아웃은 `PurchasesSession`이 하나씩, 마지막 요청만 보내고 멈춘 호출(로그인 뒤 속성 동기화 포함)은 `PURCHASES_SDK_CALL_TIMEOUT_MS`(15초)에서 끊는다. 결제·복원은 그때의 SDK 사용자에게 귀속되므로 `waitForSignedInUser`로 로그인·로그아웃이 끝나길 기다리고, 마지막 계정의 로그인이 실패·시간 초과였으면 그 계정으로 다시 로그인해 기다린 뒤 그래도 아니면 스토어 연결 오류(`SUBSCRIPTION_STORE_PROBLEM`)로 막는다. 상세: [data의 메모리와 수명](./data.md#메모리와-수명).
 
-`shared/infra`를 직접 import하거나 SDK를 포트 없이 쓰는 곳은 아래뿐이다. 늘리지 않는다.
+`shared/infra`를 직접 import하거나 SDK를 포트 없이 쓰는 곳은 아래뿐이다. 늘리지 않는다. feature와 route의 직접 import는 `feature-to-infra`가 막고, 실제로 쓰는 경계 파일·위젯 진입점·루트 레이아웃만 예외다([guardrails](./guardrails.md)).
 
 - `shared/infra` 안 경계 파일(`audio/use-audio-part-playlist.ts`, `keep-awake/use-keep-screen-awake.ts`, `localization/device-locale.ts`, `linking/use-linking-url.ts`, `view-capture/capturable-view.tsx`): 라이브러리 자체가 훅·컴포넌트라 DI 값으로 바꿀 수 없다
 - `create-device-ports`·`composition-root`, `app/_layout.tsx`의 루트 오류 보고기, `bootstrap/navigation/open-support-mail.ts`(루트 경계의 문의 메일): 조립하는 곳이거나 Provider 밖에서 그려진다
-- 위젯 진입점(`device/widget/bridge/`), `shared/infra/device/device-info.ts`의 시작 상수, DI보다 위의 Provider: 앱 트리·DI가 없거나 DI보다 먼저다
+- 위젯 헤드리스 진입점(`bootstrap/providers/register-widget-task-handler`), `shared/infra/device/device-info.ts`의 시작 상수, DI보다 위의 Provider: 앱 트리·DI가 없거나 DI보다 먼저다
 - `expo-router`(route와 route 경계 훅), `shared/config/env.ts`의 `expo-constants`, 루트 레이아웃의 `expo-splash-screen`: 포트로 숨기지 않는 라이브러리다
+- `react-native`의 `AccessibilityInfo` 알림(`announceForAccessibility*`)을 직접 부르는 2곳(`shared/ui/offline-banner/offline-banner.tsx`, `features/billing/subscription/components/subscription-result.tsx`): 설정 읽기·구독은 `useIsReduceMotionEnabled`·`useIsReduceTransparencyEnabled`가 맡고, 스크린리더에 한 번 읽어 주는 호출만 남는다
 
 ## 공개 면
 
-- 같은 기능 안에서 한 파일만 쓰는 훅·컴포넌트는 그 파일의 지역 함수, 여러 파일이나 다른 기능이 쓰면 `hooks/`·`components/`다. 부모 없이 의미 없는 조각은 부모 파일의 `Parent.Part`다([ui](./ui.md)).
-- `app/`·`bootstrap`이 쓰는 훅·컴포넌트는 쓰는 곳이 하나여도 공개 면이라 기능 폴더에 남긴다.
-- 공개 면도 정의 파일에서 직접 import한다. 쓰지 않는 export는 knip이 막는다.
+- 한 곳만 쓰는 훅·컴포넌트는 쓰는 파일 안의 지역 함수다. 부모 없이 의미 없는 조각은 부모 파일의 `Parent.Part`다([ui](./ui.md#네임스페이스지역-컴포넌트)).
+- 파일을 따로 두는 것은 세 경우뿐이다. ① 여러 파일이 쓴다. ② `app/`·`bootstrap`이 쓰는 기능의 공개 컴포넌트·훅이다(쓰는 곳이 하나여도). ③ 자체 테스트가 직접 그리거나 스스로 완결된 부품이다(Skia 레이어, 차트, 테스트가 있는 상태 기계 훅). route 파일만 쓰는 배치 조각(단계 화면, 진행 점, 제목 줄)은 route 파일의 지역 컴포넌트다. 공개 면도 정의 파일에서 직접 import하고, 쓰지 않는 export는 knip이 막는다.
 
 ## 함수 형태
 
 - 모듈 수준 함수(컴포넌트, 훅, 순수 함수, mapper, query options, `select`, fixture)는 `function` 선언이고 네임스페이스 조각은 `X.Item = function Item()`이다(`aido/function-declaration`, `aido/namespace-function-name`).
-- 클래스 메서드는 화살표 필드 + `#` 비공개(`KyHttpClient`, `SecureStorage`, `ApiError`도)이고 생성자 파라미터 프로퍼티 대신 필드를 선언한다. 팩토리가 돌려주는 객체(어댑터, store, repository, 세션)는 화살표 속성이고 메서드 축약(`get() {}`)을 쓰지 않는다. 컴포넌트 안 핸들러·인라인 콜백·키 객체 값은 화살표다.
-- 시간 상수는 이름에 단위를 넣는다(`SHEET_ANIMATION_DURATION_MS`, `ANIMATION.durationMs.fast`, `STORE_PREMIUM_SYNC_DELAYS_MS`).
+- 클래스 메서드는 화살표 필드 + `#` 비공개(`KyHttpClient`, `SecureStorage`, `ApiError`도)이고 생성자 파라미터 프로퍼티 대신 필드를 선언한다. 팩토리가 돌려주는 객체(어댑터, store, repository, 세션)는 화살표 속성이고 메서드 축약(`get() {}`)을 쓰지 않는다. 예외는 `*Policy` 객체로, 메서드 축약과 `this`를 쓴다([model](./model.md#모델과-policy)). 컴포넌트 안 핸들러·인라인 콜백·키 객체 값은 화살표다.
+- 시간 상수는 이름에 단위를 넣는다(`TODO_COMMENT_HIGHLIGHT_DURATION_MS`, `ANIMATION.durationMs.fast`, `STORE_PREMIUM_SYNC_DELAYS_MS`).

@@ -1,5 +1,5 @@
 import { throttle } from 'es-toolkit';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 /** 손가락이 두 번 튀는 시간. 이 안에 들어온 반복 탭은 같은 한 번으로 본다. */
 const TAP_GUARD_MS = 600;
@@ -21,8 +21,5 @@ export function useSingleTap<TapArguments extends unknown[]>(
 
   useEffect(() => () => throttledTap.cancel(), [throttledTap]);
 
-  return useCallback(
-    (...tapArguments: TapArguments) => throttledTap(() => onTapRef.current(...tapArguments)),
-    [throttledTap],
-  );
+  return (...tapArguments: TapArguments) => throttledTap(() => onTapRef.current(...tapArguments));
 }

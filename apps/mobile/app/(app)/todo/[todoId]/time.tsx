@@ -1,5 +1,5 @@
 import { useAskPushPermissionOnTodoTime } from '@src/features/notification/hooks/use-ask-push-permission-on-todo-time';
-import { TodoTimeBottomSheet } from '@src/features/planning/todo/components/todo-list/todo-time-bottom-sheet';
+import { TodoTimeBottomSheet } from '@src/features/planning/todo/components/todo-time-bottom-sheet';
 import { todoParamsSchema } from '@src/features/planning/todo/schemas/todo-params.schema';
 import { useRouteParamsOrRedirect } from '@src/shared/hooks/use-route-params-or-redirect';
 import { SheetRouteScreen } from '@src/shared/ui';

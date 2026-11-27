@@ -22,19 +22,19 @@ export function PushDeliverySettings(props: SettingsSectionProps) {
   const [{ data: preference }, { data: permission }] = useSuspenseQueries({
     queries: [useGetPreferenceQueryOptions(), useGetPushPermissionQueryOptions()],
   });
-  const updateMutation = useMutation(useUpdatePreferenceMutationOptions());
+  const updatePreference = useMutation(useUpdatePreferenceMutationOptions());
   // 권한 창이 닫힐 때까지 pending이라 토글을 두 번 누를 수 없다
-  const requestPermissionMutation = useMutation(useRequestPushPermissionMutationOptions());
+  const requestPushPermission = useMutation(useRequestPushPermissionMutationOptions());
 
-  const isUpdating = updateMutation.isPending || requestPermissionMutation.isPending;
+  const isUpdating = updatePreference.isPending || requestPushPermission.isPending;
 
   const handlePushEnabledChange = (enabled: boolean) =>
-    updateMutation.mutate(
+    updatePreference.mutate(
       { pushEnabled: enabled },
       {
         onSuccess: () => {
           if (enabled) {
-            requestPermissionMutation.mutate({ source: 'settings' });
+            requestPushPermission.mutate({ source: 'settings' });
           }
         },
       },
@@ -74,7 +74,7 @@ export function PushDeliverySettings(props: SettingsSectionProps) {
             : t('auth:preference.enablePushFirst')
         }
         isSelected={preference.nightPushEnabled}
-        onSelectedChange={(enabled) => updateMutation.mutate({ nightPushEnabled: enabled })}
+        onSelectedChange={(enabled) => updatePreference.mutate({ nightPushEnabled: enabled })}
         isDisabled={!preference.pushEnabled || isUpdating}
       />
       <SettingsListGroup.Separator />
@@ -87,7 +87,7 @@ export function PushDeliverySettings(props: SettingsSectionProps) {
             : t('auth:preference.enablePushFirst')
         }
         isSelected={preference.aiPushEnabled}
-        onSelectedChange={(enabled) => updateMutation.mutate({ aiPushEnabled: enabled })}
+        onSelectedChange={(enabled) => updatePreference.mutate({ aiPushEnabled: enabled })}
         isDisabled={!preference.pushEnabled || isUpdating}
       />
     </SettingsListGroup>

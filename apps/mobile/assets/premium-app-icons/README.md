@@ -1,6 +1,6 @@
 # 고양이 아이콘
 
-기존 6개 선택 키와 순서를 유지하고 러시안 블루, 크림 고양이, 턱시도 고양이를 추가했다. 세 신규 이미지는 서비스의 기존 졸린 표정과 부드러운 3D 톤을 참고해 새로 생성한 디자인이며, 외부 이미지나 캐릭터 에셋을 가져오지 않았다.
+이 폴더의 런처 대체 아이콘이다. 세 이미지는 서비스의 졸린 표정과 부드러운 3D 톤에 맞춰 직접 만든 디자인이고, 외부 이미지나 캐릭터 에셋을 쓰지 않는다.
 
 | 파일 | 선택 키 | 배경 |
 | --- | --- | --- |
@@ -10,4 +10,4 @@
 
 앱 아이콘 원본은 모두 1024×1024 RGB PNG이며 투명도와 모서리 마스크를 포함하지 않는다. iOS·Android 런처가 플랫폼 규칙에 따라 모양을 적용한다. 프로필·아이콘 선택 미리보기는 `assets/images/profile-icons/*.webp`(384px)를 쓰고, 이 폴더의 PNG는 런처 대체 아이콘 전용이다. 기본 아이콘의 미리보기는 `profile-icons/default.webp`를 로그인 화면과 프로필 기본 이미지까지 함께 쓰며, 기본 런처 아이콘은 `assets/images/icon.png`라서 여기에 `default.png`를 두지 않는다. 아이콘을 추가하면 두 곳에 모두 파일을 넣어야 한다(런처용 PNG와 미리보기용 WebP).
 
-선택 키는 `@aido/api/vocabulary`의 `PROFILE_ICON_KEYS`, 미리보기·라벨은 `src/features/device/app-icon/constants/app-icon.constants.ts`, 네이티브 등록은 `app.config.ts`의 `expo-quick-actions` 플러그인이 담당한다. 네이티브 등록이 추가되므로 앱을 다시 빌드해야 한다. OTA 업데이트만으로 새 런처 아이콘을 추가하지 않는다.
+선택 키는 `@aido/api/vocabulary`의 `PROFILE_ICON_KEYS`, 미리보기·라벨은 `src/shared/constants/app-icons.ts`, 네이티브 등록은 `app.config.ts`의 `expo-quick-actions` 플러그인이 담당한다. 네이티브 등록이 추가되므로 앱을 다시 빌드해야 한다. OTA 업데이트만으로 새 런처 아이콘을 추가하지 않는다.

@@ -14,7 +14,7 @@ const EXCLUDED = [
   /(^|\/)node_modules\//,
 ];
 // 출시 기록은 그때 상태로 얼려 둔다. 링크·길이·경로를 보지 않는다.
-const FROZEN = [/^docs\/releases\//, /^apps\/mobile\/docs\/releases\//];
+const FROZEN = [/^docs\/releases\//];
 const REMARK_CLI = resolve(repositoryRoot, 'node_modules/remark-cli/cli.js');
 
 const PATH_PREFIXES = [

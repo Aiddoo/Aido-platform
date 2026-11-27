@@ -1,7 +1,7 @@
+import { AppIconInput } from '@src/features/device/app-icon/components/app-icon-input';
 import { LinkedAccountCountValue } from '@src/features/identity/auth/components/linked-account-count-value';
 import { AccountSettingsList } from '@src/features/identity/user/components/account-settings-list';
 import { ProfileAvatarButton } from '@src/features/identity/user/components/profile-avatar-button';
-import { ProfileImageBottomSheet } from '@src/features/identity/user/components/profile-image-bottom-sheet';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -10,12 +10,12 @@ import {
   SettingsListGroup,
   SettingsScreenLayout,
 } from '@src/shared/ui';
-import { router, Stack } from 'expo-router';
-import { Suspense, useState } from 'react';
+import { useRouter, Stack } from 'expo-router';
+import { Suspense } from 'react';
 
 export default function ProfileScreen() {
-  const [isImageSheetOpen, setIsImageSheetOpen] = useState(false);
-  const push = useSingleTap(router.push);
+  const router = useRouter();
+  const pushOnce = useSingleTap(router.push);
   const { t } = useTranslation('settings');
 
   return (
@@ -25,8 +25,7 @@ export default function ProfileScreen() {
       <SettingsScreenLayout>
         <QueryErrorBoundary fallback={ProfileAvatarButton.Error}>
           <Suspense fallback={<ProfileAvatarButton.Loading />}>
-            <ProfileAvatarButton onPress={() => setIsImageSheetOpen(true)} />
-            <ProfileImageBottomSheet isOpen={isImageSheetOpen} onOpenChange={setIsImageSheetOpen} />
+            <ProfileAvatarButton iconInput={AppIconInput} />
           </Suspense>
         </QueryErrorBoundary>
 
@@ -41,7 +40,7 @@ export default function ProfileScreen() {
             icon={<SettingsListGroup.Icon Icon={LinkDuoIcon} />}
             label={t('titles.linkedAccounts')}
             value={<LinkedAccountCountValue />}
-            onPress={() => push('/settings/linked-accounts')}
+            onPress={() => pushOnce('/settings/linked-accounts')}
           />
         </SettingsListGroup>
       </SettingsScreenLayout>

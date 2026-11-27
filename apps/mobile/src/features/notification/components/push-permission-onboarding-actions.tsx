@@ -6,7 +6,6 @@ import { useTranslation } from '@src/shared/i18n';
 import { useStoredValue } from '@src/shared/storage/use-stored-value';
 import { Button, STACK_CLOSE_ICON } from '@src/shared/ui';
 import { Stack } from 'expo-router';
-import { useCallback } from 'react';
 
 import { PUSH_PERMISSION_STEP } from '../constants/notification.constants';
 import type { PushPermissionPromptSource } from '../constants/notification.events';
@@ -31,13 +30,13 @@ export function PushPermissionOnboardingActions() {
     params: { source: SOURCE, step: PUSH_PERMISSION_STEP.ASK },
   });
 
-  const handleClose = useCallback(() => {
+  const handleClose = () => {
     trackEvent('push_permission_prompt_dismissed', {
       source: SOURCE,
       step: PUSH_PERMISSION_STEP.ASK,
     });
     setDeferredAt(getNowInstant());
-  }, [setDeferredAt, trackEvent]);
+  };
 
   // Android 뒤로 가기도 닫기로 받는다. 답 없이 피드로 돌아가면 피드가 이 화면을 다시 연다
   useAndroidBackHandler({

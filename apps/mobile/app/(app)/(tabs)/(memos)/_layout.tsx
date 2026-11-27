@@ -7,7 +7,7 @@ export const unstable_settings = {
   anchor: 'memo/index',
 };
 
-export default function MemoLayout() {
+export default function MemoTabLayout() {
   const screenOptions = useStackScreenOptions({ hasContentBackground: true });
 
   // 메모 목록·상세 칸은 탭 사이드바를 뺀 폭으로 나눈다

@@ -1,6 +1,6 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { resolveTimezone } from "#api/shared/domain/time/timezone-name";
+import { resolveDateBoundaryTimezone } from "#api/shared/domain/time/timezone-name";
 
 import { GeoCell } from "../../../shared/domain/geo-cell.vo.js";
 import type { UserLocationRepositoryPort } from "../../../user-locations/application/ports/user-location.repository.port.js";
@@ -97,7 +97,7 @@ export class GetWeatherConditionsUseCase {
         grid: location.requireForecastGrid(),
         target,
       });
-      const forecastZone = resolveTimezone(this.#dependencies.weatherProvider.timezone);
+      const forecastZone = resolveDateBoundaryTimezone(this.#dependencies.weatherProvider.timezone);
       const currentHour = target.toZonedDateTimeISO(forecastZone).hour;
       const hourly = forecast.hourlyForecasts.find((h) => h.hour === currentHour);
       return {

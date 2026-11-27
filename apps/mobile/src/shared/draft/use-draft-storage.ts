@@ -1,5 +1,5 @@
 import { useDraftService } from '@src/shared/di/shared-di-context';
-import { useCallback, useEffect, useEffectEvent, useState } from 'react';
+import { useEffect, useEffectEvent, useState } from 'react';
 
 import type { DraftKey } from './draft.model';
 
@@ -9,11 +9,17 @@ interface UseDraftStorageOptions {
   onOutdatedDiscard?: () => void;
 }
 
+interface DraftStorageActions<TValue> {
+  restoredDraft: TValue | undefined;
+  saveDraft: (value: TValue) => void;
+  clearDraft: () => void;
+}
+
 /** restoredDraft는 첫 렌더에서 동기로 읽어 깜박임이 없고, 키는 마운트 시점에 고정되므로 대상이 바뀌면 `key`로 다시 마운트한다 */
 export function useDraftStorage<TValue>(
   draftKey: DraftKey<TValue>,
   { sourceUpdatedAt, onOutdatedDiscard }: UseDraftStorageOptions = {},
-) {
+): DraftStorageActions<TValue> {
   const draftService = useDraftService();
   const [mountedDraftKey] = useState(draftKey);
   const [saveInSession] = useState(() => draftService.createSessionSave(mountedDraftKey));
@@ -34,15 +40,9 @@ export function useDraftStorage<TValue>(
     }
   }, [restoreResult]);
 
-  const saveDraft = useCallback(
-    (value: TValue) => saveInSession(value, { sourceUpdatedAt }),
-    [saveInSession, sourceUpdatedAt],
-  );
+  const saveDraft = (value: TValue) => saveInSession(value, { sourceUpdatedAt });
 
-  const clearDraft = useCallback(
-    () => draftService.remove(mountedDraftKey),
-    [draftService, mountedDraftKey],
-  );
+  const clearDraft = () => draftService.remove(mountedDraftKey);
 
   return {
     restoredDraft: restoreResult.status === 'restored' ? restoreResult.value : undefined,

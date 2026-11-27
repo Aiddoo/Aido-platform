@@ -1,7 +1,8 @@
 import { MeteredEmailBudgetAdapter } from "#api/modules/notification/email-messages/infrastructure/adapters/metered-email-budget.adapter";
 import { UsageMeterPort, USAGE_SUBJECT_ALL } from "#api/platform/metering/usage-meter.port";
 import { usagePeriod } from "#api/platform/metering/usage-period";
-import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { instantToDate } from "#api/shared/domain/time/instant";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import {
   createE2eApp,
@@ -10,6 +11,9 @@ import {
 } from "#test/e2e/helpers/e2e-app-factory";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase } from "#test/setup/test-database";
+
+// 계량 키는 UTC 날짜로 갈린다. 테스트와 어댑터가 실제 시계를 따로 읽으면 UTC 자정을 넘는 실행에서 키가 어긋난다
+const NOW = Temporal.Instant.from("2026-07-26T03:00:00.000Z");
 
 describe("이메일 발송 예산 (실제 PostgreSQL)", () => {
   let database: TestDatabase;
@@ -39,16 +43,16 @@ describe("이메일 발송 예산 (실제 PostgreSQL)", () => {
     budget = new MeteredEmailBudgetAdapter({
       meter,
       alert: alerts,
-      clock: context.module.get(ClockPort),
+      clock: new FixedClock(NOW),
       logger: { warn: () => undefined },
     });
   });
 
-  const dayKey = () => ({
+  const dayKey = {
     meter: "email.sent",
-    periodKey: usagePeriod.day(new Date()),
+    periodKey: usagePeriod.day(instantToDate(NOW)),
     subject: USAGE_SUBJECT_ALL,
-  });
+  };
 
   it("standard 150건이 동시에 예약해도 정확히 70건만 받고 일 계량은 70이다", async () => {
     // When
@@ -58,7 +62,7 @@ describe("이메일 발송 예산 (실제 PostgreSQL)", () => {
 
     // Then
     expect(results.filter((result) => result === "reserved")).toHaveLength(70);
-    expect(await meter.read([dayKey()])).toEqual([70]);
+    expect(await meter.read([dayKey])).toEqual([70]);
   });
 
   it("standard가 70에서 멈춘 뒤에도 critical은 동시에 몰려도 정확히 30건 더 받는다", async () => {
@@ -70,7 +74,7 @@ describe("이메일 발송 예산 (실제 PostgreSQL)", () => {
 
     // Then
     expect(results.filter((result) => result === "reserved")).toHaveLength(30);
-    expect(await meter.read([dayKey()])).toEqual([100]);
+    expect(await meter.read([dayKey])).toEqual([100]);
   });
 
   it("동시에 몰려도 일 80통 경보는 한 번만 올라간다", async () => {
@@ -107,7 +111,7 @@ describe("이메일 발송 예산 (실제 PostgreSQL)", () => {
     await budget.settleProviderQuotaExhausted("daily");
 
     // Then
-    expect(await meter.read([dayKey()])).toEqual([100]);
+    expect(await meter.read([dayKey])).toEqual([100]);
     expect(await budget.reserve("critical")).toBe("exhausted");
   });
 });

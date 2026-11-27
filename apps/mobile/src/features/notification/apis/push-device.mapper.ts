@@ -4,7 +4,8 @@ import type {
 } from '@aido/api/contracts/notification/v1';
 import { toInstant } from '@src/shared/date/instant';
 
-import type { PushDevice, PushPermission } from '../domains/push-permission.model';
+import type { PushDevice } from '../domains/push-device.model';
+import type { PushPermission } from '../domains/push-permission.model';
 
 const PUSH_PAYLOAD_VERSION = 2;
 

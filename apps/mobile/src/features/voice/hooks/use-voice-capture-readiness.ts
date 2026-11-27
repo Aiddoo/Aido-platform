@@ -1,14 +1,14 @@
 import type { SpeechLocale, SpeechMode } from '@src/core/ports/speech-recognizer';
 import type { EntitlementGateSurface } from '@src/features/billing/subscription/constants/subscription.events';
-import type { EntitlementFeature } from '@src/features/billing/subscription/domains/entitlement.model';
+import type { EntitlementFeature } from '@src/features/billing/subscription/domains/feature-quota.model';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { useClaimAiConsentRenewal } from '@src/features/device/coachmark/hooks/use-claim-ai-consent-renewal';
 import { useAiDataSharingConsentGate } from '@src/features/identity/consent/hooks/use-ai-data-sharing-consent-gate';
 import { useTrack } from '@src/shared/analytics';
+import { useDismissKeyboard } from '@src/shared/hooks/use-dismiss-keyboard';
+import { useIsUnmountedRef } from '@src/shared/hooks/use-is-unmounted-ref';
 import { useTranslation } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui';
-import { useEffect, useRef } from 'react';
-import { Keyboard } from 'react-native';
 
 import type { VoiceCaptureEntry } from '../constants/voice.events';
 import { useEnsureMicrophonePermission } from './use-ensure-microphone-permission';
@@ -43,6 +43,7 @@ export function useVoiceCaptureReadiness({
   surface,
   mode,
 }: UseVoiceCaptureReadinessOptions) {
+  const dismissKeyboard = useDismissKeyboard();
   const { t } = useTranslation('ai');
   const { trackEvent } = useTrack();
   const toast = useAppToast();
@@ -50,15 +51,7 @@ export function useVoiceCaptureReadiness({
   const claimRenewalPrompt = useClaimAiConsentRenewal();
   const aiConsent = useAiDataSharingConsentGate({ claimRenewalPrompt });
   const ensureMicrophonePermission = useEnsureMicrophonePermission();
-  const isUnmountedRef = useRef(false);
-
-  useEffect(() => {
-    isUnmountedRef.current = false;
-
-    return () => {
-      isUnmountedRef.current = true;
-    };
-  }, []);
+  const isUnmountedRef = useIsUnmountedRef();
 
   return async ({
     locale,
@@ -70,7 +63,7 @@ export function useVoiceCaptureReadiness({
       return NOT_READY;
     }
     // 동의 시트와 권한 창이 키보드에 가리지 않게 내린다
-    Keyboard.dismiss();
+    dismissKeyboard();
     const consent = await aiConsent.requestAgreementBeforeListening();
     if (!consent.hasAgreed) {
       toast.toast(t('consent.notice.voice'));

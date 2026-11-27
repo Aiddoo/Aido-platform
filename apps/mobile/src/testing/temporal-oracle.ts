@@ -1,3 +1,5 @@
+import { isMatching, P } from 'ts-pattern';
+
 // 앱은 Temporal 없이 날짜를 계산한다. 테스트는 서버와 같은 Node 26 네이티브 Temporal을 정답으로 비교한다
 interface OracleInstant {
   toString(options: { fractionalSecondDigits: 3 }): string;
@@ -22,13 +24,23 @@ interface OraclePlainDate {
   toString(): string;
 }
 
+interface OracleZonedDateTime {
+  toPlainDate(): { toString(): string };
+  toPlainTime(): { toString(options: { smallestUnit: 'minute' }): string };
+}
+
 interface NativeTemporal {
+  Instant: { from(value: string): { toZonedDateTimeISO(timeZone: string): OracleZonedDateTime } };
   PlainDate: { from(value: string): OraclePlainDate };
   PlainTime: { from(value: string): unknown };
 }
 
 function isNativeTemporal(value: unknown): value is NativeTemporal {
-  return typeof value === 'object' && value != null && 'PlainDate' in value && 'PlainTime' in value;
+  return isMatching({ Instant: P.any, PlainDate: P.any, PlainTime: P.any }, value);
+}
+
+function toZonedDateTime(instant: string, timeZone: string): OracleZonedDateTime {
+  return getNativeTemporal().Instant.from(instant).toZonedDateTimeISO(timeZone);
 }
 
 function getNativeTemporal(): NativeTemporal {
@@ -59,4 +71,9 @@ export const temporalOracle = {
       .toZonedDateTime(timeZone, { disambiguation: 'compatible' })
       .toInstant()
       .toString({ fractionalSecondDigits: 3 }),
+  /** 서버 localDateIn과 같은 규칙. 그 순간의 그 시간대 달력 날짜 */
+  toDateKey: (instant: string, timeZone: string) =>
+    toZonedDateTime(instant, timeZone).toPlainDate().toString(),
+  toHHmm: (instant: string, timeZone: string) =>
+    toZonedDateTime(instant, timeZone).toPlainTime().toString({ smallestUnit: 'minute' }),
 } as const;

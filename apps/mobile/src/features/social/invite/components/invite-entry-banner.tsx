@@ -1,6 +1,6 @@
 import { useMyAccountId } from '@src/features/identity/user/hooks/use-my-account-id';
 import { useGetTodoSummaryQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { Trans, useTranslation } from '@src/shared/i18n';
 import { useStoredValue } from '@src/shared/storage/use-stored-value';
 import { Button, InlineAlert, Text, Mascot } from '@src/shared/ui';

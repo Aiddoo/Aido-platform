@@ -1,6 +1,6 @@
 import Notifications from '@expo/material-symbols/notifications.xml';
 import Refresh from '@expo/material-symbols/refresh.xml';
-import { WeatherLocationPolicy } from '@src/features/weather/domains/weather-location.model';
+import { shouldFetchReport } from '@src/features/weather/domains/location-reading.model';
 import { useWeatherLocation } from '@src/features/weather/hooks/use-weather-location';
 import {
   getWeatherReportsFilters,
@@ -16,19 +16,18 @@ import {
   useStackScreenOptions,
 } from '@src/shared/ui';
 import { useIsFetching, useQueryClient } from '@tanstack/react-query';
-import { router, Stack } from 'expo-router';
+import { useRouter, Stack } from 'expo-router';
 import { useResolveClassNames } from 'uniwind';
 
 const ALERT_SETTINGS_ICON = process.env.EXPO_OS === 'ios' ? 'bell' : Notifications;
 const REFRESH_ICON = process.env.EXPO_OS === 'ios' ? 'arrow.clockwise' : Refresh;
 
-// 헤더 색·새로고침 버튼이 위치·리포트 조회를 보므로 레이아웃이 읽는다. 화면의 Stack.Toolbar로 옮기면 화면이 그려지기
-// 전 헤더가 비어 깜박일 수 있어 기기에서 확인하기 전까지 여기 둔다
+// 화면의 Stack.Toolbar로 옮기면 그려지기 전 헤더가 비어 깜박일 수 있어 기기에서 확인하기 전까지 레이아웃이 읽는다
 export default function WeatherLayout() {
   const { t } = useTranslation(['weather', 'notification']);
   const location = useWeatherLocation();
   // 리포트가 없으면 하늘 장면 대신 흰 면의 위치 권한 안내라 기본 헤더 색을 쓴다
-  const isSkyScene = WeatherLocationPolicy.shouldFetchReport(location);
+  const isSkyScene = shouldFetchReport(location.status);
   /** 하늘 장면 위 헤더 버튼의 둥근 유리 면. iOS는 네이티브 유리 버튼이 그린다. */
   const skyButtonContainerColor = useResolvedColor('text-on-sky/16');
   const headerButtonContainerColor = isSkyScene ? skyButtonContainerColor : undefined;
@@ -36,7 +35,8 @@ export default function WeatherLayout() {
     fallbackHref: '/feed',
     buttonContainerColor: headerButtonContainerColor,
   });
-  const push = useSingleTap(router.push);
+  const router = useRouter();
+  const pushOnce = useSingleTap(router.push);
   const queryClient = useQueryClient();
   const isRefreshing = useIsFetching(getWeatherReportsFilters()) > 0;
   const skyTintColor = useResolvedColor('text-on-sky');
@@ -71,7 +71,7 @@ export default function WeatherLayout() {
           <Stack.Toolbar.Button
             icon={ALERT_SETTINGS_ICON}
             accessibilityLabel={t('titles.settings')}
-            onPress={() => push('/weather/settings')}
+            onPress={() => pushOnce('/weather/settings')}
           >
             {t('titles.settings')}
           </Stack.Toolbar.Button>

@@ -1,14 +1,21 @@
 import { CoachmarkPopover } from '@src/features/device/coachmark/components/coachmark-popover';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
-import { InfoIcon, RepeatIcon } from '@src/shared/ui';
+import { getTouchTargetInset, InfoIcon, RepeatIcon } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
 import { PressableFeedback } from 'heroui-native';
 import { useState } from 'react';
 
 import { useFeedDateKey } from '../../hooks/use-feed-params';
-import { useGetTodoOverviewQueryOptions } from '../../queries/todo.queries';
+import { selectHasActiveRepeat, useGetTodoOverviewQueryOptions } from '../../queries/todo.queries';
 import { RepeatHintLine } from '../repeat-hint-line';
+
+/** 안내 한 줄(가장 작은 글꼴 단계에서 b4가 바뀌는 e1의 줄 17). 가로는 글자 폭이라 넓히지 않는다 */
+const HINT_LINE_HEIGHT = 17;
+const HINT_HIT_SLOP = {
+  top: getTouchTargetInset(HINT_LINE_HEIGHT),
+  bottom: getTouchTargetInset(HINT_LINE_HEIGHT),
+};
 
 interface RepeatHorizonHintProps {
   /** 먼저 뜰 자동 화면(알림 화면·새로운 기능)이 남았으면 false라 안내를 미룬다. 눌러서 연 설명은 기다리지 않는다 */
@@ -22,7 +29,7 @@ export function RepeatHorizonHint({ shouldShowHint = true }: RepeatHorizonHintPr
   const [selectedDateKey] = useFeedDateKey();
   const { data: hasActiveRepeat = false } = useQuery({
     ...useGetTodoOverviewQueryOptions(),
-    select: (overview) => overview.hasActiveRepeat,
+    select: selectHasActiveRepeat,
   });
   const [isInfoOpen, setIsInfoOpen] = useState(false);
 
@@ -44,7 +51,7 @@ export function RepeatHorizonHint({ shouldShowHint = true }: RepeatHorizonHintPr
     >
       <PressableFeedback
         onPress={() => setIsInfoOpen(true)}
-        hitSlop={{ top: 12, bottom: 12 }}
+        hitSlop={HINT_HIT_SLOP}
         accessibilityRole="button"
         accessibilityLabel={t('repeat.horizonInfo.label')}
         testID="repeat-horizon-hint"

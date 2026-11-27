@@ -8,7 +8,14 @@ import { exitSheetRoute, type SheetRouteExit } from './sheet-route';
 const BACK: SheetRouteExit = { type: 'back' };
 
 /** 애니메이션이 끝나 `onOpenChange(false)`가 오면 route를 한 번만 떠난다 */
-export function useSheetRoute(fallbackHref: Href) {
+interface SheetRouteActions {
+  isOpen: boolean;
+  close: (next?: SheetRouteExit) => void;
+  exit: (next?: SheetRouteExit) => void;
+  onOpenChange: (isOpen: boolean) => void;
+}
+
+export function useSheetRoute(fallbackHref: Href): SheetRouteActions {
   const router = useRouter();
   const startToastLayerClosing = use(ToastLayerClosingContext);
   const [isOpen, setIsOpen] = useState(true);

@@ -215,15 +215,14 @@ ls:
     .*.*.*.ts: regex:[^\s\S]
 
   # utils/는 표시 값(.view-model), 좌표(.geometry), 초안(-draft), 분석 값(-analytics)만 둔다.
-  # wait-for-settled-screen은 structure.md의 하나뿐인 예외(store-review)다
   apps/mobile/src/features/**/utils:
     .view-model.ts: kebab-case
     .view-model.test.ts: kebab-case
     .view-model.test.tsx: kebab-case
     .geometry.ts: kebab-case
     .geometry.test.ts: kebab-case
-    .ts: regex:(?:[a-z0-9-]+-(?:draft|analytics)|wait-for-settled-screen)
-    .test.ts: regex:(?:[a-z0-9-]+-(?:draft|analytics)|wait-for-settled-screen)
+    .ts: regex:[a-z0-9-]+-(?:draft|analytics)
+    .test.ts: regex:[a-z0-9-]+-(?:draft|analytics)
     .tsx: regex:[^\s\S]
     .*.ts: regex:[^\s\S]
     .*.tsx: regex:[^\s\S]

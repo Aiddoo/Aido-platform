@@ -35,7 +35,6 @@ export interface DialTicks {
   majorTicks: string;
 }
 
-/** from~to 각도를 step 간격으로 나누고 majorEvery번째마다 긴 눈금을 그린다. */
 function toDialTicks({
   from,
   to,

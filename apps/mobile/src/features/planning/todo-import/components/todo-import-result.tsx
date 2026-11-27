@@ -14,11 +14,11 @@ import {
   WordWrapText,
 } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { type Href, router } from 'expo-router';
+import { type Href, useRouter } from 'expo-router';
 import { match } from 'ts-pattern';
 
 import { TodoImportPolicy } from '../domains/todo-import.model';
-import { useTodoImportId } from '../hooks/use-todo-import-id';
+import { useTodoImportId } from '../hooks/use-todo-import-params';
 import { useGetTodoImportQueryOptions } from '../queries/todo-import.queries';
 import { TodoImportUndoButton } from './todo-import-undo-button';
 
@@ -30,6 +30,7 @@ export function TodoImportResult() {
   const now = useMinuteNow();
   const { data: todoImport } = useSuspenseQuery(useGetTodoImportQueryOptions({ importId }));
 
+  const router = useRouter();
   const leaveToFeed = useSingleTap((href: Href) => {
     // 가져오기 화면은 연 탭(대개 마이)에 쌓여 있어, 먼저 그 탭을 첫 화면으로 되돌려야 탭을 다시 눌렀을 때 결과가 남지 않는다
     if (router.canDismiss()) {

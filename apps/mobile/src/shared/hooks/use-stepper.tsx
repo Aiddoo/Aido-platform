@@ -22,10 +22,9 @@ import {
 } from '../utils/stepper-reducer';
 import { useAndroidBackHandler } from './use-android-back-handler';
 
-/** 값이나 지금 단계의 context를 받아 다음 context를 만드는 updater */
 type ContextInput<Contexts extends StepperContexts, Name extends StepName<Contexts>> =
   | Contexts[Name]
-  | ((prev: Contexts[StepName<Contexts>]) => Contexts[Name]);
+  | ((previousContext: Contexts[StepName<Contexts>]) => Contexts[Name]);
 
 /** context가 빈 단계(`Record<string, never>`)는 인자를 생략한다 */
 type ContextArgs<Contexts extends StepperContexts, Name extends StepName<Contexts>> =
@@ -44,6 +43,8 @@ interface StepperHistory<Contexts extends StepperContexts> {
   ) => void;
   back: () => void;
   go: (delta: number) => void;
+  /** 기록에서 지금보다 앞에 있는 그 단계로 돌아간다. 없으면 그대로다 */
+  backTo: (step: StepName<Contexts>) => void;
 }
 
 interface StepRenderProps<
@@ -73,10 +74,7 @@ export type Stepper<Contexts extends StepperContexts> = StepEntry<Contexts> & {
   index: number;
   historySteps: readonly StepEntry<Contexts>[];
   history: StepperHistory<Contexts>;
-  /**
-   * 안에서 훅을 쓰는 컴포넌트라 `<stepper.Render … />` JSX로만 그린다. 함수로 부르면 훅이 부모 훅에 섞여 순서가 흔들린다.
-   * 이웃 단계에 같은 렌더러 함수를 넘기면 한 화면으로 이어져 다시 마운트되지 않는다(칸이 하나씩 늘어나는 입력에서 키보드가 내려가지 않는다)
-   */
+  /** JSX로만 그린다(함수로 부르면 훅 순서가 흔들린다). 이웃 단계에 같은 렌더러를 넘기면 다시 마운트되지 않아 키보드가 남는다 */
   Render: (renderers: StepRenderers<Contexts>) => ReactNode;
 };
 
@@ -114,8 +112,8 @@ function createStepperStore<Contexts extends StepperContexts>(
 }
 
 function isContextUpdater(
-  input: object | ((prev: object) => object),
-): input is (prev: object) => object {
+  input: object | ((previousContext: object) => object),
+): input is (previousContext: object) => object {
   return typeof input === 'function';
 }
 
@@ -128,7 +126,7 @@ function createStepEntry<Contexts extends StepperContexts, Name extends StepName
 function createStepEntry(
   current: { context: object },
   step: string,
-  input?: object | ((prev: object) => object),
+  input?: object | ((previousContext: object) => object),
 ): { step: string; context: object } {
   const context = input != null && isContextUpdater(input) ? input(current.context) : input;
   return toStepEntry({ step, context });
@@ -150,6 +148,7 @@ function createHistory<Contexts extends StepperContexts>(
       }),
     back: () => store.dispatch({ type: 'go', delta: -1 }),
     go: (delta) => store.dispatch({ type: 'go', delta }),
+    backTo: (step) => store.dispatch({ type: 'backTo', step }),
   };
 }
 

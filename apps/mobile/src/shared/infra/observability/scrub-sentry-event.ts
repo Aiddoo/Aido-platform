@@ -1,5 +1,6 @@
 import type { Breadcrumb, Event } from '@sentry/react-native';
 import { TELEMETRY_DATA_KEYS } from '@src/core/observability/telemetry-keys';
+import { stripQueryAndHash } from '@src/shared/utils/strip-query-and-hash';
 import { isNil, mapValues, omitBy, pickBy } from 'es-toolkit';
 
 const MAX_TEXT_LENGTH = 500;
@@ -16,10 +17,6 @@ const TEXT_PATTERNS: readonly (readonly [RegExp, string])[] = [
 
 const SENSITIVE_HEADERS: ReadonlySet<string> = new Set(['authorization', 'cookie', 'set-cookie']);
 
-function stripQuery(url: string): string {
-  return url.replace(/[?#].*$/, '');
-}
-
 /** 이메일·토큰 모양을 가리고 길이를 자른다 */
 export function scrubText(text: string): string {
   const scrubbed = TEXT_PATTERNS.reduce(
@@ -31,7 +28,7 @@ export function scrubText(text: string): string {
 
 function scrubValue(key: string, value: unknown): unknown {
   if (typeof value === 'string') {
-    return scrubText(key === 'url' ? stripQuery(value) : value);
+    return scrubText(key === 'url' ? stripQueryAndHash(value) : value);
   }
   if (typeof value === 'number' || typeof value === 'boolean') {
     return value;
@@ -74,7 +71,7 @@ function scrubRequest(request: NonNullable<Event['request']>): NonNullable<Event
     ),
   );
   return {
-    ...(request.url != null && { url: stripQuery(request.url) }),
+    ...(request.url != null && { url: stripQueryAndHash(request.url) }),
     ...(request.method != null && { method: request.method }),
     headers,
   };

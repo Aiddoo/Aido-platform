@@ -1,5 +1,6 @@
 import { createSignOutEpoch } from '@src/core/session/sign-out-epoch';
 import {
+  createAppLoggerStub,
   createLocalFileSystemFake,
   createSpeechRecognizerStub,
   createTestDi,
@@ -8,6 +9,7 @@ import {
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 
 import { createSpokenVoiceNote } from '../__tests__/voice-note.fixtures';
+import { VOICE_LOG_EVENT } from '../constants/voice-log-events';
 import { VoiceRecordingIntakeSession } from './voice-recording-intake.session';
 
 const ACCOUNT_ID = 'user-1';
@@ -230,5 +232,231 @@ describe('VoiceRecordingIntakeSession', () => {
     expect(files.hasFile(DIRECTORY, 'a.wav')).toBe(false);
     expect(intake.getRecordings()).toEqual([]);
     expect(onRecordingSaved).not.toHaveBeenCalled();
+  });
+
+  it('끝내면 늦은 파일 구독과 기다림 타이머를 지우고 여러 번 불러도 같다', async () => {
+    // Given
+    const { intake } = createIntake();
+    const speechRecognizer = createSpeechRecognizerStub();
+    intake.segmentStarted('file:///documents/voice-notes/user-1/a.wav', 0);
+    intake.listenForLate((listener) => speechRecognizer.subscribe(listener));
+    const settled = intake.waitUntilSettled();
+
+    // When
+    intake.dispose();
+    intake.dispose();
+
+    // Then
+    await expect(settled).resolves.toBeUndefined();
+    expect(speechRecognizer.getListenerCount()).toBe(0);
+    expect(jest.getTimerCount()).toBe(0);
+  });
+
+  it('끝낸 뒤에도 화면이 다시 받은 파일은 전과 같이 옮겨 저장한다', async () => {
+    // Given
+    const { files, intake, onRecordingSaved } = createIntake();
+    const uri = files.addFile(DIRECTORY, 'a.wav');
+    intake.segmentStarted(uri, 0);
+    intake.dispose();
+
+    // When
+    intake.receive(uri, 0);
+    await intake.waitUntilSettled();
+
+    // Then
+    expect(intake.getRecordings()).toHaveLength(1);
+    expect(onRecordingSaved).toHaveBeenCalledTimes(1);
+  });
+
+  it('끝낸 뒤라도 지운 초안의 파일은 전과 같이 옮기지 않고 지운다', async () => {
+    // Given
+    const { files, intake, onRecordingSaved } = createIntake();
+    const uri = files.addFile(DIRECTORY, 'a.wav');
+    intake.segmentStarted(uri, 0);
+    intake.dispose();
+    intake.discard();
+
+    // When
+    intake.receive(uri, 0);
+    await intake.waitUntilSettled();
+
+    // Then
+    expect(files.hasFile(DIRECTORY, 'a.wav')).toBe(false);
+    expect(intake.getRecordings()).toEqual([]);
+    expect(onRecordingSaved).not.toHaveBeenCalled();
+  });
+
+  describe('화면이 인식기를 다시 듣기 시작하면', () => {
+    it('같은 인식기에 걸어 둔 늦은 파일 듣기를 거둬 화면이 넘긴 파일을 한 번만 옮긴다', async () => {
+      // Given
+      const { files, intake, onRecordingSaved } = createIntake();
+      const speechRecognizer = createSpeechRecognizerStub();
+      const uri = files.addFile(DIRECTORY, 'a.wav');
+      intake.segmentStarted(uri, 0);
+      intake.listenForLate(speechRecognizer.subscribe);
+
+      // When
+      intake.reclaim(speechRecognizer.subscribe);
+      speechRecognizer.emit({ type: 'recording-saved', uri });
+      intake.receive(uri, 0);
+      await intake.waitUntilSettled();
+
+      // Then
+      expect(speechRecognizer.getListenerCount()).toBe(0);
+      expect(jest.getTimerCount()).toBe(0);
+      expect(intake.getRecordings()).toHaveLength(1);
+      expect(onRecordingSaved).toHaveBeenCalledTimes(1);
+    });
+
+    it('인식기가 바뀌었으면 옛 인식기의 늦은 파일 듣기를 그대로 둬 그 파일을 잃지 않는다', async () => {
+      // Given
+      const { files, intake } = createIntake();
+      const previousRecognizer = createSpeechRecognizerStub();
+      const nextRecognizer = createSpeechRecognizerStub();
+      const uri = files.addFile(DIRECTORY, 'a.wav');
+      intake.segmentStarted(uri, 0);
+      intake.listenForLate(previousRecognizer.subscribe);
+
+      // When
+      intake.reclaim(nextRecognizer.subscribe);
+      previousRecognizer.emit({ type: 'recording-saved', uri });
+      await intake.waitUntilSettled();
+
+      // Then
+      expect(intake.getRecordings()).toHaveLength(1);
+      expect(previousRecognizer.getListenerCount()).toBe(0);
+    });
+  });
+
+  describe('앞 녹음이 시작을 기억한 파일을 새 녹음 화면이 먼저 받으면', () => {
+    const NEXT_DRAFT_ID = 'draft-2';
+
+    /** 같은 기기 저장소를 쓰는 앞 녹음과 새 녹음. 새 녹음 화면의 구독이 앞 녹음의 늦은 파일 듣기보다 먼저 걸려 있다 */
+    function createOverlappingIntakes() {
+      const files = createLocalFileSystemFake();
+      const di = createTestDi({ ports: createVoiceNoteStorageFake(files).ports });
+      const speechRecognizer = createSpeechRecognizerStub();
+      const createDraftIntake = (draftId: string) =>
+        new VoiceRecordingIntakeSession({
+          accountId: ACCOUNT_ID,
+          draftId,
+          draftRepository: di.voiceNoteDraftRepository,
+          recordingRepository: di.voiceRecordingRepository,
+          discard: di.voiceNoteStorageService.discard,
+          signOutEpoch: createSignOutEpoch(),
+          onRecordingSaved: jest.fn(),
+        });
+      const previous = createDraftIntake(DRAFT_ID);
+      const next = createDraftIntake(NEXT_DRAFT_ID);
+      const uri = files.addFile(DIRECTORY, 'a.wav');
+      previous.segmentStarted(uri, 0);
+      speechRecognizer.subscribe((event) => {
+        if (event.type === 'recording-saved') {
+          next.receive(event.uri, 0);
+        }
+      });
+      previous.listenForLate(speechRecognizer.subscribe);
+      return { files, speechRecognizer, previous, next, uri };
+    }
+
+    it('새 녹음으로 옮기지 않고 앞 초안의 조각으로만 남긴다', async () => {
+      // Given
+      const { files, speechRecognizer, previous, next, uri } = createOverlappingIntakes();
+
+      // When
+      speechRecognizer.emit({ type: 'recording-saved', uri });
+      await previous.waitUntilSettled();
+      await next.waitUntilSettled();
+
+      // Then
+      expect(previous.getRecordings()).toHaveLength(1);
+      expect(next.getRecordings()).toEqual([]);
+      expect(files.hasFile(DIRECTORY, `${DRAFT_ID}-0.wav`)).toBe(true);
+      expect(files.hasFile(DIRECTORY, `${NEXT_DRAFT_ID}-0.wav`)).toBe(false);
+    });
+
+    it('새 녹음의 초안을 지웠어도 앞 녹음의 파일은 지우지 않는다', async () => {
+      // Given
+      const { files, speechRecognizer, previous, next, uri } = createOverlappingIntakes();
+      next.discard();
+
+      // When
+      speechRecognizer.emit({ type: 'recording-saved', uri });
+      await previous.waitUntilSettled();
+
+      // Then
+      expect(previous.getRecordings()).toHaveLength(1);
+      expect(files.hasFile(DIRECTORY, `${DRAFT_ID}-0.wav`)).toBe(true);
+    });
+
+    it('새 녹음도 그 파일의 시작을 기억했으면 받지 않더라도 기다리던 끝내기를 바로 풀어 준다', async () => {
+      // Given
+      const { speechRecognizer, next, uri } = createOverlappingIntakes();
+      next.segmentStarted(uri, 0);
+      const onSettled = jest.fn();
+      next.waitUntilSettled().then(onSettled, onSettled);
+
+      // When
+      speechRecognizer.emit({ type: 'recording-saved', uri });
+      await jest.advanceTimersByTimeAsync(0);
+
+      // Then
+      expect(onSettled).toHaveBeenCalledTimes(1);
+      expect(next.getRecordings()).toEqual([]);
+    });
+
+    it('앞 녹음이 기다리기를 그만둔 뒤에는 새 녹음이 받아 파일을 남긴다', async () => {
+      // Given
+      const { files, speechRecognizer, previous, next, uri } = createOverlappingIntakes();
+      jest.advanceTimersByTime(30_000);
+
+      // When
+      speechRecognizer.emit({ type: 'recording-saved', uri });
+      await next.waitUntilSettled();
+
+      // Then
+      expect(previous.getRecordings()).toEqual([]);
+      expect(next.getRecordings()).toHaveLength(1);
+      expect(files.hasFile(DIRECTORY, `${NEXT_DRAFT_ID}-0.wav`)).toBe(true);
+    });
+  });
+
+  it('앞 녹음이 먼저 받아 옮기는 파일을 새 녹음 화면이 뒤이어 받으면 옮기려 하지 않고 건너뜀 기록도 남기지 않는다', async () => {
+    // Given
+    const files = createLocalFileSystemFake();
+    const logger = createAppLoggerStub();
+    const di = createTestDi({ ports: { ...createVoiceNoteStorageFake(files).ports, logger } });
+    const speechRecognizer = createSpeechRecognizerStub();
+    const createDraftIntake = (draftId: string) =>
+      new VoiceRecordingIntakeSession({
+        accountId: ACCOUNT_ID,
+        draftId,
+        draftRepository: di.voiceNoteDraftRepository,
+        recordingRepository: di.voiceRecordingRepository,
+        discard: di.voiceNoteStorageService.discard,
+        signOutEpoch: createSignOutEpoch(),
+        onRecordingSaved: jest.fn(),
+      });
+    const previous = createDraftIntake(DRAFT_ID);
+    const next = createDraftIntake('draft-2');
+    const uri = files.addFile(DIRECTORY, 'a.wav');
+    previous.segmentStarted(uri, 0);
+    previous.listenForLate(speechRecognizer.subscribe);
+    speechRecognizer.subscribe((event) => {
+      if (event.type === 'recording-saved') {
+        next.receive(event.uri, 0);
+      }
+    });
+
+    // When
+    speechRecognizer.emit({ type: 'recording-saved', uri });
+    await previous.waitUntilSettled();
+    await next.waitUntilSettled();
+
+    // Then
+    expect(previous.getRecordings()).toHaveLength(1);
+    expect(next.getRecordings()).toEqual([]);
+    expect(logger.info).not.toHaveBeenCalledWith(VOICE_LOG_EVENT.RECORDING_SHARED_SOURCE_SKIPPED);
+    expect(logger.warn).not.toHaveBeenCalled();
   });
 });

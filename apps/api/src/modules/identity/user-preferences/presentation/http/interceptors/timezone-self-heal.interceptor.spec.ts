@@ -101,10 +101,12 @@ describe("TimezoneSelfHealInterceptor", () => {
     expect(refresh.commands).toEqual([]);
   });
 
-  it("무효/누락 타임존 헤더면 요청하지 않는다", () => {
+  it("무효·누락·고정 오프셋·UTC 타임존 헤더면 요청하지 않아 저장값을 지킨다", () => {
     // When
     intercept("u1", {});
     intercept("u1", { "x-timezone": "Mars/Olympus" });
+    intercept("u1", { "x-timezone": "+09:00" });
+    intercept("u1", { "x-timezone": "UTC" });
 
     // Then
     expect(refresh.commands).toEqual([]);

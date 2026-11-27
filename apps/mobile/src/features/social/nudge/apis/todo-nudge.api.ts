@@ -10,23 +10,14 @@ import {
   sendNudgeThanksResponseSchema,
 } from '@aido/api/contracts/nudge/v1';
 import type { ApiError } from '@src/core/errors/api-error';
-import { fail, type Result } from '@src/core/errors/result';
+import type { Result } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http-client';
-import { BusinessError } from '@src/shared/errors';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
-import type {
-  NudgeInteraction,
-  NudgeInteractionPage,
-  NudgeThanksPreview,
-} from '../domains/nudge-interaction.model';
-import { TODO_NUDGE_ERROR_CODE, type TodoNudgeErrorCode } from '../domains/todo-nudge.error';
-import {
-  isMessageTooLong,
-  normalizeMessage,
-  type NudgeCooldownInfo,
-  type SendTodoNudgeResult,
-} from '../domains/todo-nudge.model';
+import type { NudgeCooldown } from '../domains/nudge-cooldown.model';
+import type { NudgeInteraction, NudgeInteractionPage } from '../domains/nudge-interaction.model';
+import type { NudgeThanksPreview } from '../domains/nudge-thanks-preview.model';
+import type { SendTodoNudgeResult } from '../domains/todo-nudge.model';
 import type {
   CreateNudgeInput,
   CreateRemindNudgeInput,
@@ -40,12 +31,12 @@ import {
   toNudgeThanksPreview,
 } from './nudge-interaction.mapper';
 import {
-  toNudgeCooldownInfo,
+  toCreateNudgeRequest,
+  toCreateRemindNudgeRequest,
+  toNudgeCooldown,
   toSendNudgeResult,
   toSendRemindNudgeResult,
 } from './todo-nudge.mapper';
-
-export type TodoNudgeApiError = ApiError | BusinessError<TodoNudgeErrorCode>;
 
 export class TodoNudgeApi {
   readonly #httpClient: HttpClient;
@@ -54,51 +45,33 @@ export class TodoNudgeApi {
     this.#httpClient = httpClient;
   }
 
-  sendNudge = async (
-    input: CreateNudgeInput,
-  ): Promise<Result<SendTodoNudgeResult, TodoNudgeApiError>> => {
-    if (isMessageTooLong(input)) {
-      return fail(new BusinessError(TODO_NUDGE_ERROR_CODE.MESSAGE_TOO_LONG));
-    }
-
-    return parseApiResponse(
-      await this.#httpClient.post('v1/nudges', {
-        receiverId: input.receiverId,
-        todoId: input.todoId,
-        message: normalizeMessage(input),
-      }),
+  // 메시지 길이는 콕 폼(nudgeFormSchema)이 계약 한도로 막는다
+  sendNudge = async (input: CreateNudgeInput): Promise<Result<SendTodoNudgeResult, ApiError>> =>
+    parseApiResponse(
+      await this.#httpClient.post('v1/nudges', toCreateNudgeRequest(input)),
       createNudgeResponseSchema,
       toSendNudgeResult,
       '[TodoNudgeApi] Invalid sendNudge response',
     );
-  };
 
   sendRemindNudge = async (
     input: CreateRemindNudgeInput,
-  ): Promise<Result<SendTodoNudgeResult, TodoNudgeApiError>> => {
-    if (isMessageTooLong(input)) {
-      return fail(new BusinessError(TODO_NUDGE_ERROR_CODE.MESSAGE_TOO_LONG));
-    }
-
-    return parseApiResponse(
-      await this.#httpClient.post('v1/nudges/remind', {
-        receiverId: input.receiverId,
-        message: normalizeMessage(input),
-      }),
+  ): Promise<Result<SendTodoNudgeResult, ApiError>> =>
+    parseApiResponse(
+      await this.#httpClient.post('v1/nudges/remind', toCreateRemindNudgeRequest(input)),
       createRemindNudgeResponseSchema,
       toSendRemindNudgeResult,
       '[TodoNudgeApi] Invalid sendRemindNudge response',
     );
-  };
 
   getRemindCooldownInfo = async (
     userId: string,
     signal?: AbortSignal,
-  ): Promise<Result<NudgeCooldownInfo, ApiError>> =>
+  ): Promise<Result<NudgeCooldown, ApiError>> =>
     parseApiResponse(
       await this.#httpClient.get(`v1/nudges/remind/cooldown/${userId}`, { signal }),
       nudgeCooldownInfoSchema,
-      toNudgeCooldownInfo,
+      toNudgeCooldown,
       '[TodoNudgeApi] Invalid getRemindCooldownInfo response',
     );
 

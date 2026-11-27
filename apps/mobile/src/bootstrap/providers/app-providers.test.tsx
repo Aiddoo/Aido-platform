@@ -36,13 +36,16 @@ import {
   type PurchasesGatewayStub,
   type PushNotificationGatewayStub,
   setupFakeTimersPerTest,
+  silenceConsole,
   type SpeechRecognizerStub,
+  getTrackedEvents,
 } from '@src/testing/core';
 import { renderRoutes } from '@src/testing/render-route-hook';
 import { focusManager, onlineManager, useMutation, useQueryClient } from '@tanstack/react-query';
 import { act } from '@testing-library/react-native';
+import { noop } from 'es-toolkit';
 import { Stack } from 'expo-router';
-import { StrictMode } from 'react';
+import { Activity, useEffect, useState } from 'react';
 
 import * as AppLayoutRoute from '../../../app/(app)/_layout';
 import RootIndex from '../../../app/index';
@@ -218,16 +221,25 @@ function GroupStack() {
   return <Stack screenOptions={{ headerShown: false, animation: 'none' }} />;
 }
 
-/** 루트 오류 화면의 "다시 시도"처럼 앱 트리를 통째로 올린다. StrictMode라 effect가 두 번 돈다 */
+/**
+ * 루트 오류 화면의 "다시 시도"처럼 앱 트리를 통째로 올린다. 이 테스트 렌더러는 StrictMode의 effect 재실행을 하지 않아,
+ * 같은 일을 하는 Activity로 올린 뒤 effect를 정리했다 다시 건다
+ */
 async function mountApp(root: ReturnType<typeof createTestRoot>['root'], { url = '/' } = {}) {
   const probe = createProbe();
+  const activity: { setMode: (mode: 'visible' | 'hidden') => void } = { setMode: noop };
   function RootLayout() {
+    const [mode, setMode] = useState<'visible' | 'hidden'>('visible');
+    useEffect(() => {
+      activity.setMode = setMode;
+    }, []);
+
     return (
-      <StrictMode>
+      <Activity mode={mode}>
         <AppProviders root={root}>
           <AuthGateLayout />
         </AppProviders>
-      </StrictMode>
+      </Activity>
     );
   }
 
@@ -245,6 +257,10 @@ async function mountApp(root: ReturnType<typeof createTestRoot>['root'], { url =
     },
     { url },
   );
+  await act(() => jest.advanceTimersByTimeAsync(0));
+  await act(async () => activity.setMode('hidden'));
+  await act(() => jest.advanceTimersByTimeAsync(0));
+  await act(async () => activity.setMode('visible'));
   await act(() => jest.advanceTimersByTimeAsync(0));
   return { view, mounted: probe.latest, getPathname: () => view.getPathname() };
 }
@@ -271,13 +287,9 @@ describe('AppProviders', () => {
 
   beforeEach(() => {
     // 앱 화면 묶음 레이아웃이 선언한 화면을 다 만들지 않아 expo-router가 화면마다 남기는 경고만 거른다
-    const warn = console.warn;
-    jest.spyOn(console, 'warn').mockImplementation((...warnArguments: unknown[]) => {
-      if (String(warnArguments[0]).startsWith('[Layout children]')) {
-        return;
-      }
-      warn(...warnArguments);
-    });
+    silenceConsole('warn', ([firstMessage]) =>
+      String(firstMessage).startsWith('[Layout children]'),
+    );
   });
 
   it('로그인한 앱을 여러 번 올렸다 내려도 구독이 남지 않고 타이머가 늘지 않으며 내린 뒤 이벤트가 상태를 바꾸지 않는다', async () => {
@@ -381,9 +393,9 @@ describe('AppProviders', () => {
 
     // Then
     const { analytics } = getOnlyDevice(createdDevices);
-    expect(
-      analytics.trackEvent.mock.calls.filter(([eventName]) => eventName === 'invite_link_opened'),
-    ).toEqual([['invite_link_opened', { source: 'universal_link' }]]);
+    expect(getTrackedEvents(analytics, 'invite_link_opened')).toEqual([
+      { source: 'universal_link' },
+    ]);
     await second.view.unmount();
   });
 

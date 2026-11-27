@@ -77,52 +77,64 @@ export type NotificationPage = z.infer<typeof notificationPageSchema>;
 /** 읽음 응답으로 본 소유. 네트워크·5xx·예산 초과는 모르는 것이라 막지 않는다 */
 export type NotificationOwnership = 'ok' | 'foreign' | 'unknown';
 
-/** 프리미엄 AI 기능이 만든 알림 종류. 서버가 종류를 더하면 여기서 정해야 빌드가 된다 */
-const AI_FEATURE_BY_TYPE = {
-  FOLLOW_NEW: false,
-  FOLLOW_ACCEPTED: false,
-  INVITE_JOINED: false,
-  INVITE_REWARDED: false,
-  INVITE_PROGRESS: false,
-  INVITE_QUALIFY_REMINDER: false,
-  NUDGE_RECEIVED: false,
-  NUDGE_REPLIED: false,
-  NUDGE_THANKED: false,
-  CHEER_RECEIVED: false,
-  DAILY_COMPLETE: false,
-  FRIEND_COMPLETED: false,
-  WEEKLY_ACHIEVEMENT: false,
-  TODO_REMINDER: false,
-  TODO_SHARED: false,
-  WINBACK: false,
-  WEATHER_MORNING: false,
-  WEATHER_EVENING: false,
-  MORNING_REMINDER: false,
-  EVENING_REMINDER: false,
-  LUNCH_NUDGE: false,
-  STREAK_AT_RISK: false,
-  WEEKLY_REPORT: true,
-  MONTHLY_REPORT: true,
-  AI_SUGGESTION: true,
-  SYSTEM_NOTICE: false,
-  ADMIN_BROADCAST: false,
-  ADMIN_TARGETED: false,
-  PREMIUM_GRANT_ENDING: false,
-  SOCIAL_DIGEST: false,
-  NUDGE_SUGGEST: false,
-} as const satisfies Record<NotificationType, boolean>;
+/** 앱이 켜진 동안 받으면 다시 받을 다른 기능의 데이터. 없으면 null */
+export type NotificationReceiptRefresh = 'nudge-interactions' | 'friends' | 'invite' | 'me' | null;
 
-/** 프리미엄 AI 기능이 만든 알림. 열기 전에 기능 한도를 묻는다 */
-function isAiFeature(notification: Notification) {
-  return AI_FEATURE_BY_TYPE[notification.type];
+interface NotificationTypeRule {
+  /** 프리미엄 AI 기능이 만든 알림. 열기 전에 기능 한도를 묻는다 */
+  isAiFeature: boolean;
+  refreshOnReceipt: NotificationReceiptRefresh;
 }
 
-function isUnread(notification: Notification) {
-  return !notification.isRead;
+/** 알림 종류마다의 업무 규칙. 서버가 종류를 더하면 여기서 한 줄을 정해야 빌드가 된다(라벨은 view-model) */
+const NOTIFICATION_TYPE_RULES = {
+  FOLLOW_NEW: { isAiFeature: false, refreshOnReceipt: 'friends' },
+  FOLLOW_ACCEPTED: { isAiFeature: false, refreshOnReceipt: 'friends' },
+  INVITE_JOINED: { isAiFeature: false, refreshOnReceipt: 'invite' },
+  INVITE_REWARDED: { isAiFeature: false, refreshOnReceipt: 'invite' },
+  INVITE_PROGRESS: { isAiFeature: false, refreshOnReceipt: 'invite' },
+  INVITE_QUALIFY_REMINDER: { isAiFeature: false, refreshOnReceipt: null },
+  NUDGE_RECEIVED: { isAiFeature: false, refreshOnReceipt: 'nudge-interactions' },
+  NUDGE_REPLIED: { isAiFeature: false, refreshOnReceipt: 'nudge-interactions' },
+  NUDGE_THANKED: { isAiFeature: false, refreshOnReceipt: 'nudge-interactions' },
+  CHEER_RECEIVED: { isAiFeature: false, refreshOnReceipt: null },
+  DAILY_COMPLETE: { isAiFeature: false, refreshOnReceipt: null },
+  FRIEND_COMPLETED: { isAiFeature: false, refreshOnReceipt: null },
+  WEEKLY_ACHIEVEMENT: { isAiFeature: false, refreshOnReceipt: null },
+  TODO_REMINDER: { isAiFeature: false, refreshOnReceipt: null },
+  TODO_SHARED: { isAiFeature: false, refreshOnReceipt: null },
+  WINBACK: { isAiFeature: false, refreshOnReceipt: null },
+  WEATHER_MORNING: { isAiFeature: false, refreshOnReceipt: null },
+  WEATHER_EVENING: { isAiFeature: false, refreshOnReceipt: null },
+  MORNING_REMINDER: { isAiFeature: false, refreshOnReceipt: null },
+  EVENING_REMINDER: { isAiFeature: false, refreshOnReceipt: null },
+  LUNCH_NUDGE: { isAiFeature: false, refreshOnReceipt: null },
+  STREAK_AT_RISK: { isAiFeature: false, refreshOnReceipt: null },
+  WEEKLY_REPORT: { isAiFeature: true, refreshOnReceipt: null },
+  MONTHLY_REPORT: { isAiFeature: true, refreshOnReceipt: null },
+  AI_SUGGESTION: { isAiFeature: true, refreshOnReceipt: null },
+  SYSTEM_NOTICE: { isAiFeature: false, refreshOnReceipt: null },
+  ADMIN_BROADCAST: { isAiFeature: false, refreshOnReceipt: null },
+  ADMIN_TARGETED: { isAiFeature: false, refreshOnReceipt: null },
+  // 보상 기간이 곧 끝난다는 알림이면 구독 화면의 남은 기간을 서버 값으로 맞춘다
+  PREMIUM_GRANT_ENDING: { isAiFeature: false, refreshOnReceipt: 'me' },
+  SOCIAL_DIGEST: { isAiFeature: false, refreshOnReceipt: null },
+  NUDGE_SUGGEST: { isAiFeature: false, refreshOnReceipt: null },
+} as const satisfies Record<NotificationType, NotificationTypeRule>;
+
+/** 받은 푸시 종류가 바꾸는 다른 기능의 데이터. 받을 때 다시 받으면 보고 있는 화면에 새 내용이 바로 보인다 */
+export function getNotificationReceiptRefresh(type: NotificationType): NotificationReceiptRefresh {
+  return NOTIFICATION_TYPE_RULES[type].refreshOnReceipt;
 }
 
 /** 받은 알림(알림함 항목) */
 export const NotificationPolicy = {
-  isAiFeature,
-  isUnread,
-} as const;
+  /** 프리미엄 AI 기능이 만든 알림. 열기 전에 기능 한도를 묻는다 */
+  isAiFeature(notification: Notification): boolean {
+    return NOTIFICATION_TYPE_RULES[notification.type].isAiFeature;
+  },
+
+  isUnread(notification: Notification): boolean {
+    return !notification.isRead;
+  },
+};

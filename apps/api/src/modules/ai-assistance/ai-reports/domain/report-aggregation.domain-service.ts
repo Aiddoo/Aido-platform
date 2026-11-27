@@ -1,13 +1,11 @@
 import { completionRate, DAYS_OF_WEEK, type DayOfWeek, isAllCompleted } from "@aido/api/vocabulary";
 import { groupBy, keyBy, mapValues, orderBy, range, sumBy } from "es-toolkit";
 
+import { instantFromDate } from "#api/shared/domain/time/instant";
 import { plainDateFromDate } from "#api/shared/domain/time/plain-date";
+import { localDateIn } from "#api/shared/domain/time/timezone-name";
 
-import {
-  dayOfWeekOf,
-  localDateAt,
-  localDateTimeAt,
-} from "../../shared/domain/user-calendar.domain-service.js";
+import { dayOfWeekOf, localDateTimeAt } from "../../shared/domain/user-calendar.domain-service.js";
 import type {
   CategoryBreakdownItem,
   DailyCompletionItem,
@@ -177,10 +175,10 @@ export function computeStreakDays(
 
   // endDate 전날부터 역순으로 연속 달성일 계산
   // DATE 그룹은 UTC 달력 label이고, 조회 경계만 사용자의 실제 instant다.
-  const rangeStart = localDateAt(startDate, timezone);
+  const rangeStart = localDateIn(instantFromDate(startDate), timezone);
 
   let streak = 0;
-  let cursor = localDateAt(endDate, timezone).subtract({ days: 1 });
+  let cursor = localDateIn(instantFromDate(endDate), timezone).subtract({ days: 1 });
   while (Temporal.PlainDate.compare(cursor, rangeStart) >= 0) {
     const dateKey = cursor.toString();
     const total = totalByDate[dateKey] ?? 0;
@@ -253,8 +251,8 @@ export function assembleAggregatedData(
     totalGroups: dailyTotalGroups,
     completedGroups: dailyCompletedGroups,
     period: {
-      firstDay: localDateAt(startDate, timezone),
-      lastDay: localDateAt(endDate, timezone).subtract({ days: 1 }),
+      firstDay: localDateIn(instantFromDate(startDate), timezone),
+      lastDay: localDateIn(instantFromDate(endDate), timezone).subtract({ days: 1 }),
     },
   });
 

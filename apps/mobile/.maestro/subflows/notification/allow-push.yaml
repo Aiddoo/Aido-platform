@@ -1,0 +1,22 @@
+appId: ${MAESTRO_APP_ID}
+name: 푸시 알림 설정에서 기기 알림 권한을 허용한다(iOS 시뮬레이터는 launchApp으로 미리 줄 수 없다)
+---
+- openLink: ${output.config.appScheme}://settings/notifications/push
+- extendedWaitUntil:
+    visible:
+      id: ${output.ids.notification.permissionStatus}
+    timeout: 15000
+- runFlow:
+    label: 아직 허용하지 않았으면 계속을 눌러 시스템 창에서 허용한다(src/features/notification/hooks/use-push-permission-action.ts)
+    when:
+      notVisible: ${output.labels.notification.granted}
+    commands:
+      - tapOn:
+          id: ${output.ids.notification.permissionStatus}
+      - extendedWaitUntil:
+          visible: ${output.labels.system.allowNotifications}
+          timeout: 10000
+      - tapOn: ${output.labels.system.allowNotifications}
+- extendedWaitUntil:
+    visible: ${output.labels.notification.granted}
+    timeout: 10000

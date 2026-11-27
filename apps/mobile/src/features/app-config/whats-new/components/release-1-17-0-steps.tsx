@@ -24,7 +24,7 @@ import {
 
 import { RELEASE_1_17_0_STEPS } from '../constants/release-1-17-0.constants';
 import { RELEASE_1_17_0, RELEASES } from '../constants/releases.constants';
-import { getLatestRelease } from '../domains/whats-new.model';
+import { WhatsNewPolicy } from '../domains/whats-new.model';
 import { useWhatsNewFlow } from '../hooks/use-whats-new-flow';
 import { useWhatsNewParams } from '../hooks/use-whats-new-params';
 import {
@@ -43,7 +43,7 @@ const INTRO_CAT_SIZE = 132;
 const BUBBLE_ICON_SIZE = 18;
 
 type Release1170Step = (typeof RELEASE_1_17_0_STEPS)[number];
-type Release1170StepMap = Record<Release1170Step, object>;
+type Release1170StepContexts = Record<Release1170Step, Record<string, never>>;
 
 function getStepPosition(step: Release1170Step): number {
   return RELEASE_1_17_0_STEPS.indexOf(step);
@@ -57,9 +57,9 @@ export function Release1170Steps() {
   const [{ source }] = useWhatsNewParams();
   const { t } = useTranslation(['whatsNew', 'todoImport', 'common']);
   const flow = useWhatsNewFlow({ release: RELEASE_1_17_0, source });
-  const stepper = useStepper<Release1170StepMap>({
+  const stepper = useStepper<Release1170StepContexts>({
     id: 'whats-new-1.17.0',
-    initial: { step: 'intro', context: {} },
+    initial: { step: 'intro' },
     onStepChange: ({ step }) => flow.trackStepViewed({ step, index: getStepPosition(step) }),
   });
   const { step, history } = stepper;
@@ -68,7 +68,7 @@ export function Release1170Steps() {
   const goNext = () => {
     const next = findNextStep(step);
     if (next != null) {
-      history.push(next, {});
+      history.push(next);
     }
   };
   // 페이저 없이 현재 단계만 그리고, 옆으로 밀면 단계를 넘긴다. 움직이는 동안 React는 다시 그려지지 않는다
@@ -88,7 +88,7 @@ export function Release1170Steps() {
   return (
     <>
       <WhatsNewStep.Header
-        isNew={getLatestRelease(RELEASES).id === RELEASE_1_17_0.id}
+        isNew={WhatsNewPolicy.getLatest(RELEASES).id === RELEASE_1_17_0.id}
         version={RELEASE_1_17_0.version}
         onClose={flow.close}
       />
@@ -101,7 +101,7 @@ export function Release1170Steps() {
           <stepper.Render
             intro={() => (
               <WhatsNewStep
-                media={<IntroMedia onStart={goNext} />}
+                media={<IntroMedia onNext={goNext} />}
                 title={t('whatsNew:v1_17_0.intro.title')}
                 description={t('whatsNew:v1_17_0.intro.description')}
               />
@@ -197,7 +197,7 @@ export function Release1170Steps() {
   );
 }
 
-function IntroMedia({ onStart }: { onStart: () => void }) {
+function IntroMedia({ onNext }: { onNext: () => void }) {
   const { t } = useTranslation(['whatsNew', 'todoImport']);
 
   return (
@@ -207,7 +207,7 @@ function IntroMedia({ onStart }: { onStart: () => void }) {
         Icon={CalendarImportIcon}
         title={t('todoImport:entry.menu')}
         description={t('whatsNew:v1_17_0.intro.card')}
-        onPress={onStart}
+        onPress={onNext}
         testID="whats-new-intro-todo-import"
         className="bg-white"
       />

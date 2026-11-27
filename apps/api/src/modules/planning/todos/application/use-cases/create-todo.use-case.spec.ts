@@ -249,7 +249,8 @@ describe("할 일 생성", () => {
         name: "윤년",
         startDate: "2028-02-28",
         until: "2028-03-01",
-        timezone: "UTC",
+        // 요청의 UTC는 기기 보고가 아니므로 오프셋 0인 지역 이름으로 고정한다
+        timezone: "Atlantic/Reykjavik",
         now: "2028-02-01T00:00:00Z",
         expected: [
           "2028-02-28T09:00:00.000Z",

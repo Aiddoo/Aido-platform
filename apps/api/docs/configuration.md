@@ -12,7 +12,7 @@ env를 더하거나 읽는 위치를 바꿀 때, 운영 env를 준비할 때 읽
   - 테스트는 설정 provider를 바꾸거나(`overrideProvider(<config>.KEY)`), 여러 namespace가 함께 바뀌는 배포 환경은 앱을 띄우기 전에 env를 넣는다(`createE2eApp({ env })`).
 - `process.env`는 `platform/config/env.ts`(`processEnv`)와 `*.config.ts`에서만 읽는다(oxlint `node/no-process-env`).
 - env 이름은 운영 계약이라 바꾸지 않는다. 쓰지 않는 env는 코드 사용처가 0인지 확인한 뒤 schema에서 지운다. 배포 env에 남아도 schema가 모르는 키는 무시된다.
-- 설정 값 목록은 schema 안의 `as const` 튜플에서 `z.enum`으로 유도한다(`ADMIN_NOTIFIER_PROVIDERS`, [공유 값](conventions.md#공유-값은-한-곳에서-선언한다)).
+- 설정 값 목록은 schema 안의 `as const` 튜플에서 `z.enum`으로 유도한다(`ADMIN_NOTIFIER_PROVIDERS`, [공유 값](architecture/conventions.md#공유-값은-한-곳에서-선언한다)).
 - Zod 오류 옵션은 `{ error }`다. env 원문·secret·backup은 로그나 Git에 넣지 않는다.
 
 ## 배포 환경
@@ -66,7 +66,7 @@ env를 더하거나 읽는 위치를 바꿀 때, 운영 env를 준비할 때 읽
 - `DATABASE_URL`의 `sslmode`가 `require`·`verify-ca`·`verify-full`이 아니거나 `DATABASE_SSL_ALLOW_UNVERIFIED=true`다.
 - `APPLE_JWKS_URL`이 Apple 공식 주소가 아니다(비우면 공식 주소를 쓴다).
 
-`SENTRY_DSN`이 없으면 시작은 하고 `config.recommended-value.missing` 경고를 남긴다. 개발 도구는 로컬 실행에서만 유도해 운영에서 켤 설정이 없다. `TOKEN_ENCRYPTION_SALT`는 지금 운영이 기본 salt를 쓰므로 요구하지 않는다. 운영 env 예시 키 구성이 이 검증을 통과하는지는 `production-env.spec.ts`가 본다. 새 공급자·스위치를 더하면 "운영에서 이 값이면 안 된다"를 같은 검증에 더하고 schema spec으로 확인한다.
+`SENTRY_DSN`이 없으면 시작은 하고 `config.recommended-value.missing` 경고를 남긴다. 개발 도구는 로컬 실행에서만 유도해 운영에서 켤 설정이 없다. `TOKEN_ENCRYPTION_SALT`는 운영이 기본 salt를 쓰므로 요구하지 않는다. 운영 env 예시 키 구성이 이 검증을 통과하는지는 `production-env.spec.ts`가 본다. 새 공급자·스위치를 더하면 "운영에서 이 값이면 안 된다"를 같은 검증에 더하고 schema spec으로 확인한다.
 
 ## 운영 env
 
@@ -82,7 +82,7 @@ env를 더하거나 읽는 위치를 바꿀 때, 운영 env를 준비할 때 읽
 | JWT_SECRET / JWT_REFRESH_SECRET / TOKEN_ENCRYPTION_KEY                  | 시작 검증에 필요한 32자 이상 값. `TOKEN_ENCRYPTION_SALT`는 선택(바꾸지 않는다)                                                                                                                                                                       |
 | CURSOR_SIGNING_KEYS / OPT_OUT_TOKEN_SIGNING_KEYS                        | `kid:secret,…`(첫 항목이 서명 키, secret 32자 이상). 운영은 둘 다 넣는다. 비우면 JWT_SECRET으로 서명, 기존 토큰은 계속 검증(지울 조건은 [호환](../../../docs/conventions/compatibility.md))                                                          |
 | JOB_SHUTDOWN_TIMEOUT_MS                                                 | 90000. compose `stop_grace_period`(120초)보다 짧게 둔다                                                                                                                                                                                              |
-| JOB_WORKER_ENABLED / JOB_POOL_MAX                                       | true / 3. `false`면 작업을 넣기만 하는 API 전용 프로세스다([작업과 이벤트](jobs-and-events.md#큐-정의))                                                                                                                                              |
+| JOB_WORKER_ENABLED / JOB_POOL_MAX                                       | true / 3. `false`면 작업을 넣기만 하는 API 전용 프로세스다([작업과 이벤트](architecture/jobs-and-events.md#큐-정의))                                                                                                                                 |
 | CACHE_TYPE / PUSH_RATE_LIMIT_BACKEND                                    | memory / postgres; 서로 다른 capability([확장](scaling.md))                                                                                                                                                                                          |
 | REDIS_URL / REDIS_COMMAND_TIMEOUT_MS / REDIS_CONNECT_TIMEOUT_MS         | `CACHE_TYPE=redis`일 때의 연결 주소와 타임아웃(기본 1500 / 5000). redis를 고르고 주소가 없으면 시작을 거부한다                                                                                                                                       |
 | EXPO_ACCESS_TOKEN / RESEND_API_KEY                                      | Expo / 이메일 공급자                                                                                                                                                                                                                                 |

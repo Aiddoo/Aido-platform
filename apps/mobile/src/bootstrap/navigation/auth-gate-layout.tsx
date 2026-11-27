@@ -86,6 +86,7 @@ export function AuthGateLayout() {
     if (!isEntryPending) {
       return;
     }
+    // 이미 내려갔으면 실패해도 화면은 그대로다
     const timer = setTimeout(
       () => SplashScreen.hideAsync().catch(noop),
       NOTIFICATION_ENTRY_HOLD_MAX_MS,

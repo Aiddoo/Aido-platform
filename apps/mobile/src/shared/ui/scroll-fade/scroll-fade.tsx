@@ -9,12 +9,12 @@ const SURFACE_BACKGROUND_CLASS_NAMES = {
   sheet: 'bg-white dark:bg-gray-1',
 } as const;
 
-type ScrollFadeProps = Omit<
+interface ScrollFadeProps extends Omit<
   ComponentProps<typeof ScrollShadow>,
   'LinearGradientComponent' | 'color' | 'size'
-> & {
+> {
   surface: keyof typeof SURFACE_BACKGROUND_CLASS_NAMES;
-};
+}
 
 export function ScrollFade({ surface, ...props }: ScrollFadeProps) {
   const { backgroundColor } = useResolveClassNames(SURFACE_BACKGROUND_CLASS_NAMES[surface]);

@@ -8,7 +8,7 @@ import {
   PARTICLE_SEED_STRIDE,
   placeSprite,
   wrap,
-} from '../../utils/weather-scene-particles.view-model';
+} from '../../utils/weather-scene-particles.geometry';
 import {
   PARTICLE_SAMPLING,
   PARTICLE_SPRITES,
@@ -56,7 +56,7 @@ const PACE = [0.62, 1];
 const PACE_JITTER = 0.12;
 const UNIT = [0, 1];
 
-type RainLayerProps = {
+interface RainLayerProps {
   variant: RainVariant;
   density: number;
   speed: number;
@@ -66,7 +66,7 @@ type RainLayerProps = {
   height: number;
   isLowEndDevice: boolean;
   time: SharedValue<number>;
-};
+}
 
 /** 빗줄기(이슬비는 짧고 가는 빗방울)는 멀수록 가늘고 짧고 흐리고 느리게, 바람이 셀수록 왼쪽으로 기울여 깊이를 만든다. */
 export function RainLayer({

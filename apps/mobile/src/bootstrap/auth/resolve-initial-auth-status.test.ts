@@ -3,7 +3,7 @@ import { createMemoryTokenStore } from '@src/testing/core';
 
 import { resolveInitialAuthStatus } from './resolve-initial-auth-status';
 
-describe('앱 부팅 인증 판정 — 클라이언트는 세션을 먼저 끊지 않는다', () => {
+describe('resolveInitialAuthStatus', () => {
   let tokenStore: ReturnType<typeof createMemoryTokenStore>;
 
   beforeEach(() => {

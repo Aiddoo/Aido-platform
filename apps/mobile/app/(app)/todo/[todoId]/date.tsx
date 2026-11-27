@@ -1,4 +1,4 @@
-import { TodoDateBottomSheet } from '@src/features/planning/todo/components/todo-list/todo-date-bottom-sheet';
+import { TodoDateBottomSheet } from '@src/features/planning/todo/components/todo-date-bottom-sheet';
 import { todoParamsSchema } from '@src/features/planning/todo/schemas/todo-params.schema';
 import { useRouteParamsOrRedirect } from '@src/shared/hooks/use-route-params-or-redirect';
 import { SheetRouteScreen } from '@src/shared/ui';

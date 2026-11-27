@@ -19,13 +19,14 @@ import {
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { Fragment, type ReactNode } from 'react';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import ReorderableList, { useIsActive, useReorderableDrag } from 'react-native-reorderable-list';
 
-import { TodoCategoryPolicy, type TodoCategoryWithCount } from '../domains/todo-category.model';
+import type { TodoCategoryWithCount } from '../domains/todo-categories.model';
+import { TodoCategoryPolicy } from '../domains/todo-category.model';
 import { prefetchDeletionPreview } from '../queries/todo-category-cache';
 import { useReorderTodoCategoryMutationOptions } from '../queries/todo-category.mutations';
 import {
@@ -34,6 +35,9 @@ import {
 } from '../queries/todo-category.queries';
 
 const ROW_TRAILING_FADE_IN_MS = 250;
+// Android는 FlashList 칸 안의 entering이 둘째 줄부터 버튼을 줄 밖 자리에 그려, iOS에서만 스며들게 한다
+const ROW_TRAILING_ENTERING =
+  process.env.EXPO_OS === 'android' ? undefined : FadeIn.duration(ROW_TRAILING_FADE_IN_MS);
 
 /** 카드 안에 그리는 행만 둔다. 카드와 제목은 화면이 감싼다 */
 export function CategoryList() {
@@ -60,7 +64,7 @@ CategoryList.Reorder = function Reorder() {
     updatedAt: dataUpdatedAt,
     isPending: reorderCategory.isPending,
     getItemId: (category) => category.id,
-    isOptimistic: TodoCategoryPolicy.isOptimisticCategory,
+    isOptimistic: (category) => TodoCategoryPolicy.isOptimisticCategory(category),
     onReorder: ({ instruction: { movedId, targetId, position } }) => {
       reorderCategory.mutate({
         id: movedId,
@@ -109,10 +113,7 @@ function CategoryRow({ category, right }: CategoryRowProps) {
         </VStack>
       }
       right={
-        <Animated.View
-          entering={FadeIn.duration(ROW_TRAILING_FADE_IN_MS)}
-          className="h-9 justify-center"
-        >
+        <Animated.View entering={ROW_TRAILING_ENTERING} className="h-9 justify-center">
           {right}
         </Animated.View>
       }
@@ -128,6 +129,7 @@ interface CategoryListItemProps {
 
 CategoryList.EditItem = function EditItem({ category }: CategoryListItemProps) {
   const { t } = useTranslation('common');
+  const router = useRouter();
   const push = useSingleTap(router.push);
   const queryClient = useQueryClient();
   const deletionPreviewOptions = useGetTodoCategoryDeletionPreviewQueryOptions({

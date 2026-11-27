@@ -4,14 +4,14 @@ import { preferenceSchema } from '@src/features/identity/preference/domains/pref
 import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/queries/preference-query-keys';
 import { userSchema } from '@src/features/identity/user/domains/user.model';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
-import { todoCategoriesResultSchema } from '@src/features/planning/category/domains/todo-category.model';
+import { todoCategoriesResultSchema } from '@src/features/planning/category/domains/todo-categories.model';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/queries/todo-category-query-keys';
 import { dailyCompletionsResultSchema } from '@src/features/planning/todo/domains/daily-completion.model';
-import { todoListResultSchema } from '@src/features/planning/todo/domains/todo.model';
+import { todoListResultSchema } from '@src/features/planning/todo/domains/todo-list.model';
 import { TODO_QUERY_KEYS } from '@src/features/planning/todo/queries/todo-query-keys';
-import { friendUserPagesSchema } from '@src/features/social/friend/domains/friend.model';
 import { FRIEND_QUERY_KEYS } from '@src/features/social/friend/queries/friend-query-keys';
-import { locationReadingSchema } from '@src/features/weather/domains/weather-location.model';
+import { friendUserPagesSchema } from '@src/features/social/friend/schemas/friend-list-storage.schema';
+import { locationReadingSchema } from '@src/features/weather/domains/location-reading.model';
 import { weatherReportSchema } from '@src/features/weather/domains/weather-report.model';
 import { WEATHER_QUERY_KEYS } from '@src/features/weather/queries/weather-query-keys';
 
@@ -22,7 +22,7 @@ export const PERSISTED_QUERY_SCHEMAS: readonly PersistedQuerySchema[] = [
   { queryKey: USER_QUERY_KEYS.me(), schema: userSchema },
   { queryKey: TODO_QUERY_KEYS.lists(), schema: todoListResultSchema },
   { queryKey: TODO_CATEGORY_QUERY_KEYS.list(), schema: todoCategoriesResultSchema },
-  { queryKey: TODO_QUERY_KEYS.completionRanges(), schema: dailyCompletionsResultSchema },
+  { queryKey: TODO_QUERY_KEYS.completionMonths(), schema: dailyCompletionsResultSchema },
   { queryKey: ENTITLEMENT_QUERY_KEYS.snapshot(), schema: entitlementSnapshotSchema },
   { queryKey: PREFERENCE_QUERY_KEYS.current(), schema: preferenceSchema },
   { queryKey: FRIEND_QUERY_KEYS.friends(), schema: friendUserPagesSchema },

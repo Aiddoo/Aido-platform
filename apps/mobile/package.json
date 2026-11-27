@@ -1,6 +1,6 @@
 {
   "name": "@aido/mobile",
-  "version": "1.17.0",
+  "version": "1.17.1",
   "private": true,
   "main": "index.ts",
   "scripts": {
@@ -21,10 +21,6 @@
     "check:unused": "knip --directory ../.. --workspace apps/mobile --config apps/mobile/knip.jsonc",
     "lint:deps": "depcruise src app --config .dependency-cruiser.cjs --output-type plugin:$PWD/scripts/feature-graph.cjs",
     "test": "jest",
-    "test:handles": "jest --runInBand --detectOpenHandles",
-    "test:changed": "jest --onlyChanged",
-    "test:related": "jest --findRelatedTests",
-    "test:watch": "jest --watch",
     "test:node": "node --test \"scripts/**/__tests__/*.test.mjs\" \"plugins/**/__tests__/*.test.mjs\" store-metadata/art/render.test.mjs",
     "typecheck": "tsc --noEmit",
     "update:preview": "eas update --branch preview --environment preview",
@@ -35,17 +31,15 @@
     "store:export": "node scripts/store-listing.mjs export",
     "store:art": "node store-metadata/art/render.mjs",
     "store:screens": "node --no-warnings .maestro/store-screenshots/scripts/demo-seed.ts",
-    "store:screens:capture": "bash .maestro/store-screenshots/capture.sh",
-    "export": "expo export --platform ios --platform android",
-    "test:store-listing": "node --test scripts/store-listing.test.mjs"
+    "store:screens:capture": "bash .maestro/store-screenshots/capture.sh"
   },
   "dependencies": {
     "@aido/api": "workspace:*",
-    "@babel/runtime": "7.29.14",
+    "@babel/runtime": "7.29.15",
     "@expo/material-symbols": "catalog:expo58",
     "@expo/metro-runtime": "catalog:expo58",
     "@expo/ui": "catalog:expo58",
-    "@hookform/resolvers": "7.0.8",
+    "@hookform/resolvers": "7.0.9",
     "@lodev09/react-native-true-sheet": "catalog:expo58",
     "@react-native-community/datetimepicker": "catalog:expo58",
     "@react-native-firebase/analytics": "26.4.2",
@@ -99,7 +93,7 @@
     "expo-web-browser": "catalog:expo58",
     "expo-widgets": "catalog:expo58",
     "heroui-native": "catalog:expo58",
-    "i18next": "27.2.4",
+    "i18next": "27.2.9",
     "intl-pluralrules": "2.0.1",
     "ky": "2.2.0",
     "react": "catalog:expo58",

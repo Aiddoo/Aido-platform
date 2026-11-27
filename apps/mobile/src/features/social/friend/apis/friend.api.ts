@@ -10,20 +10,10 @@ import {
   sendFriendRequestResponseSchema,
   sentRequestsResponseSchema,
 } from '@aido/api/contracts/follow/v1';
-import type { ApiError } from '@src/core/errors/api-error';
-import { fail, type Result } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http-client';
-import { BusinessError } from '@src/shared/errors';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 import { noop } from 'es-toolkit';
 
-import { FRIEND_ERROR_CODE, type FriendErrorCode } from '../domains/friend.error';
-import {
-  isValidSearchQuery,
-  isValidUserTag,
-  type SearchedUserPage,
-  type SendFriendRequestResult,
-} from '../domains/friend.model';
 import type {
   PaginationQuery,
   ReorderFriendInput,
@@ -37,8 +27,6 @@ import {
   toSendFriendRequestResult,
 } from './friend.mapper';
 
-type FriendApiError = ApiError | BusinessError<FriendErrorCode>;
-
 export class FriendApi {
   readonly #httpClient: HttpClient;
 
@@ -46,24 +34,14 @@ export class FriendApi {
     this.#httpClient = httpClient;
   }
 
-  sendRequestByTag = async (
-    userTag: string,
-  ): Promise<Result<SendFriendRequestResult, FriendApiError>> => {
-    const tag = userTag.trim();
-    if (!tag) {
-      return fail(new BusinessError(FRIEND_ERROR_CODE.EMPTY_TAG));
-    }
-    if (!isValidUserTag(tag)) {
-      return fail(new BusinessError(FRIEND_ERROR_CODE.INVALID_TAG));
-    }
-
-    return parseApiResponse(
-      await this.#httpClient.post(`v1/follows/${encodeURIComponent(tag)}`),
+  // 태그 형식은 친구 추가 폼(addFriendFormSchema)이 계약 규칙으로 막는다
+  sendRequestByTag = async (userTag: string) =>
+    parseApiResponse(
+      await this.#httpClient.post(`v1/follows/${encodeURIComponent(userTag.trim())}`),
       sendFriendRequestResponseSchema,
       toSendFriendRequestResult,
       '[FriendApi] Invalid sendRequest response',
     );
-  };
 
   getReceivedRequests = async (params?: PaginationQuery, signal?: AbortSignal) =>
     parseApiResponse(
@@ -122,26 +100,17 @@ export class FriendApi {
       '[FriendApi] Invalid getFriends response',
     );
 
-  searchUsers = async (
-    params: SearchUsersQuery,
-    signal?: AbortSignal,
-  ): Promise<Result<SearchedUserPage, FriendApiError>> => {
-    const query = params.query.trim();
-    // 2자 미만이면 네트워크 요청 없이 실패한다
-    if (!isValidSearchQuery(query)) {
-      return fail(new BusinessError(FRIEND_ERROR_CODE.SEARCH_QUERY_TOO_SHORT));
-    }
-
-    return parseApiResponse(
+  // 짧은 검색어는 조회 옵션(isValidSearchQuery)이 요청 전에 거른다
+  searchUsers = async (params: SearchUsersQuery, signal?: AbortSignal) =>
+    parseApiResponse(
       await this.#httpClient.get('v1/follows/search', {
         signal,
-        params: { q: query, cursor: params.cursor, limit: params.limit },
+        params: { q: params.query.trim(), cursor: params.cursor, limit: params.limit },
       }),
       searchUsersResponseSchema,
       toSearchedUsersPage,
       '[FriendApi] Invalid searchUsers response',
     );
-  };
 
   reorderFriend = async (followId: string, input: ReorderFriendInput) =>
     parseApiResponse(

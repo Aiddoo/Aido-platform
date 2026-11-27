@@ -9,6 +9,8 @@ import {
 import { ANIMATION } from '@src/shared/constants/animation';
 import { useIsAnimationActive } from '@src/shared/hooks/use-is-animation-active';
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
+import { useSkiaDensityScale } from '@src/shared/hooks/use-skia-density-scale';
+import { useToggleableFrameCallback } from '@src/shared/hooks/use-toggleable-frame-callback';
 import { SHEET_RADIUS } from '@src/shared/ui';
 import type { LayoutChangeEvent } from 'react-native';
 import Animated, {
@@ -19,11 +21,17 @@ import Animated, {
   useSharedValue,
 } from 'react-native-reanimated';
 
-import { VOICE_EDGE_GLOW, VOICE_GRADIENT_COLORS } from '../constants/voice.constants';
-import { useSkiaDensityScale } from '../hooks/use-skia-density-scale';
-import { useToggleableFrameCallback } from '../hooks/use-toggleable-frame-callback';
+import { VOICE_GRADIENT_COLORS } from '../constants/voice.constants';
 import { followLevel } from '../utils/waveform.geometry';
 
+const VOICE_EDGE_GLOW = {
+  blur: 14,
+  rimWidth: 1.5,
+  rotationPeriodMs: 5_000,
+  minOpacity: 0.35,
+  attackMs: 90,
+  releaseMs: 700,
+} as const;
 const BLEED = VOICE_EDGE_GLOW.blur * 3;
 const FULL_TURN_RADIANS = Math.PI * 2;
 

@@ -4,7 +4,12 @@ import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, renderHook } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
-import { useFeedAction, useFeedDateKey, useFeedFriendId } from './use-feed-params';
+import {
+  useFeedAction,
+  useFeedDateKey,
+  useFeedFriendId,
+  useFeedSelectedTodoId,
+} from './use-feed-params';
 
 const mockedUseLocalSearchParams = jest.mocked(useLocalSearchParams);
 const FRIEND_ID = 'cmfriend000000000000000001';
@@ -178,5 +183,80 @@ describe('useFeedDateKey', () => {
     const { result } = await setup(date);
     // Then
     expect(result.current.selectedDateKey).toBe('2026-07-14');
+  });
+});
+
+describe('useFeedSelectedTodoId', () => {
+  it('URL의 todoId를 숫자로 읽는다', async () => {
+    // Given
+    mockedUseLocalSearchParams.mockReturnValue({ todoId: '42' });
+
+    // When
+    const { result } = await renderHook(() => useFeedSelectedTodoId());
+
+    // Then
+    expect(result.current[0]).toBe(42);
+  });
+
+  it('친구 피드에서도 같은 피드 화면의 todoId를 읽는다', async () => {
+    // Given
+    mockedUseLocalSearchParams.mockReturnValue({ friendId: FRIEND_ID, todoId: '42' });
+
+    // When
+    const { result } = await renderHook(() => useFeedSelectedTodoId());
+
+    // Then
+    expect(result.current[0]).toBe(42);
+  });
+
+  it('잘못된 todoId는 선택 없음으로 본다', async () => {
+    // Given
+    mockedUseLocalSearchParams.mockReturnValue({ todoId: 'abc' });
+
+    // When
+    const { result } = await renderHook(() => useFeedSelectedTodoId());
+
+    // Then
+    expect(result.current[0]).toBeUndefined();
+  });
+
+  it('다른 할 일을 고르면 이전 할 일의 댓글 위치와 정렬을 지운다', async () => {
+    // Given
+    mockedUseLocalSearchParams.mockReturnValue({ todoId: '5', sort: 'POPULAR' });
+    const { result } = await renderHook(() => useFeedSelectedTodoId());
+
+    // When
+    result.current[1](7);
+
+    // Then
+    expect(jest.mocked(router.setParams).mock.calls[0]?.[0]).toStrictEqual({
+      todoId: '7',
+      comment: undefined,
+      sort: undefined,
+    });
+  });
+
+  it('이미 고른 할 일을 다시 고르면 정렬과 댓글 위치를 그대로 둔다', async () => {
+    // Given
+    mockedUseLocalSearchParams.mockReturnValue({ todoId: '7', sort: 'POPULAR' });
+    const { result } = await renderHook(() => useFeedSelectedTodoId());
+
+    // When
+    result.current[1](7);
+
+    // Then
+    expect(router.setParams).not.toHaveBeenCalled();
+  });
+
+  it('undefined를 고르면 선택을 해제한다', async () => {
+    // Given
+    mockedUseLocalSearchParams.mockReturnValue({ todoId: '7' });
+    const { result } = await renderHook(() => useFeedSelectedTodoId());
+
+    // When
+    result.current[1](undefined);
+
+    // Then
+    expect(router.setParams).toHaveBeenCalledWith(expect.objectContaining({ todoId: undefined }));
   });
 });

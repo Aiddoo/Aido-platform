@@ -4,6 +4,7 @@ import type { AppLogger } from '@src/core/ports/app-logger';
 import type { RequestConfig } from '@src/core/ports/http-client';
 import type { TokenStore } from '@src/core/ports/token-store';
 import type { SessionEpoch } from '@src/core/session/session-epoch';
+import { SECOND_MS } from '@src/shared/constants/time-units';
 import { getErrorMessage } from '@src/shared/errors';
 
 import type { AuthApi } from '../apis/auth.api';
@@ -11,7 +12,7 @@ import { AUTH_LOG_EVENT } from '../constants/auth-log-events';
 import type { SessionRevocationService } from './session-revocation.service';
 
 /** 로그아웃 서버 요청 하나의 상한. 기본 10초를 두 번 기다리지 않게 짧게 끊는다 */
-export const LOGOUT_REQUEST_TIMEOUT_MS = 3_000;
+export const LOGOUT_REQUEST_TIMEOUT_MS = 3 * SECOND_MS;
 
 interface LogOutDeviceServicePorts {
   authApi: Pick<AuthApi, 'logout'>;

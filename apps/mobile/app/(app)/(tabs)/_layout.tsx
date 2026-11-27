@@ -1,4 +1,5 @@
 import { useHaptics } from '@src/bootstrap/providers/di-context';
+import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useTranslation } from '@src/shared/i18n';
 import { NATIVE_TAB_ICON_SOURCES } from '@src/shared/ui';
 import { NativeTabs } from 'expo-router/native-tabs';
@@ -12,9 +13,9 @@ export const unstable_settings = {
 
 export default function TabsLayout() {
   const haptics = useHaptics();
-  const activeStyle = useResolveClassNames('text-main');
+  const activeColor = useResolvedColor('text-main');
   const backgroundStyle = useResolveClassNames('bg-white');
-  const inactiveStyle = useResolveClassNames('text-gray-6');
+  const inactiveColor = useResolvedColor('text-gray-6');
   const { t } = useTranslation();
 
   const handleTabPress = ({ data }: { data: { isPrevented: boolean } }) => {
@@ -25,8 +26,8 @@ export default function TabsLayout() {
 
   return (
     <NativeTabs
-      tintColor={activeStyle.color}
-      iconColor={{ default: inactiveStyle.color, selected: activeStyle.color }}
+      tintColor={activeColor}
+      iconColor={{ default: inactiveColor, selected: activeColor }}
       backgroundColor={backgroundStyle.backgroundColor}
       minimizeBehavior="never"
       // 펼친 화면·iPad에서 탭 바와 사이드바를 시스템이 고른다(iOS 27+)
