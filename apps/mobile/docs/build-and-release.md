@@ -129,7 +129,6 @@ GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.fsmonitor GIT_CONFIG_VALUE_0=false TMPD
 
 - **precompiled 모듈 끔**: iOS 117은 precompiled ExpoFileSystem이 ExpoModulesJSI에 없는 Swift 심볼을 참조해 JS 시작 전에 DYLD에서 종료됐다. `expo-build-properties.ios.usePrecompiledModules=false`로 Expo 모듈을 함께 소스 빌드한다([Expo 공식 설정](https://docs.expo.dev/guides/prebuilt-expo-modules/)). 의존성 버전을 내리거나 생성된 `ios/` 파일만 고치는 방식으로 대체하지 않는다. OTA로 이 장애를 해결할 수 없다.
 - **Firebase 초기화**: `withFirebaseInitialization` plugin이 RNFirebase가 인식하지 못하는 SDK 58 AppDelegate에 네이티브 Firebase 초기화를 더한다. RNFirebase plugin 바로 뒤에 등록하며 새 template을 인식하지 못하면 prebuild를 실패시킨다. 생성된 launch method에서 Firebase가 React Native factory보다 먼저 한 번만 설정되는지 확인한다.
-- **`expo-web-browser` plugin**: package exports에 `app.plugin.js`가 없어 EAS resolver가 런타임 모듈로 오인한다. `app.config.ts`에서 설치된 package의 실제 plugin 파일을 프로젝트 상대 경로로 지정한다(절대 경로가 fingerprint에 들어가 runtime이 달라지지 않게). `Expo.fx` 오류를 앱 런타임·Expo 소스 변경으로 고치지 않는다.
 - **위젯 layout registry** import 경로는 실제 파일 경로로 정규화한다. macOS의 `/tmp`와 `/private/tmp`가 Metro에서 다르게 처리되어 iOS archive가 실패하지 않도록 `expo-widgets` 패치에 반영돼 있다.
 
 ### 네이티브 검증
