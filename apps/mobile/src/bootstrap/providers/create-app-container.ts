@@ -87,7 +87,7 @@ import { createPushNotificationEntryStore } from '@src/features/notification/sto
 import { createPushOnboardingGuardStore } from '@src/features/notification/stores/push-onboarding-guard.store';
 import { TodoCategoryApi } from '@src/features/planning/category/apis/todo-category.api';
 import { TodoImportApi } from '@src/features/planning/todo-import/apis/todo-import.api';
-import { todoImportFeedEntryDismissedStoredValue } from '@src/features/planning/todo-import/schemas/todo-import-feed-entry-storage.schema';
+import { todoImportFeedEntryStoredValue } from '@src/features/planning/todo-import/schemas/todo-import-feed-entry-storage.schema';
 import { TodoImportUploadSession } from '@src/features/planning/todo-import/services/todo-import-upload.session';
 import { SubTodoApi } from '@src/features/planning/todo/apis/sub-todo.api';
 import { TodoApi } from '@src/features/planning/todo/apis/todo.api';
@@ -375,7 +375,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
           },
           'todo-import-feed-entry': {
             clear: (userId) =>
-              removeStoredValue(syncStorage, todoImportFeedEntryDismissedStoredValue, userId),
+              removeStoredValue(syncStorage, todoImportFeedEntryStoredValue, userId),
           },
           'feature-attribution': {
             clear: (userId) => clearFeatureAttributions(syncStorage, userId),

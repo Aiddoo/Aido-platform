@@ -13,11 +13,11 @@ import {
   type PushOnboardingGuardState,
 } from '@src/features/notification/stores/push-onboarding-guard.store';
 import { createTodoCategoryListDto } from '@src/features/planning/category/__tests__/todo-category.fixtures';
-import { todoImportFeedEntryDismissedStoredValue } from '@src/features/planning/todo-import/schemas/todo-import-feed-entry-storage.schema';
+import { todoImportFeedEntryStoredValue } from '@src/features/planning/todo-import/schemas/todo-import-feed-entry-storage.schema';
 import { createFriendsListDto } from '@src/features/social/friend/__tests__/friend.fixtures';
 import { createNudgeCooldownInfoDto } from '@src/features/social/nudge/__tests__/todo-nudge.fixtures';
 import { ServerError } from '@src/shared/errors/infra-error';
-import { writeStoredValue } from '@src/shared/storage/define-stored-value';
+import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
 import {
   createAnalyticsStub,
   createApiError,
@@ -925,11 +925,12 @@ describe('FeedScreen', () => {
       ]);
     });
 
-    it('닫으면 사라지고 피드를 다시 열어도 그 계정에는 다시 뜨지 않는다', async () => {
+    it('닫으면 사라지고 닫았다고 남아 피드를 다시 열어도 그 계정에는 다시 뜨지 않는다', async () => {
       // Given
       const analytics = createAnalyticsStub();
+      const syncStorage = createMemoryObservableSyncStorage();
       const { di, unmount } = await renderFeed({
-        ports: { analytics },
+        ports: { analytics, syncStorage },
         server: EMPTY_ACCOUNT_SERVER,
       });
       await screen.findByText(IMPORT_TITLE);
@@ -943,21 +944,36 @@ describe('FeedScreen', () => {
 
       // Then
       expect(screen.queryByText(IMPORT_TITLE)).toBeNull();
+      expect(readStoredValue(syncStorage, todoImportFeedEntryStoredValue, ME_ID)).toBe('dismissed');
       expect(getTrackedEvents(analytics, 'todo_import_entry_dismissed')).toEqual([
         { source: 'feed_card' },
       ]);
     });
 
-    it('오늘 할 일이 없어도 할 일 기록이 있는 계정에는 보이지 않고 기록은 한 번만 묻는다', async () => {
+    it('할 일 기록이 있는 계정은 처음 한 번만 묻고 남겨 피드를 다시 열면 묻지 않는다', async () => {
       // Given
-      const { httpClient } = await renderFeed({ server: { todosByDate: {} } });
+      const analytics = createAnalyticsStub();
+      const syncStorage = createMemoryObservableSyncStorage();
+      const { httpClient, di, unmount } = await renderFeed({
+        ports: { analytics, syncStorage },
+        server: { todosByDate: {} },
+      });
+      await waitForTodoRecordRead(httpClient);
+      await waitFor(() =>
+        expect(readStoredValue(syncStorage, todoImportFeedEntryStoredValue, ME_ID)).toBe('hasTodo'),
+      );
+      expect(countGetRequests(httpClient)[OVERVIEW_PATH]).toBe(1);
 
       // When
-      await waitForTodoRecordRead(httpClient);
+      await unmount();
+      await renderScreen(<FeedScreen />, { withLocalDate: true, withOverlay: true, di });
+      await screen.findByText('자주 하는 일을 반복으로 만들어요');
+      await act(() => jest.advanceTimersByTimeAsync(0));
 
       // Then
       expect(screen.queryByText(IMPORT_TITLE)).toBeNull();
       expect(countGetRequests(httpClient)[OVERVIEW_PATH]).toBe(1);
+      expect(getTrackedEvents(analytics, 'todo_import_entry_dismissed')).toEqual([]);
     });
 
     it('오늘 할 일이 보이면 할 일 기록을 묻지 않고 보이지 않는다', async () => {
@@ -988,12 +1004,7 @@ describe('FeedScreen', () => {
     it('다른 계정에서 닫았어도 이 계정에는 보인다', async () => {
       // Given
       const syncStorage = createMemoryObservableSyncStorage();
-      writeStoredValue(
-        syncStorage,
-        todoImportFeedEntryDismissedStoredValue,
-        'dismissed',
-        'another-account',
-      );
+      writeStoredValue(syncStorage, todoImportFeedEntryStoredValue, 'dismissed', 'another-account');
 
       // When
       await renderFeed({ ports: { syncStorage }, server: EMPTY_ACCOUNT_SERVER });
