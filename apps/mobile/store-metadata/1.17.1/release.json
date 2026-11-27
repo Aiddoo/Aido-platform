@@ -38,18 +38,22 @@
       "ko": [
         "버튼을 빠르게 두 번 눌러도 요청이 한 번만 가요.",
         "화면 문구를 더 짧고 알기 쉽게 다듬었어요.",
+        "날씨 화면을 열면 앱이 꺼지던 문제를 고쳤어요.",
         "알림에서 ‘완료하기’를 오프라인일 때 누르면 나중에 실행되던 문제를 고쳤어요.",
         "기기 시간대를 읽지 못했을 때 알림 시각이 어긋날 수 있던 문제를 고쳤어요.",
         "말로 메모에서 녹음이 섞이거나 ‘이어서 말하기’가 되지 않던 문제를 고쳤어요.",
-        "저장한 뒤 화면이 닫히지 않거나 다른 화면이 닫히던 문제를 고쳤어요."
+        "저장한 뒤 화면이 닫히지 않거나 다른 화면이 닫히던 문제를 고쳤어요.",
+        "일부 화면이 어긋나 보이던 문제를 고쳤어요."
       ],
       "en": [
         "Tapping a button twice quickly now sends just one request.",
         "Shorter, clearer wording across the app.",
+        "Fixed the app closing when opening Weather.",
         "Fixed the Complete action on a notification running later if you tapped it offline.",
-        "Fixed reminder times that could be off when the device time zone couldn't be read.",
+        "Fixed reminder times being off when the time zone couldn't be read.",
         "Fixed voice notes mixing audio and “Keep talking” not working.",
-        "Fixed screens not closing, or the wrong screen closing, after a save."
+        "Fixed screens not closing, or the wrong screen closing, after a save.",
+        "Fixed a few display glitches."
       ]
     }
   }

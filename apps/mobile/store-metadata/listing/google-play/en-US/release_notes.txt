@@ -3,7 +3,9 @@ Improvements
 - Shorter, clearer wording across the app.
 
 Bug fixes
+- Fixed the app closing when opening Weather.
 - Fixed the Complete action on a notification running later if you tapped it offline.
-- Fixed reminder times that could be off when the device time zone couldn't be read.
+- Fixed reminder times being off when the time zone couldn't be read.
 - Fixed voice notes mixing audio and “Keep talking” not working.
 - Fixed screens not closing, or the wrong screen closing, after a save.
+- Fixed a few display glitches.
