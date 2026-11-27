@@ -18,7 +18,7 @@ const todoImportPlacementSchema = z.object({
   target: todoImportTargetSchema,
   // 이곳을 고른 캘린더의 일정을 모두 더한 수
   importCount: countSchema,
-  // 이곳에 넣을 수 있는 할 일 수(서버 한도)
+  // 카테고리당 한도(서버 값). 비어 있을 때 넣을 수 있는 할 일 수다
   maxPerCategory: countSchema,
   // 가져오기 전에 이곳에 더 넣을 수 있는 할 일 수
   roomLeft: countSchema,
@@ -33,7 +33,7 @@ export type TodoImportPlacement = z.infer<typeof todoImportPlacementSchema>;
 // 넘치거나(overflow) 가득 찬(full) 곳은 일정을 건너뛴다
 type TodoImportPlacementStatus = 'fits' | 'fillsUp' | 'overflow' | 'full';
 
-interface TodoImportPlacementSummary {
+export interface TodoImportPlacementSummary {
   totalCount: number;
   placedCount: number;
   // 일정이 들어가는 아이두 카테고리 수

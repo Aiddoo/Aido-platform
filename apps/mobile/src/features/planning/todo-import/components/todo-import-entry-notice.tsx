@@ -38,7 +38,7 @@ export function TodoImportEntryNotice(props: TodoImportEntryNoticeProps) {
   const todayKey = useTodayKey();
   const fontScaledSize = useFontScaledSize();
   const { trackEvent } = useTrack();
-  // 오늘 목록은 피드 목록과 같은 키라 요청이 늘지 않는다
+  // 오늘 목록 키는 내 피드가 이미 읽는다(오늘을 보면 할 일 목록이, 다른 날을 보면 알림 꺼짐 안내가 읽는다)
   const [{ data: accountId }, { data: permission }, { data: hasTodayTodo }] = useSuspenseQueries({
     queries: [
       { ...useGetMeQueryOptions(), select: selectAccountId },
@@ -50,21 +50,24 @@ export function TodoImportEntryNotice(props: TodoImportEntryNoticeProps) {
     todoImportFeedEntryDismissedStoredValue,
     accountId,
   );
-  const entry: TodoImportFeedEntry = {
+  // 서버 기록을 물을지는 기록 없이 정해진다
+  const entryBeforeRecord: TodoImportFeedEntry = {
     isDismissed: dismissed != null,
     calendarAccess: getOsPermissionAccess(permission),
+    hasTodayTodo,
+    hasTodoRecord: null,
   };
-  // 오늘 할 일이 보이면 이미 할 일이 있는 계정이라 서버의 할 일 기록을 묻지 않는다
   const { data: hasTodoRecord } = useQuery({
     ...useGetTodoOverviewQueryOptions(),
     select: selectHasTodo,
-    enabled: TodoImportFeedEntryPolicy.canOffer(entry) && !hasTodayTodo,
+    enabled: TodoImportFeedEntryPolicy.shouldAskTodoRecord(entryBeforeRecord),
   });
 
   // 기록을 읽는 동안·읽지 못했으면 자리를 잡지 않는다
-  const isVisible =
-    hasTodoRecord != null &&
-    TodoImportFeedEntryPolicy.shouldShow(entry, hasTodayTodo || hasTodoRecord);
+  const isVisible = TodoImportFeedEntryPolicy.shouldShow({
+    ...entryBeforeRecord,
+    hasTodoRecord: hasTodoRecord ?? null,
+  });
 
   useTrackView(
     'todo_import_entry_shown',

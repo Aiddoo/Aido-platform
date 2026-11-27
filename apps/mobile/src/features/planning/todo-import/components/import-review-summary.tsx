@@ -16,6 +16,7 @@ import { match } from 'ts-pattern';
 import { TodoImportPlacementPolicy } from '../domains/todo-import-placement.model';
 import type { TodoImportPlan } from '../domains/todo-import-plan.model';
 import type { TodoImportRange } from '../domains/todo-import-range.model';
+import { useFormatPlacedEventCount } from '../hooks/use-format-placed-event-count';
 import { useSuspenseTodoImportPlacements } from '../hooks/use-suspense-todo-import-placements';
 import {
   findTargetAppearance,
@@ -37,6 +38,7 @@ export function ImportReviewSummary({ plan, range, ...props }: ImportReviewSumma
   const { t } = useTranslation('todoImport');
   const todayKey = useTodayKey();
   const dateFormatContext = useDateFormatContext();
+  const formatPlacedEventCount = useFormatPlacedEventCount();
 
   const { data: categoriesResult } = useSuspenseQuery({
     ...useGetTodoCategoriesQueryOptions(),
@@ -45,10 +47,7 @@ export function ImportReviewSummary({ plan, range, ...props }: ImportReviewSumma
   const placements = useSuspenseTodoImportPlacements({ plan, refetchOnMount: false });
 
   const summary = TodoImportPlacementPolicy.getSummary(placements);
-  const events =
-    summary.placedCount < summary.totalCount
-      ? t('categories.eventCountPartial', { total: summary.totalCount, count: summary.placedCount })
-      : t('categories.eventCount', { count: summary.totalCount });
+  const events = formatPlacedEventCount(summary);
   const singleTarget = TodoImportPlacementPolicy.findSingleTarget(placements);
   // 한 곳이면 이름을 부른다. 고른 카테고리가 그사이 지워져 이름을 모르면 곳 수로 센다
   const destination = match(

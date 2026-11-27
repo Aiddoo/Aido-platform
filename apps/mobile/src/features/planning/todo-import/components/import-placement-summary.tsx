@@ -9,6 +9,7 @@ import { match } from 'ts-pattern';
 import { TodoImportPlacementPolicy } from '../domains/todo-import-placement.model';
 import { type TodoImportPlan, TodoImportPlanPolicy } from '../domains/todo-import-plan.model';
 import { createDefaultTarget } from '../domains/todo-import-target.model';
+import { useFormatPlacedEventCount } from '../hooks/use-format-placed-event-count';
 import { useNewCategoryDefaults } from '../hooks/use-new-category-defaults';
 import { useSuspenseTodoImportPlacements } from '../hooks/use-suspense-todo-import-placements';
 import { findTargetAppearance } from '../utils/todo-import.view-model';
@@ -24,15 +25,13 @@ interface ImportPlacementSummaryProps extends Omit<
 export function ImportPlacementSummary({ plan, ...props }: ImportPlacementSummaryProps) {
   const { t } = useTranslation('todoImport');
   const newCategoryDefaults = useNewCategoryDefaults();
+  const formatPlacedEventCount = useFormatPlacedEventCount();
 
   const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const placements = useSuspenseTodoImportPlacements({ plan });
 
   const summary = TodoImportPlacementPolicy.getSummary(placements);
-  const isPartial = summary.placedCount < summary.totalCount;
-  const events = isPartial
-    ? t('categories.eventCountPartial', { total: summary.totalCount, count: summary.placedCount })
-    : t('categories.eventCount', { count: summary.totalCount });
+  const events = formatPlacedEventCount(summary);
   // 한 곳에 넣을 때 그곳의 이름을 부른다
   const appearance = findTargetAppearance(
     TodoImportPlanPolicy.getDestination(
