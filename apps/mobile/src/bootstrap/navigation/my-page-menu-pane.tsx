@@ -14,6 +14,7 @@ import { ActiveTodoImportValue } from '@src/features/planning/todo-import/compon
 import { FriendCountValue } from '@src/features/social/friend/components/friend-count-value';
 import { InviteRewardButton } from '@src/features/social/invite/components/invite-reward-button';
 import { useIsInviteAvailable } from '@src/features/social/invite/hooks/use-is-invite-available';
+import { useTrack } from '@src/shared/analytics';
 import { useTranslation } from '@src/shared/i18n';
 import { APP_LOCALES } from '@src/shared/i18n/app-locales';
 import type { FontScale } from '@src/shared/preferences/font-scale.preference';
@@ -49,6 +50,7 @@ import { Suspense } from 'react';
 /** 좁은 화면은 마이 탭 첫 화면이, 넓은 화면은 마이 탭 화면마다 왼쪽 칸이 그린다 */
 export function MyPageMenuPane() {
   const { t } = useTranslation(['user', 'settings', 'todoImport']);
+  const { trackEvent } = useTrack();
   const isInviteAvailable = useIsInviteAvailable();
   const isCompact = usePaneSizeClass() === 'compact';
 
@@ -129,6 +131,7 @@ export function MyPageMenuPane() {
               label={t('todoImport:entry.menu')}
               pathname="/todo-import"
               value={<ActiveTodoImportValue />}
+              onPress={() => trackEvent('todo_import_entry_tapped', { source: 'mypage' })}
             />
             <SettingsListGroup.Separator />
             <MyPageMenuItem

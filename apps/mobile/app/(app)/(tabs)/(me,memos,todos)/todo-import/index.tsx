@@ -14,6 +14,7 @@ import { ImportEndDateChips } from '@src/features/planning/todo-import/component
 import { ImportHintButton } from '@src/features/planning/todo-import/components/import-hint-button';
 import { ImportPlacementSummary } from '@src/features/planning/todo-import/components/import-placement-summary';
 import { ImportRangeInput } from '@src/features/planning/todo-import/components/import-range-input';
+import { ImportReviewSummary } from '@src/features/planning/todo-import/components/import-review-summary';
 import { ImportSourceList } from '@src/features/planning/todo-import/components/import-source-list';
 import { LastTodoImportRow } from '@src/features/planning/todo-import/components/last-todo-import-row';
 import { MissingCalendarHelp } from '@src/features/planning/todo-import/components/missing-calendar-help';
@@ -590,7 +591,14 @@ function OptionsStep({ form, progress, onStarted, onTargetsRejected }: OptionsSt
   const calendarImportGate = useEntitlementGate('CALENDAR_IMPORT', { surface: 'todo_import' });
   const formatTargetRejection = useFormatTargetRejection();
 
+  const [range, collections, categoryMode, singleTarget, targets] = useWatch({
+    control: form.control,
+    name: ['range', 'collections', 'categoryMode', 'singleTarget', 'targets'],
+  });
+
   const startImport = useMutation(useStartTodoImportMutationOptions());
+
+  const plan: TodoImportPlan = { collections, categoryMode, singleTarget, targets };
 
   // 실패는 RHF가 실패로 알아 다시 누를 수 있게 handleSubmit 밖 호출부에서 받는다
   const submitImport = form.handleSubmit(async (values) => {
@@ -665,6 +673,14 @@ function OptionsStep({ form, progress, onStarted, onTargetsRejected }: OptionsSt
         </VStack>
       }
     >
+      <QueryErrorBoundary fallback={ImportReviewSummary.Error}>
+        <Suspense fallback={<ImportReviewSummary.Loading />}>
+          <ImportReviewSummary plan={plan} range={range} />
+        </Suspense>
+      </QueryErrorBoundary>
+
+      <Spacing size={20} />
+
       <SettingsListGroup>
         <Controller
           control={form.control}

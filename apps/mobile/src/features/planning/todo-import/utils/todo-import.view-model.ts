@@ -1,5 +1,11 @@
 import type { OsPermission } from '@src/core/ports/os-permission';
 import type { TodoCategory } from '@src/features/planning/category/domains/todo-category.model';
+import type { DateKey } from '@src/shared/date/date-key';
+import {
+  type DateFormatContext,
+  formatYearAwareDateKeyLabel,
+} from '@src/shared/date/format/date-format';
+import { formatRangeLabel } from '@src/shared/date/format/date-labels';
 import { getOsPermissionAccess } from '@src/shared/utils/get-os-permission-access';
 import { countBy, groupBy } from 'es-toolkit';
 
@@ -8,7 +14,7 @@ import {
   type TodoImportCollection,
   TodoImportCollectionPolicy,
 } from '../domains/todo-import-collection.model';
-import type { TodoImportRangePreset } from '../domains/todo-import-range.model';
+import type { TodoImportRange, TodoImportRangePreset } from '../domains/todo-import-range.model';
 import type { TodoImportTarget } from '../domains/todo-import-target.model';
 
 const RANGE_PRESET_LABEL_KEYS = {
@@ -127,4 +133,35 @@ const WORD_JOINER = '\u2060';
 /** 문장 안 날짜("12월 23일", "Dec 23")가 숫자와 글자 사이에서 다음 줄로 갈라지지 않게 잇는다 */
 export function formatUnbreakableLabel(label: string): string {
   return Array.from(label.replaceAll(' ', NO_BREAK_SPACE)).join(WORD_JOINER);
+}
+
+export interface ImportRangeLabels {
+  start: string;
+  // 하루만 가져오면 null이다
+  end: string | null;
+}
+
+// 가져올 기간의 첫날·끝 날 글자. 기간 입력 칸과 같은 포맷이라 날마다 올해가 아니면 해를 붙인다
+export function getImportRangeLabels(
+  range: TodoImportRange,
+  todayKey: DateKey,
+  context: DateFormatContext,
+): ImportRangeLabels {
+  return {
+    start: formatYearAwareDateKeyLabel(range.startDate, todayKey, context),
+    end:
+      range.endDate === range.startDate
+        ? null
+        : formatYearAwareDateKeyLabel(range.endDate, todayKey, context),
+  };
+}
+
+// 가져올 기간 한 줄("11월 26일~2027년 1월 5일"). 하루면 그날 하나다
+export function formatImportRange(
+  range: TodoImportRange,
+  todayKey: DateKey,
+  context: DateFormatContext,
+): string {
+  const { start, end } = getImportRangeLabels(range, todayKey, context);
+  return end == null ? start : formatRangeLabel({ start, end }, 'compact', context);
 }

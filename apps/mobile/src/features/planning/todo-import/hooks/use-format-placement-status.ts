@@ -34,6 +34,10 @@ export function useFormatPlacementStatus(): (
         }),
         isWarning: true,
       }))
-      .with('full', () => ({ message: t('categories.fullWarning', { name }), isWarning: true }))
+      // 한도는 모든 요금제가 같아 요금제를 말하지 않고, 서버가 준 카테고리당 한도를 그대로 보인다
+      .with('full', () => ({
+        message: t('categories.fullWarning', { name, limit: placement.maxPerCategory }),
+        isWarning: true,
+      }))
       .exhaustive();
 }

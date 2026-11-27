@@ -15,6 +15,7 @@ import { useIsPushReminderOff } from '@src/features/notification/hooks/use-is-pu
 import { useOpenPushOnboarding } from '@src/features/notification/hooks/use-open-push-onboarding';
 import { useHasPendingPushNotificationEntry } from '@src/features/notification/hooks/use-push-notification-entry';
 import { usePushOnboardingGuardState } from '@src/features/notification/hooks/use-push-onboarding-guard';
+import { TodoImportEntryNotice } from '@src/features/planning/todo-import/components/todo-import-entry-notice';
 import { AddTodoRequestEntry } from '@src/features/planning/todo/components/add-todo-request-entry';
 import { Calendar } from '@src/features/planning/todo/components/calendar/calendar';
 import { FriendCalendar } from '@src/features/planning/todo/components/calendar/friend-calendar';
@@ -218,6 +219,13 @@ function MyFeed({ onScrollBeginDrag, shouldShowHint, shouldShowSuggestionHint }:
         </Box>
 
         <Spacing size={20} />
+
+        {/* 할 일이 없는 계정만 보는 안내라 로딩·실패 때 자리를 잡지 않는다 */}
+        <QueryErrorBoundary fallback={QueryErrorFallback.Hidden}>
+          <Suspense fallback={null}>
+            <TodoImportEntryNotice className="mx-4 mb-3" />
+          </Suspense>
+        </QueryErrorBoundary>
 
         <InviteEntryBanner className="mx-4 mb-3" />
 

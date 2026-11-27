@@ -1,10 +1,13 @@
 import type { OsPermission } from '@src/core/ports/os-permission';
+import type { DateFormatContext } from '@src/shared/date/format/date-format';
+import { createDateKey } from '@src/testing/date-key';
 
 import { createTodoImportCollection } from '../__tests__/todo-import.fixtures';
 import {
+  formatImportRange,
+  formatUnbreakableLabel,
   getCalendarPermissionView,
   groupCollectionsBySource,
-  formatUnbreakableLabel,
 } from './todo-import.view-model';
 
 const GRANTED: OsPermission = { status: 'granted', canAskAgain: true };
@@ -125,7 +128,48 @@ describe('formatUnbreakableLabel', () => {
     const label = formatUnbreakableLabel('Dec 23');
 
     // Then
-    expect(label.replaceAll('\u2060', '')).toBe('Dec\u00A023');
+    expect(label.replaceAll(String.fromCodePoint(0x2060), '')).toBe(
+      `Dec${String.fromCodePoint(0x00a0)}23`,
+    );
     expect(label).not.toContain(' ');
+  });
+});
+
+describe('formatImportRange', () => {
+  const TODAY = createDateKey('2026-11-26');
+  const KO_SEOUL: DateFormatContext = { locale: 'ko-KR', timezone: 'Asia/Seoul' };
+  const EN_SEOUL: DateFormatContext = { locale: 'en-US', timezone: 'Asia/Seoul' };
+  // 영어 기간 구분자는 공용 카탈로그의 en dash다
+  const EN_DASH = String.fromCodePoint(0x2013);
+
+  it.each([
+    {
+      scenario: '올해 안의 기간은 월·일만 잇는다',
+      startDate: '2026-11-26',
+      endDate: '2026-12-25',
+      expected: { ko: '11월 26일~12월 25일', en: `Nov 26${EN_DASH}Dec 25` },
+    },
+    {
+      scenario: '해를 넘는 끝 날에만 해를 붙인다',
+      startDate: '2026-11-26',
+      endDate: '2027-01-05',
+      expected: { ko: '11월 26일~2027년 1월 5일', en: `Nov 26${EN_DASH}Jan 5, 2027` },
+    },
+    {
+      scenario: '하루만 가져오면 그날 하나다',
+      startDate: '2026-11-26',
+      endDate: '2026-11-26',
+      expected: { ko: '11월 26일', en: 'Nov 26' },
+    },
+  ])('$scenario', ({ startDate, endDate, expected }) => {
+    // Given
+    const range = { startDate: createDateKey(startDate), endDate: createDateKey(endDate) };
+
+    // When
+    const ko = formatImportRange(range, TODAY, KO_SEOUL);
+    const en = formatImportRange(range, TODAY, EN_SEOUL);
+
+    // Then
+    expect({ ko, en }).toEqual(expected);
   });
 });

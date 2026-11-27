@@ -17,7 +17,6 @@ import {
 } from '@src/features/planning/todo-import/domains/todo-import-collection.model';
 import { createTodoImportPlacement } from '@src/features/planning/todo-import/domains/todo-import-placement.model';
 import { TodoRow } from '@src/features/planning/todo/components/todo-row';
-import { TodoResourceLimitPolicy } from '@src/features/planning/todo/domains/todo-resource-limit.model';
 import { isPrivateVisibility } from '@src/features/planning/todo/domains/todo-visibility.model';
 import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import { ANIMATION } from '@src/shared/constants/animation';
@@ -142,10 +141,7 @@ export function ImportDestinationDemo() {
       : createTodoImportPlacement(
           { kind: 'EXISTING_CATEGORY', categoryId: destination.id },
           TodoImportCollectionPolicy.calculateItemCount(collections),
-          TodoResourceLimitPolicy.calculateRoomLeft({
-            maxPerCategory: TODO_LIMITS.MAX_PER_CATEGORY,
-            activeCount: destination.activeCount,
-          }),
+          { maxPerCategory: TODO_LIMITS.MAX_PER_CATEGORY, activeCount: destination.activeCount },
         );
 
   return (

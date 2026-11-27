@@ -2,7 +2,11 @@
   "untitledEvent": "제목 없는 일정",
   "entry": {
     "menu": "캘린더 일정 가져오기",
-    "inProgress": "가져오는 중"
+    "inProgress": "가져오는 중",
+    "feedTitle": "캘린더 일정을 할 일로 가져와보세요",
+    "feedDescription": "이 기기에 추가한 캘린더의 일정을 한 번에 옮겨요",
+    "feedOpenLabel": "캘린더에서 가져오기",
+    "feedDismissLabel": "캘린더 가져오기 안내 닫기"
   },
   "lastImport": {
     "label": "지난 가져오기",
@@ -115,7 +119,7 @@
     "roomLeft": "{{count}}개 더 넣을 수 있어요",
     "fillsUp": "모두 들어가요. 넣고 나면 가득 차요",
     "overflow": "'{{name}}'에는 {{count}}개만 더 들어가요. 가까운 날짜부터 넣고 나머지 {{skipped}}개는 건너뛰어요",
-    "fullWarning": "'{{name}}' 카테고리가 가득 찼어요. 다른 곳을 골라주세요",
+    "fullWarning": "'{{name}}'에는 할 일을 {{limit}}개까지 넣을 수 있어요. 가득 찼으니 다른 곳을 골라주세요",
     "newTarget": "새 · {{name}}",
     "newCategoryName": "캘린더 일정",
     "unassigned": "고르지 않음",
@@ -142,8 +146,10 @@
       "noMatch": "찾는 카테고리가 없어요",
       "newTitle": "새 카테고리 만들기",
       "newDescription": "이름은 '{{name}}'로 시작해요. 바꿀 수 있어요",
+      "newDescriptionFree": "무료로 {{count}}개 더 만들 수 있어요. 이름은 '{{name}}'로 시작해요",
       "sameName": "'{{name}}' 카테고리가 이미 있어요",
       "lockedFree": "무료로는 카테고리를 {{limit}}개까지 만들 수 있어요",
+      "lockedFreeOthers": "무료는 카테고리 {{limit}}개까지예요. 다른 캘린더에 새 카테고리를 이미 골랐어요",
       "locked": "카테고리를 더 만들 수 없어요"
     },
     "rejected": {
@@ -160,7 +166,12 @@
     "shareWithFriends": "친구에게 공개",
     "shareWithFriendsDescription": "끄면 나만 볼 수 있어요",
     "disclosure": "‘가져오기’를 누르면 고른 일정의 제목·날짜·시간을 아이두에 저장해 할 일로 만들어요",
-    "import": "가져오기"
+    "import": "가져오기",
+    "summary": "{{events}} · {{range}} · {{destination}}",
+    "rangeLabel": "{{start}}부터 {{end}}까지",
+    "destinationOne": "카테고리 '{{name}}'",
+    "destinationNew": "새 카테고리 '{{name}}'",
+    "destinationCount": "카테고리 {{count}}곳"
   },
   "progress": {
     "reading": "캘린더에서 일정을 읽는 중",

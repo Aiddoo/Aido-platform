@@ -24,6 +24,7 @@ import {
   createPushNotificationGatewayStub,
   createRouteParamsFake,
   createTestDi,
+  createTodoImportSourceStub,
   silenceConsole,
   stubWindowDimensions,
   getTrackedEvents,
@@ -31,6 +32,7 @@ import {
   setupViewMeasurePerTest,
 } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
+import { pressTwiceInSameFrame } from '@src/testing/press';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
@@ -864,6 +866,143 @@ describe('FeedScreen', () => {
         expect(premium.httpClient.get).toHaveBeenCalledWith('v1/ai/suggestions', expect.anything()),
       );
       expect(screen.queryByText('자주 하는 일을 반복으로 만들어요')).toBeNull();
+    });
+  });
+
+  describe('캘린더 가져오기 안내', () => {
+    const IMPORT_TITLE = '캘린더 일정을 할 일로 가져와보세요';
+    const OVERVIEW_PATH = 'v1/todos/overview';
+    const NO_TODO_OVERVIEW = { hasTodo: false, hasCompletedTodo: false, hasActiveRepeat: false };
+    const EMPTY_ACCOUNT_SERVER = {
+      todosByDate: {},
+      get: { [OVERVIEW_PATH]: ok(NO_TODO_OVERVIEW) },
+    };
+
+    async function waitForTodoRecordRead(
+      httpClient: Awaited<ReturnType<typeof renderFeed>>['httpClient'],
+    ) {
+      await waitFor(() =>
+        expect(httpClient.get).toHaveBeenCalledWith(OVERVIEW_PATH, expect.anything()),
+      );
+      await act(() => jest.advanceTimersByTimeAsync(0));
+    }
+
+    it('할 일이 하나도 없는 계정에는 할 일 기록을 한 번 묻고 안내를 보이고 보인 것을 한 번 센다', async () => {
+      // Given
+      const analytics = createAnalyticsStub();
+
+      // When
+      const { httpClient } = await renderFeed({
+        ports: { analytics },
+        server: EMPTY_ACCOUNT_SERVER,
+      });
+
+      // Then
+      expect(await screen.findByText(IMPORT_TITLE)).toBeOnTheScreen();
+      expect(countGetRequests(httpClient)[OVERVIEW_PATH]).toBe(1);
+      expect(getTrackedEvents(analytics, 'todo_import_entry_shown')).toEqual([
+        { source: 'feed_card' },
+      ]);
+    });
+
+    it('안내를 같은 프레임에 두 번 눌러도 가져오기 화면을 한 번 열고 한 번 센다', async () => {
+      // Given
+      const analytics = createAnalyticsStub();
+      await renderFeed({ ports: { analytics }, server: EMPTY_ACCOUNT_SERVER });
+      const notice = await screen.findByRole('button', { name: '캘린더에서 가져오기' });
+
+      // When
+      await pressTwiceInSameFrame(notice);
+
+      // Then
+      expect(router.push).toHaveBeenCalledTimes(1);
+      expect(router.push).toHaveBeenCalledWith('/todo-import');
+      expect(getTrackedEvents(analytics, 'todo_import_entry_tapped')).toEqual([
+        { source: 'feed_card' },
+      ]);
+    });
+
+    it('닫으면 사라지고 피드를 다시 열어도 그 계정에는 다시 뜨지 않는다', async () => {
+      // Given
+      const analytics = createAnalyticsStub();
+      const { di, unmount } = await renderFeed({
+        ports: { analytics },
+        server: EMPTY_ACCOUNT_SERVER,
+      });
+      await screen.findByText(IMPORT_TITLE);
+
+      // When
+      await fireEvent.press(screen.getByLabelText('캘린더 가져오기 안내 닫기'));
+      await waitFor(() => expect(screen.queryByText(IMPORT_TITLE)).toBeNull());
+      await unmount();
+      await renderScreen(<FeedScreen />, { withLocalDate: true, withOverlay: true, di });
+      await screen.findByText('자주 하는 일을 반복으로 만들어요');
+
+      // Then
+      expect(screen.queryByText(IMPORT_TITLE)).toBeNull();
+      expect(getTrackedEvents(analytics, 'todo_import_entry_dismissed')).toEqual([
+        { source: 'feed_card' },
+      ]);
+    });
+
+    it('오늘 할 일이 없어도 할 일 기록이 있는 계정에는 보이지 않는다', async () => {
+      // Given
+      const { httpClient } = await renderFeed({ server: { todosByDate: {} } });
+
+      // When
+      await waitForTodoRecordRead(httpClient);
+
+      // Then
+      expect(screen.queryByText(IMPORT_TITLE)).toBeNull();
+    });
+
+    it('설정에서만 켤 수 있게 캘린더 권한을 거절했으면 할 일 기록도 묻지 않고 보이지 않는다', async () => {
+      // Given
+      const todoImportSource = createTodoImportSourceStub({
+        permission: { status: 'denied', canAskAgain: false },
+      });
+
+      // When
+      const { httpClient } = await renderFeed({
+        ports: { todoImportSource },
+        server: EMPTY_ACCOUNT_SERVER,
+      });
+      await screen.findByText('자주 하는 일을 반복으로 만들어요');
+
+      // Then
+      expect(screen.queryByText(IMPORT_TITLE)).toBeNull();
+      expect(httpClient.get).not.toHaveBeenCalledWith(OVERVIEW_PATH, expect.anything());
+    });
+
+    it('할 일 기록을 읽지 못하면 자리를 잡지 않는다', async () => {
+      // Given
+      const { httpClient } = await renderFeed({
+        server: {
+          todosByDate: {},
+          get: { [OVERVIEW_PATH]: fail(createApiError(ErrorCode.SYS_0001)) },
+        },
+      });
+
+      // When
+      await waitForTodoRecordRead(httpClient);
+
+      // Then
+      expect(screen.queryByText(IMPORT_TITLE)).toBeNull();
+    });
+
+    it('친구 피드에는 보이지 않는다', async () => {
+      // When
+      await renderFeed({
+        params: { friendId: FRIEND_ID },
+        server: {
+          todosByDate: {},
+          get: { ...FRIEND_SERVER, [OVERVIEW_PATH]: ok(NO_TODO_OVERVIEW) },
+        },
+      });
+      await screen.findByText('친구 독서');
+
+      // Then
+      expect(screen.queryByText(IMPORT_TITLE)).toBeNull();
     });
   });
 

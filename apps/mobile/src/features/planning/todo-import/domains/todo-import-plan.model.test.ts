@@ -228,6 +228,7 @@ describe('TodoImportPlanPolicy', () => {
       expect(placements).toEqual([
         {
           target: WORK_TARGET,
+          maxPerCategory: MAX_PER_CATEGORY,
           ...expected,
           remainingCount: expected.roomLeft - expected.placedCount,
         },
@@ -276,6 +277,7 @@ describe('TodoImportPlanPolicy', () => {
         {
           target,
           importCount: 301,
+          maxPerCategory: MAX_PER_CATEGORY,
           roomLeft: 300,
           placedCount: 300,
           skippedCount: 1,

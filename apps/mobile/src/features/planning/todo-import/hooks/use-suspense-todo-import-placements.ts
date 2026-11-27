@@ -10,22 +10,31 @@ import { useNewCategoryDefaults } from './use-new-category-defaults';
 
 interface TodoImportPlacementsInput {
   plan: TodoImportPlan;
+  /** false면 받아 둔 카테고리·한도를 그대로 읽고 다시 받지 않는다. 앞 단계가 보인 수를 다시 보일 때 쓴다 */
+  refetchOnMount?: boolean;
 }
 
 // 고르지 않은 카테고리는 묻지 않고, 넣을 곳 카드·캘린더 줄·요약이 같은 키를 읽어 요청은 한 번이다
 export function useSuspenseTodoImportPlacements({
   plan,
+  refetchOnMount = true,
 }: TodoImportPlacementsInput): TodoImportPlacement[] {
   const newCategoryDefaults = useNewCategoryDefaults();
   const getResourceLimitQueryOptions = useGetTodoResourceLimitQueryOptionsFactory();
 
-  const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
+  const { data: categoriesResult } = useSuspenseQuery({
+    ...useGetTodoCategoriesQueryOptions(),
+    refetchOnMount,
+  });
 
   const defaultTarget = createDefaultTarget(categoriesResult.categories, newCategoryDefaults);
   const categoryIds = TodoImportPlanPolicy.findLimitCategoryIds(plan, defaultTarget);
   // 넣을 곳은 카테고리 목록을 받아야 정해져 한도 조회가 그 뒤에 나간다. 구조 공유가 되도록 Map이 아니라 배열로 모은다
   const limits = useSuspenseQueries({
-    queries: categoryIds.map((categoryId) => getResourceLimitQueryOptions({ categoryId })),
+    queries: categoryIds.map((categoryId) => ({
+      ...getResourceLimitQueryOptions({ categoryId }),
+      refetchOnMount,
+    })),
     combine: (results) => results.map(({ data: limit }) => limit),
   });
 

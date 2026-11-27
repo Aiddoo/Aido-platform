@@ -1,8 +1,5 @@
 import type { TodoCategory } from '@src/features/planning/category/domains/todo-category.model';
-import {
-  type TodoResourceLimit,
-  TodoResourceLimitPolicy,
-} from '@src/features/planning/todo/domains/todo-resource-limit.model';
+import type { TodoResourceLimit } from '@src/features/planning/todo/domains/todo-resource-limit.model';
 import { sumBy, uniq, uniqWith } from 'es-toolkit';
 import { z } from 'zod';
 
@@ -136,13 +133,7 @@ export const TodoImportPlanPolicy = {
         assigned.filter((entry) => TodoImportTargetPolicy.isSameTarget(entry.target, target)),
         ({ collection }) => collection.itemCount,
       );
-      return [
-        createTodoImportPlacement(
-          target,
-          importCount,
-          TodoResourceLimitPolicy.calculateRoomLeft(categoryLimit.limit),
-        ),
-      ];
+      return [createTodoImportPlacement(target, importCount, categoryLimit.limit)];
     });
   },
 };

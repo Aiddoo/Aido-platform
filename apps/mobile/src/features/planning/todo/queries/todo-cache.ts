@@ -528,7 +528,10 @@ export function settleTodoSeriesWrite(queryClient: QueryClient) {
 /** 바뀐 날짜를 몰라 넓게 맞추고, 진행 중인 체크가 있으면 낡음만 표시해 그 낙관적 값을 덮지 않는다 */
 export function settleTodoBatchWrite(queryClient: QueryClient) {
   return Promise.all([
-    settleTodoQueries(queryClient, ALL_MY_TODO_FILTERS, { isOutsideWrites: true }),
+    // 여러 할 일을 한 번에 만들면 첫 할 일이 생겼는지(가져오기 안내 카드)도 서버만 안다
+    settleTodoQueries(queryClient, [...ALL_MY_TODO_FILTERS, ...getTodoOverviewFilters()], {
+      isOutsideWrites: true,
+    }),
     invalidateTodoCategories(queryClient),
     invalidateTodoDependentQueries(queryClient),
   ]);

@@ -49,6 +49,7 @@ import {
 } from '../domains/todo-import-collection.model';
 import {
   createNewCategoryTarget,
+  type NewCategoryAvailability,
   type TodoImportTarget,
   TodoImportTargetPolicy,
 } from '../domains/todo-import-target.model';
@@ -162,12 +163,12 @@ function CategoryTargetSheet({
           subject.kind === 'calendar' ? subject.collection : null,
           newCategoryDefaults,
         );
-  const remainingCategorySlots = EntitlementPolicy.findRemainingCount(snapshot, 'TODO_CATEGORY');
-  // 이 대상의 새 카테고리를 더해도 남은 자리 안이어야 한다. 이름이 같은 새 카테고리는 하나로 센다
-  const canCreateCategory =
-    remainingCategorySlots == null ||
-    TodoImportTargetPolicy.calculateNewCategoryCount([...otherTargets, newCategory]) <=
-      remainingCategorySlots;
+  const newCategoryAvailability = TodoImportTargetPolicy.getNewCategoryAvailability(
+    newCategory,
+    otherTargets,
+    EntitlementPolicy.findRemainingCount(snapshot, 'TODO_CATEGORY'),
+  );
+  // 초대로 늘어난 한도도 서버가 준 값이다
   const freeCategoryLimit = EntitlementPolicy.hasFullAccess(snapshot)
     ? null
     : EntitlementPolicy.findLimit(snapshot, 'TODO_CATEGORY');
@@ -224,7 +225,7 @@ function CategoryTargetSheet({
               sameNameCategoryId={
                 TodoImportTargetPolicy.findSameNameCategory(newCategory, categories)?.id ?? null
               }
-              canCreateCategory={canCreateCategory}
+              availability={newCategoryAvailability}
               freeCategoryLimit={freeCategoryLimit}
               onChooseExisting={(categoryId) => choose({ kind: 'EXISTING_CATEGORY', categoryId })}
               onCreate={() => setView('create')}
@@ -385,7 +386,7 @@ interface NewCategoryOptionProps {
   newCategoryName: string;
   /** 이름이 같은 카테고리. 있으면 새로 만들지 않고 그 카테고리를 고른다 */
   sameNameCategoryId: number | null;
-  canCreateCategory: boolean;
+  availability: NewCategoryAvailability;
   /** 무료 요금제의 카테고리 한도. 프리미엄이면 null이다 */
   freeCategoryLimit: number | null;
   onChooseExisting: (categoryId: number) => void;
@@ -397,7 +398,7 @@ interface NewCategoryOptionProps {
 CategoryTargetSheet.NewCategoryOption = function NewCategoryOption({
   newCategoryName,
   sameNameCategoryId,
-  canCreateCategory,
+  availability,
   freeCategoryLimit,
   onChooseExisting,
   onCreate,
@@ -407,26 +408,52 @@ CategoryTargetSheet.NewCategoryOption = function NewCategoryOption({
   const fontScaledSize = useFontScaledSize();
   const iconSize = fontScaledSize(ICON_SIZE);
 
-  const option = match({ sameNameCategoryId, canCreateCategory })
+  const creatable = { isLocked: false, onPress: onCreate };
+  const locked = { isLocked: true, onPress: onLocked };
+  // 무료 문구는 무료 사용자(freeCategoryLimit가 있음)에게만 보인다
+  const option = match({ sameNameCategoryId, availability, freeCategoryLimit })
     .returnType<{ description: string; isLocked: boolean; onPress: () => void }>()
     .with({ sameNameCategoryId: P.nonNullable }, ({ sameNameCategoryId: categoryId }) => ({
       description: t('categories.sheet.sameName', { name: newCategoryName }),
       isLocked: false,
       onPress: () => onChooseExisting(categoryId),
     }))
-    .with({ canCreateCategory: true }, () => ({
+    .with(
+      { availability: { kind: 'available' }, freeCategoryLimit: P.nonNullable },
+      ({ availability: { remainingCount } }) => ({
+        ...creatable,
+        description: t('categories.sheet.newDescriptionFree', {
+          count: remainingCount,
+          name: newCategoryName,
+        }),
+      }),
+    )
+    .with({ availability: { kind: P.union('available', 'unlimited') } }, () => ({
+      ...creatable,
       description: t('categories.sheet.newDescription', { name: newCategoryName }),
-      isLocked: false,
-      onPress: onCreate,
     }))
-    .otherwise(() => ({
-      description:
-        freeCategoryLimit == null
-          ? t('categories.sheet.locked')
-          : t('categories.sheet.lockedFree', { limit: freeCategoryLimit }),
-      isLocked: true,
-      onPress: onLocked,
-    }));
+    .with(
+      { availability: { kind: 'locked', reason: 'limit' }, freeCategoryLimit: P.nonNullable },
+      ({ freeCategoryLimit: limit }) => ({
+        ...locked,
+        description: t('categories.sheet.lockedFree', { limit }),
+      }),
+    )
+    .with(
+      {
+        availability: { kind: 'locked', reason: 'otherCalendars' },
+        freeCategoryLimit: P.nonNullable,
+      },
+      ({ freeCategoryLimit: limit }) => ({
+        ...locked,
+        description: t('categories.sheet.lockedFreeOthers', { limit }),
+      }),
+    )
+    .with({ availability: { kind: 'locked' }, freeCategoryLimit: null }, () => ({
+      ...locked,
+      description: t('categories.sheet.locked'),
+    }))
+    .exhaustive();
 
   return (
     <SettingsListGroup>

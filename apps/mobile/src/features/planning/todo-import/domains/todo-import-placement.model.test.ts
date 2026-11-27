@@ -2,24 +2,43 @@ import {
   createTodoImportPlacement,
   TodoImportPlacementPolicy,
 } from './todo-import-placement.model';
+import type { TodoImportTarget } from './todo-import-target.model';
 
 const WORK_TARGET = { kind: 'EXISTING_CATEGORY', categoryId: 7 } as const;
 const SCHOOL_TARGET = { kind: 'NEW_CATEGORY', name: '학교', color: '#339AF0' } as const;
+const MAX_PER_CATEGORY = 300;
+
+// 서버 한도 응답 모양에서 남은 자리만 정한다
+function createLimitWithRoomLeft(roomLeft: number) {
+  return { maxPerCategory: MAX_PER_CATEGORY, activeCount: MAX_PER_CATEGORY - roomLeft };
+}
 
 describe('createTodoImportPlacement', () => {
   it('남은 자리보다 많으면 남은 자리만큼만 들어가고 나머지는 건너뛴다', () => {
     // When
-    const placement = createTodoImportPlacement(WORK_TARGET, 180, 52);
+    const placement = createTodoImportPlacement(WORK_TARGET, 180, createLimitWithRoomLeft(52));
 
     // Then
     expect(placement).toEqual({
       target: WORK_TARGET,
       importCount: 180,
+      maxPerCategory: MAX_PER_CATEGORY,
       roomLeft: 52,
       placedCount: 52,
       skippedCount: 128,
       remainingCount: 0,
     });
+  });
+
+  it('아직 없는 새 카테고리는 비어 있어 한도만큼 자리가 있다', () => {
+    // When
+    const placement = createTodoImportPlacement(SCHOOL_TARGET, 4, {
+      maxPerCategory: MAX_PER_CATEGORY,
+      activeCount: null,
+    });
+
+    // Then
+    expect(placement.roomLeft).toBe(MAX_PER_CATEGORY);
   });
 });
 
@@ -32,7 +51,11 @@ describe('TodoImportPlacementPolicy', () => {
       ['이미 가득 차 하나도 들어가지 않는다', 3, 0, 'full'],
     ])('%s', (_case, importCount, roomLeft, expected) => {
       // Given
-      const placement = createTodoImportPlacement(WORK_TARGET, importCount, roomLeft);
+      const placement = createTodoImportPlacement(
+        WORK_TARGET,
+        importCount,
+        createLimitWithRoomLeft(roomLeft),
+      );
 
       // When
       const status = TodoImportPlacementPolicy.getStatus(placement);
@@ -45,7 +68,9 @@ describe('TodoImportPlacementPolicy', () => {
   describe('findByTarget', () => {
     it('이름이 같은 새 카테고리는 같은 곳의 자리 계산이다', () => {
       // Given
-      const placements = [createTodoImportPlacement(SCHOOL_TARGET, 4, 300)];
+      const placements = [
+        createTodoImportPlacement(SCHOOL_TARGET, 4, createLimitWithRoomLeft(300)),
+      ];
 
       // When
       const placement = TodoImportPlacementPolicy.findByTarget(placements, {
@@ -59,7 +84,9 @@ describe('TodoImportPlacementPolicy', () => {
 
     it('고르지 않은 곳은 없다', () => {
       // Given
-      const placements = [createTodoImportPlacement(SCHOOL_TARGET, 4, 300)];
+      const placements = [
+        createTodoImportPlacement(SCHOOL_TARGET, 4, createLimitWithRoomLeft(300)),
+      ];
 
       // When
       const placement = TodoImportPlacementPolicy.findByTarget(placements, WORK_TARGET);
@@ -69,12 +96,45 @@ describe('TodoImportPlacementPolicy', () => {
     });
   });
 
+  describe('findSingleTarget', () => {
+    const cases: {
+      scenario: string;
+      targets: TodoImportTarget[];
+      expected: TodoImportTarget | null;
+    }[] = [
+      {
+        scenario: '넣을 곳이 한 곳이면 그곳이다',
+        targets: [SCHOOL_TARGET],
+        expected: SCHOOL_TARGET,
+      },
+      {
+        scenario: '넣을 곳이 여러 곳이면 없다',
+        targets: [WORK_TARGET, SCHOOL_TARGET],
+        expected: null,
+      },
+      { scenario: '넣을 곳이 없으면 없다', targets: [], expected: null },
+    ];
+
+    it.each(cases)('$scenario', ({ targets, expected }) => {
+      // Given
+      const placements = targets.map((target) =>
+        createTodoImportPlacement(target, 4, createLimitWithRoomLeft(300)),
+      );
+
+      // When
+      const target = TodoImportPlacementPolicy.findSingleTarget(placements);
+
+      // Then
+      expect(target).toEqual(expected);
+    });
+  });
+
   describe('getSummary', () => {
     it('넣을 곳마다 실제로 들어가는 수를 더해 건너뛸 수를 알 수 있다', () => {
       // Given
       const placements = [
-        createTodoImportPlacement(WORK_TARGET, 180, 52),
-        createTodoImportPlacement(SCHOOL_TARGET, 4, 300),
+        createTodoImportPlacement(WORK_TARGET, 180, createLimitWithRoomLeft(52)),
+        createTodoImportPlacement(SCHOOL_TARGET, 4, createLimitWithRoomLeft(300)),
       ];
 
       // When

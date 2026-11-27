@@ -1,3 +1,7 @@
+import {
+  type TodoResourceLimit,
+  TodoResourceLimitPolicy,
+} from '@src/features/planning/todo/domains/todo-resource-limit.model';
 import { sumBy } from 'es-toolkit';
 import { z } from 'zod';
 
@@ -14,6 +18,8 @@ const todoImportPlacementSchema = z.object({
   target: todoImportTargetSchema,
   // 이곳을 고른 캘린더의 일정을 모두 더한 수
   importCount: countSchema,
+  // 이곳에 넣을 수 있는 할 일 수(서버 한도)
+  maxPerCategory: countSchema,
   // 가져오기 전에 이곳에 더 넣을 수 있는 할 일 수
   roomLeft: countSchema,
   // 남은 자리만큼 실제로 들어가는 수
@@ -38,13 +44,15 @@ interface TodoImportPlacementSummary {
 export function createTodoImportPlacement(
   target: TodoImportTarget,
   importCount: number,
-  roomLeft: number,
+  limit: TodoResourceLimit,
 ): TodoImportPlacement {
+  const roomLeft = TodoResourceLimitPolicy.calculateRoomLeft(limit);
   const placedCount = Math.min(importCount, roomLeft);
 
   return {
     target,
     importCount,
+    maxPerCategory: limit.maxPerCategory,
     roomLeft,
     placedCount,
     skippedCount: importCount - placedCount,
@@ -73,6 +81,12 @@ export const TodoImportPlacementPolicy = {
         TodoImportTargetPolicy.isSameTarget(placement.target, target),
       ) ?? null
     );
+  },
+
+  // 넣을 곳이 한 곳뿐이면 그곳이다. 캘린더마다 나눠 넣어도 모두 같은 곳이면 한 곳이다
+  findSingleTarget(placements: readonly TodoImportPlacement[]): TodoImportTarget | null {
+    const [first, ...rest] = placements;
+    return first != null && rest.length === 0 ? first.target : null;
   },
 
   // 모두 몇 개를 몇 곳에 넣는지, 자리가 모자라 실제로 몇 개만 들어가는지
