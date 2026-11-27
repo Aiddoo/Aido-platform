@@ -11,7 +11,8 @@
         "24시간 표기를 골라도 알림 글의 시각이 오전·오후로 나오던 문제를 고쳤어요.",
         "말로 메모에서 다른 메모의 녹음이 섞이거나, 실패한 뒤 ‘이어서 말하기’가 되지 않던 문제를 고쳤어요.",
         "저장을 기다리는 사이 화면을 벗어나면 다른 화면이 닫히던 문제를 고쳤어요.",
-        "링크로 바로 연 화면에서 저장한 뒤 화면이 닫히지 않던 문제를 고쳤어요."
+        "링크로 바로 연 화면에서 저장한 뒤 화면이 닫히지 않던 문제를 고쳤어요.",
+        "안내 말풍선이 아래에서 올라온 창 위에 겹쳐 글자를 가리던 문제를 고쳤어요."
       ],
       "en": [
         "Tapping a button twice quickly, or again while a screen is closing after a save, now sends just one request.",
@@ -21,7 +22,8 @@
         "Fixed notification text showing AM/PM times even when you chose the 24-hour format.",
         "Fixed voice notes picking up audio from another note, and “Keep talking” not working after a failed start.",
         "Fixed a different screen closing if you left while a save was still in progress.",
-        "Fixed screens opened straight from a link not closing after you saved."
+        "Fixed screens opened straight from a link not closing after you saved.",
+        "Fixed a tip bubble appearing on top of a sheet and covering its text."
       ],
       "en-GB": [
         "Tapping a button twice quickly, or again while a screen is closing after a save, now sends just one request.",
@@ -31,7 +33,8 @@
         "Fixed notification text showing am/pm times even when you chose the 24-hour format.",
         "Fixed voice notes picking up audio from another note, and ‘Keep talking’ not working after a failed start.",
         "Fixed a different screen closing if you left while a save was still in progress.",
-        "Fixed screens opened straight from a link not closing after you saved."
+        "Fixed screens opened straight from a link not closing after you saved.",
+        "Fixed a tip bubble appearing on top of a sheet and covering its text."
       ]
     },
     "googlePlay": {

@@ -9,3 +9,4 @@ Bug fixes
 - Fixed voice notes picking up audio from another note, and ‘Keep talking’ not working after a failed start.
 - Fixed a different screen closing if you left while a save was still in progress.
 - Fixed screens opened straight from a link not closing after you saved.
+- Fixed a tip bubble appearing on top of a sheet and covering its text.
