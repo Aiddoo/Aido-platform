@@ -1,11 +1,12 @@
 Improvements
-- Tapping a button twice quickly now sends just one request.
-- Shorter, clearer wording across the app.
+- Double taps now send one request.
+- Shorter, clearer wording.
+- Calendar import shows a summary before you start.
 
 Bug fixes
 - Fixed the app closing when opening Weather.
-- Fixed the Complete action on a notification running later if you tapped it offline.
-- Fixed reminder times being off when the time zone couldn't be read.
+- Fixed Complete on a notification running later when tapped offline.
+- Fixed reminder times being off when the time zone was unknown.
 - Fixed voice notes mixing audio and “Keep talking” not working.
-- Fixed screens not closing, or the wrong screen closing, after a save.
+- Fixed screens not closing or the wrong one closing after a save.
 - Fixed a few display glitches.
