@@ -748,6 +748,16 @@ describe('TodoImportSetupScreen', () => {
       return httpClient.get.mock.calls.filter(([url]) => url === path).length;
     }
 
+    /** 줄바꿈을 막는 문자를 걷어 내고 화면에 그려진 글자를 찾는다 */
+    function getByShownText(expected: string | RegExp) {
+      return screen.getByText(expected, {
+        normalizer: (content) =>
+          content
+            .replaceAll(String.fromCodePoint(0x2060), '')
+            .replaceAll(String.fromCodePoint(0x00a0), ' '),
+      });
+    }
+
     it('넣을 곳이 한 곳이면 카테고리 단계가 보인 수와 이름을 다시 보이고 요청을 더 보내지 않는다', async () => {
       // Given
       const { httpClient } = await renderSetup();
@@ -763,8 +773,76 @@ describe('TodoImportSetupScreen', () => {
       expect(
         await screen.findByLabelText(`일정 5개 · ${DEFAULT_RANGE_LABEL} · 카테고리 '기본'`),
       ).toBeOnTheScreen();
+      expect(getByShownText("일정 5개 · 11월 24일~12월 23일 · 카테고리 '기본'")).toBeOnTheScreen();
       expect(countReads(httpClient, CATEGORIES_PATH)).toBe(categoryReads);
       expect(countReads(httpClient, RESOURCE_LIMIT_PATH)).toBe(limitReads);
+    });
+
+    it('일정이 하나면 하나로 센다', async () => {
+      // Given
+      await renderSetup({ personalEventCount: 1 });
+      await screen.findByText('일정 4개를 가져와요');
+      await fireEvent.press(screen.getByRole('checkbox', { name: '회사, 3개' }));
+      await screen.findByText('일정 1개를 가져와요');
+      await goToCategories();
+
+      // When
+      await goToOptions();
+
+      // Then
+      expect(
+        await screen.findByLabelText(`일정 1개 · ${DEFAULT_RANGE_LABEL} · 카테고리 '기본'`),
+      ).toBeOnTheScreen();
+    });
+
+    it('해를 넘는 기간은 끝 날에만 해를 붙인다', async () => {
+      // Given
+      await renderSetup({
+        seedQueryCache: seedEntitlements({ tier: 'PREMIUM', usedCategoryCount: 2 }),
+      });
+      await screen.findByText('일정 5개를 가져와요');
+      await fireEvent.press(screen.getByRole('radio', { name: '3개월' }));
+      await goToCategories();
+
+      // When
+      await goToOptions();
+
+      // Then
+      expect(
+        await screen.findByLabelText(
+          /^일정 5개 · 11월 24일부터 2027년 2월 \d+일까지 · 카테고리 '기본'$/,
+        ),
+      ).toBeOnTheScreen();
+      expect(
+        getByShownText(/^일정 5개 · 11월 24일~2027년 2월 \d+일 · 카테고리 '기본'$/),
+      ).toBeOnTheScreen();
+    });
+
+    it('한도를 읽지 못한 채 와도 요약 자리에 다시 시도를 보이고 가져오기는 그대로 눌린다', async () => {
+      // Given
+      const { httpClient } = await renderSetup();
+      const respondDefault = httpClient.get.getMockImplementation();
+      httpClient.get.mockImplementation(async (url, config) => {
+        if (url === RESOURCE_LIMIT_PATH) {
+          return fail(createTodoImportApiError({ code: ErrorCode.SYS_0001 }));
+        }
+        if (respondDefault == null) {
+          throw new Error('기본 응답을 정하지 않았습니다');
+        }
+        return respondDefault(url, config);
+      });
+      await waitFor(() => expect(screen.getByRole('button', { name: '다음' })).toBeEnabled());
+      await pressNext();
+      await screen.findByText('아이두 카테고리를 읽지 못했어요');
+
+      // When
+      await goToOptions();
+
+      // Then
+      expect(await screen.findByText('아이두 카테고리를 읽지 못했어요')).toBeOnTheScreen();
+      expect(screen.getByRole('button', { name: '다시 시도' })).toBeOnTheScreen();
+      await pressImport();
+      await waitFor(() => expect(findStartRequests(httpClient)).toHaveLength(1));
     });
 
     it('자리가 모자라면 카테고리 단계처럼 실제로 들어가는 수를 보인다', async () => {
@@ -836,6 +914,30 @@ describe('TodoImportSetupScreen', () => {
       ).toBeOnTheScreen();
       expect(screen.getByText(OPTIONS_TITLE)).toBeOnTheScreen();
       expect(router.replace).not.toHaveBeenCalled();
+    });
+
+    it('거절된 넣을 곳이 고른 캘린더와 하나도 맞지 않으면 오류 안내를 띄우고 옵션 단계에 남는다', async () => {
+      // Given
+      await renderSetup({
+        startImport: async () =>
+          fail(
+            createTodoImportApiError({
+              code: ErrorCode.TODO_IMPORT_2303,
+              details: { targets: [{ targetKey: 'category-9', reason: 'CATEGORY_NOT_FOUND' }] },
+            }),
+          ),
+      });
+      await goToCategories();
+      await goToOptions();
+
+      // When
+      await pressImport();
+
+      // Then
+      // 테스트의 서버 오류는 서버 카탈로그 문구를 싣는다
+      expect(await screen.findByText('가져올 카테고리를 쓸 수 없습니다.')).toBeOnTheScreen();
+      expect(screen.getByText(OPTIONS_TITLE)).toBeOnTheScreen();
+      expect(screen.queryByText(CATEGORIES_TITLE)).not.toBeOnTheScreen();
     });
   });
 

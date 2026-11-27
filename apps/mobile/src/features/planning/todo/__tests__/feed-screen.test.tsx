@@ -13,13 +13,16 @@ import {
   type PushOnboardingGuardState,
 } from '@src/features/notification/stores/push-onboarding-guard.store';
 import { createTodoCategoryListDto } from '@src/features/planning/category/__tests__/todo-category.fixtures';
+import { todoImportFeedEntryDismissedStoredValue } from '@src/features/planning/todo-import/schemas/todo-import-feed-entry-storage.schema';
 import { createFriendsListDto } from '@src/features/social/friend/__tests__/friend.fixtures';
 import { createNudgeCooldownInfoDto } from '@src/features/social/nudge/__tests__/todo-nudge.fixtures';
 import { ServerError } from '@src/shared/errors/infra-error';
+import { writeStoredValue } from '@src/shared/storage/define-stored-value';
 import {
   createAnalyticsStub,
   createApiError,
   createJsonFetcherStub,
+  createMemoryObservableSyncStorage,
   createPendingResponse,
   createPushNotificationGatewayStub,
   createRouteParamsFake,
@@ -945,7 +948,7 @@ describe('FeedScreen', () => {
       ]);
     });
 
-    it('오늘 할 일이 없어도 할 일 기록이 있는 계정에는 보이지 않는다', async () => {
+    it('오늘 할 일이 없어도 할 일 기록이 있는 계정에는 보이지 않고 기록은 한 번만 묻는다', async () => {
       // Given
       const { httpClient } = await renderFeed({ server: { todosByDate: {} } });
 
@@ -954,6 +957,49 @@ describe('FeedScreen', () => {
 
       // Then
       expect(screen.queryByText(IMPORT_TITLE)).toBeNull();
+      expect(countGetRequests(httpClient)[OVERVIEW_PATH]).toBe(1);
+    });
+
+    it('오늘 할 일이 보이면 할 일 기록을 묻지 않고 보이지 않는다', async () => {
+      // When
+      const { httpClient } = await renderFeed({
+        server: { get: { [OVERVIEW_PATH]: ok(NO_TODO_OVERVIEW) } },
+      });
+      await screen.findByText('운동');
+      await screen.findByText('자주 하는 일을 반복으로 만들어요');
+
+      // Then
+      expect(screen.queryByText(IMPORT_TITLE)).toBeNull();
+      expect(countGetRequests(httpClient)[OVERVIEW_PATH]).toBeUndefined();
+    });
+
+    it('다른 날을 보고 있어도 오늘 목록을 더 받지 않는다', async () => {
+      // When
+      const { httpClient } = await renderFeed({
+        params: { date: TOMORROW },
+        server: EMPTY_ACCOUNT_SERVER,
+      });
+      await screen.findByText(IMPORT_TITLE);
+
+      // Then
+      expect(getTodoRequestDates(httpClient).filter((date) => date === TODAY)).toHaveLength(1);
+    });
+
+    it('다른 계정에서 닫았어도 이 계정에는 보인다', async () => {
+      // Given
+      const syncStorage = createMemoryObservableSyncStorage();
+      writeStoredValue(
+        syncStorage,
+        todoImportFeedEntryDismissedStoredValue,
+        'dismissed',
+        'another-account',
+      );
+
+      // When
+      await renderFeed({ ports: { syncStorage }, server: EMPTY_ACCOUNT_SERVER });
+
+      // Then
+      expect(await screen.findByText(IMPORT_TITLE)).toBeOnTheScreen();
     });
 
     it('설정에서만 켤 수 있게 캘린더 권한을 거절했으면 할 일 기록도 묻지 않고 보이지 않는다', async () => {
