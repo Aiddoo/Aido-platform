@@ -3,7 +3,12 @@ import { useTrack } from '@src/shared/analytics';
 import { getNowInstant } from '@src/shared/date/clock';
 import type { Instant } from '@src/shared/date/instant';
 import { useAppWindow } from '@src/shared/hooks/use-app-window';
-import { HintPopoverContent, type HintPopoverContentProps, MicIcon } from '@src/shared/ui';
+import {
+  HintPopoverContent,
+  type HintPopoverContentProps,
+  MicIcon,
+  useOverlayState,
+} from '@src/shared/ui';
 import { useIsFocused } from 'expo-router';
 import { Popover } from 'heroui-native';
 import {
@@ -84,8 +89,10 @@ export function CoachmarkPopover({
   const { trackEvent } = useTrack();
   const [isPending, complete] = usePendingCoachmark({ accountId, kind });
   const isFocused = useIsFocused();
+  const { hasActiveOverlay } = useOverlayState();
   const isSettled = useIsCoachmarkSettled({
-    isVisible: isFocused && (shouldAutoOpen || isForced),
+    // 시트·다이얼로그는 route가 아니라 포커스를 가져가지 않아, 가려진 대상의 말풍선이 그 위에 뜨지 않게 닫아 두고 걷히면 다시 연다
+    isVisible: isFocused && !hasActiveOverlay && (shouldAutoOpen || isForced),
     restartKey: dismissKey,
     onScreenTargetRef,
   });

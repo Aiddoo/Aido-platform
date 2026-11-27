@@ -68,7 +68,7 @@ const choice = await openSheet<UpsellChoice>(
 | `openAsync<T>(render, { dismissedValue })` | 띄우고 `Promise<T>`를 돌려준다. 답 없이 사라지면 `dismissedValue`로 끝난다                                  |
 | `close()` / `close(value)`                 | `isOpen`을 false로 바꾼다. `openAsync`는 이때 resolve                                                       |
 | `unmount()`                                | 트리에서 뺀다. 닫힘 애니메이션이 끝난 뒤(`onExit`) 부른다                                                   |
-| `useOverlayState()`                        | 현재 열린 overlay 상태를 읽는다                                                                             |
+| `useOverlayState()`                        | 이 Provider에 열린 overlay가 있는지 읽는다. Provider 밖에서는 없는 것으로 읽는다                            |
 
 ## overlay-kit과 다른 점
 

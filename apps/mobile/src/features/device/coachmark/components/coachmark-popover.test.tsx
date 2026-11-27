@@ -1,7 +1,7 @@
 import '@src/shared/i18n/init';
 import { ok } from '@src/core/errors/result';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
-import { Text } from '@src/shared/ui';
+import { Text, useOverlay } from '@src/shared/ui';
 import {
   createAnalyticsStub,
   createHttpClientStub,
@@ -78,6 +78,45 @@ async function renderCoachmarkOnHiddenTab() {
       jest.mocked(useIsFocused).mockReturnValue(isFocused);
       await rerender(coachmark());
     },
+  };
+}
+
+function SheetOpener() {
+  const overlay = useOverlay();
+
+  return (
+    <PressableFeedback
+      testID="open-sheet"
+      onPress={() =>
+        overlay.open(({ unmount }) => <PressableFeedback testID="close-sheet" onPress={unmount} />)
+      }
+    />
+  );
+}
+
+async function renderCoachmarkUnderSheet() {
+  const httpClient = createHttpClientStub();
+  httpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
+  const { syncStorage, records: coachmarkRecords } = createCoachmarkStorage();
+  const analytics = createAnalyticsStub();
+
+  await renderScreen(
+    <>
+      <CoachmarkPopover kind="voice-note-start" title="안내 제목" description="안내 설명">
+        <PressableFeedback testID="target" />
+      </CoachmarkPopover>
+      <SheetOpener />
+    </>,
+    { di: createTestDi({ ports: { httpClient, syncStorage, analytics } }), withOverlay: true },
+  );
+
+  return {
+    analytics,
+    isPending: () =>
+      !coachmarkRecords.hasSeen({
+        accountId: createCurrentUserDto().userId,
+        kind: 'voice-note-start',
+      }),
   };
 }
 
@@ -222,6 +261,58 @@ describe('CoachmarkPopover', () => {
 
       // Then
       expect(await screen.findByTestId('hint-popover', {}, POPOVER_WAIT)).toBeTruthy();
+    });
+  });
+
+  describe('시트나 다이얼로그가 화면을 덮을 때', () => {
+    it('열린 뒤 시트가 뜨면 닫히지만 끝난 것으로 남기지 않는다', async () => {
+      // Given
+      const { analytics, isPending } = await renderCoachmarkUnderSheet();
+      await screen.findByTestId('hint-popover', {}, POPOVER_WAIT);
+
+      // When
+      await fireEvent.press(screen.getByTestId('open-sheet'));
+
+      // Then
+      await waitFor(() => expect(screen.queryByTestId('hint-popover')).toBeNull());
+      expect(analytics.trackEvent).not.toHaveBeenCalledWith(
+        'coachmark_dismissed',
+        expect.anything(),
+      );
+      expect(isPending()).toBe(true);
+    });
+
+    it('시트가 걷히면 자리를 다시 재서 열고 노출은 한 번만 남긴다', async () => {
+      // Given
+      const { analytics } = await renderCoachmarkUnderSheet();
+      await screen.findByTestId('hint-popover', {}, POPOVER_WAIT);
+      await fireEvent.press(screen.getByTestId('open-sheet'));
+      await waitFor(() => expect(screen.queryByTestId('hint-popover')).toBeNull());
+
+      // When
+      await fireEvent.press(screen.getByTestId('close-sheet'));
+
+      // Then
+      expect(await screen.findByTestId('hint-popover', {}, POPOVER_WAIT)).toBeTruthy();
+      expect(getTrackedEvents(analytics, 'coachmark_shown')).toHaveLength(1);
+    });
+
+    describe('시트가 먼저 떠 있으면', () => {
+      setupFakeTimersPerTest();
+
+      it('기다린 뒤에도 열지 않고 노출을 남기지 않는다', async () => {
+        // Given
+        const { analytics } = await renderCoachmarkUnderSheet();
+        await fireEvent.press(screen.getByTestId('open-sheet'));
+
+        // When
+        await act(() => jest.advanceTimersByTimeAsync(600));
+
+        // Then
+        expect(screen.getByTestId('close-sheet')).toBeTruthy();
+        expect(screen.queryByTestId('hint-popover')).toBeNull();
+        expect(analytics.trackEvent).not.toHaveBeenCalledWith('coachmark_shown', expect.anything());
+      });
     });
   });
 
