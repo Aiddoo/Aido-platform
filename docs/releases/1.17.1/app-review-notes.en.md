@@ -5,7 +5,7 @@
 ## App Store Connect: App Review Information > Notes
 
 ```text
-Aido 1.17.1 is a bug-fix and wording update. It adds no new features, no new permissions, and no purchase changes. Everything else is unchanged from the previous version.
+Aido 1.17.1 is a bug-fix and wording update with two small additions to Calendar import, which shipped in 1.17.0. It adds no new permissions and no purchase changes. Everything else is unchanged from the previous version.
 
 What changed (user-visible)
 - Tapping a button twice quickly, or again while a screen is closing after a save, now sends one request.
@@ -14,6 +14,8 @@ What changed (user-visible)
 - Notification text shows 24-hour times when the user chose the 24-hour format. Reminder times no longer shift when the device time zone cannot be read.
 - Voice notes no longer pick up audio from another note, and "Keep talking" works after a failed start.
 - Screens opened straight from a link close after saving, and leaving a screen while a save is in progress no longer closes another screen.
+- Calendar import: the last step shows a one-line summary (number of events, date range, destination category). Accounts with no to-dos see a card on the To-dos tab that opens Calendar import. The card can be dismissed and uses the calendar permission already described for 1.17.0.
+- Editing, pinning, or deleting a memo that was removed on another device now says the memo is gone and leaves the screen instead of failing repeatedly.
 
 How to check
 1. Sign in with the demo account.
