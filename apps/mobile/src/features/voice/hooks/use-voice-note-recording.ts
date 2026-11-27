@@ -533,7 +533,8 @@ function useOfferOnDeviceModel({ accountId, entry }: UseOfferOnDeviceModelOption
       writeStoredValue(storage, offlineModelDeclinedStoredValue, 'declined', scope);
     }
     telemetry.offlineModelRequested(locale, result);
-    if (result === 'scheduled') {
+    // 시스템 창을 기다리는 사이 녹음을 그만뒀으면 다른 화면 위로 안내를 띄우지 않는다. 고른 결과는 위에서 남겼다
+    if (result === 'scheduled' && !isAbandoned()) {
       toast.toast(t('voiceNote:offlineModel.scheduled'));
     }
   };
