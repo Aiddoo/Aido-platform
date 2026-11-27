@@ -4,7 +4,7 @@
     "menu": "Import calendar events",
     "inProgress": "Importing",
     "feedTitle": "Bring your calendar events in as to-dos",
-    "feedDescription": "Move events from calendars on this device in one go",
+    "feedDescription": "Move this device's calendar events in one go",
     "feedOpenLabel": "Import from calendar",
     "feedDismissLabel": "Dismiss calendar import tip"
   },

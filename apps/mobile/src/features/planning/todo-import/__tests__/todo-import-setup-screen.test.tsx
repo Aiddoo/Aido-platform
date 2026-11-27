@@ -670,7 +670,7 @@ describe('TodoImportSetupScreen', () => {
 
       // Then
       expect(
-        await screen.findByText("무료로 1개 더 만들 수 있어요. 이름은 '캘린더 일정'로 시작해요"),
+        await screen.findByText("무료로 1개 더 만들 수 있어요. '캘린더 일정' 이름으로 시작해요"),
       ).toBeOnTheScreen();
     });
 
@@ -710,7 +710,7 @@ describe('TodoImportSetupScreen', () => {
 
       // Then
       expect(
-        await screen.findByText("이름은 '캘린더 일정'로 시작해요. 바꿀 수 있어요"),
+        await screen.findByText("'캘린더 일정' 이름으로 시작해요. 바꿀 수 있어요"),
       ).toBeOnTheScreen();
       expect(screen.queryByText(/무료/)).not.toBeOnTheScreen();
     });

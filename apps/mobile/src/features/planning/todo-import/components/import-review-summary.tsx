@@ -59,7 +59,7 @@ export function ImportReviewSummary({ plan, range, ...props }: ImportReviewSumma
     .exhaustive();
   const { start, end } = getImportRangeLabels(range, todayKey, dateFormatContext);
 
-  // 일정 수와 기간은 중간에서 끊기지 않아 큰 글자에서는 " · " 자리에서 줄을 넘긴다. 읽기는 끊김 방지 문자 없는 문장이다
+  // 일정 수·기간·넣을 곳은 중간에서 끊기지 않아 큰 글자에서는 " · " 자리에서 줄을 넘긴다. 읽기는 끊김 방지 문자 없는 문장이다
   return (
     <Box
       accessible
@@ -74,7 +74,7 @@ export function ImportReviewSummary({ plan, range, ...props }: ImportReviewSumma
         {t('options.summary', {
           events: formatUnbreakableLabel(events),
           range: formatUnbreakableLabel(formatImportRange(range, todayKey, dateFormatContext)),
-          destination,
+          destination: formatUnbreakableLabel(destination),
         })}
       </WordWrapText>
     </Box>
