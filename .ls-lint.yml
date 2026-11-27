@@ -199,14 +199,14 @@ ls:
     .*.*.tsx: regex:[^\s\S]
     .*.*.*.ts: regex:[^\s\S]
 
-  # constants/는 일반 상수, 분석 이벤트, 로그 키, 라벨 키 표만 둔다
+  # constants/는 일반 상수, 분석 이벤트, 로그 키만 둔다. 라벨 키는 utils/의 view-model이다
   apps/mobile/src/features/**/constants:
     .constants.ts: kebab-case
     .constants.test.ts: kebab-case
     .events.ts: kebab-case
     .events.test.ts: kebab-case
-    .ts: regex:[a-z0-9-]+-(?:log-events|labels)
-    .test.ts: regex:[a-z0-9-]+-(?:log-events|labels)
+    .ts: regex:[a-z0-9-]+-log-events
+    .test.ts: regex:[a-z0-9-]+-log-events
     .tsx: regex:[^\s\S]
     .*.ts: regex:[^\s\S]
     .*.tsx: regex:[^\s\S]
