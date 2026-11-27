@@ -4,7 +4,12 @@
 // 문구 규칙: 태그라인은 짧게(ko 14자 안팎), 헤드라인은 두 줄(\n), 해요체. 영어는 sentence case.
 // [강조]는 주황 강조, 문구는 앱이 실제로 하는 일만 쓴다(store-metadata/listing/README.md).
 
-export const RELEASE_VERSION = '1.13.0';
+import { readFileSync } from 'node:fs';
+
+// 에셋 이름·미리보기 표시의 버전은 앱 버전 하나를 따른다
+export const { version: RELEASE_VERSION } = JSON.parse(
+  readFileSync(new URL('../../package.json', import.meta.url), 'utf8'),
+);
 
 // 출처: App Store Connect Screenshot specifications, Google Play preview assets(9866151).
 export const TARGETS = {
