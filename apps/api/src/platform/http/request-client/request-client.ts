@@ -2,11 +2,9 @@ import type { IncomingHttpHeaders } from "node:http";
 
 import {
   isSemanticVersionAtLeast,
-  DEFAULT_LOCALE,
   DEVICE_NAME_MAX_LENGTH,
   DEVICE_TYPES,
   type DeviceType,
-  findSupportedLocale,
   IDEMPOTENCY_KEY_MAX_LENGTH,
   OS_VERSION_PATTERN,
   resolveSupportedLocale,
@@ -84,32 +82,16 @@ function primaryLanguageTag(header: unknown): string | null {
   return primary.length > 0 ? primary : null;
 }
 
-// 1.4.0부터 앱이 앱 언어를 Accept-Language로 보낸다
-const APP_LOCALE_HEADER_MIN_APP_VERSION = "1.4.0";
-
-/**
- * X-App-Version 없음·1.4.0 미만(1.10.0 이하 앱과 앱 밖 클라이언트)에서 지원하지 않는 언어만 ko로 둔다(1.4.0 전 앱은
- * iOS가 기기 언어를 붙였고 한국어 화면뿐이다, 1.4.0~1.10.0은 ko·en만 보낸다). 제거 조건은 docs/conventions/compatibility.md다.
- */
-export function resolvePreI18nAppLocale(tag: string): SupportedLocale {
-  return findSupportedLocale(tag) ?? DEFAULT_LOCALE;
-}
-
 /**
  * 저장하는 앱 언어. 보내지 않으면 null이라 저장된 locale을 덮어쓰지 않는다
  * (1.4.0에서 en으로 쓰는 유저가 구버전 기기로 토큰을 재등록해도 en이 유지된다).
  */
-export function requestedAppLocale(
-  header: unknown,
-  appVersion: string | null,
-): SupportedLocale | null {
+export function requestedAppLocale(header: unknown): SupportedLocale | null {
   const tag = primaryLanguageTag(header);
   if (tag == null) {
     return null;
   }
-  const sentByPreI18nApp =
-    appVersion == null || !isSemanticVersionAtLeast(appVersion, APP_LOCALE_HEADER_MIN_APP_VERSION);
-  return sentByPreI18nApp ? resolvePreI18nAppLocale(tag) : resolveSupportedLocale(tag);
+  return resolveSupportedLocale(tag);
 }
 
 /**
@@ -125,16 +107,15 @@ export function resolveResponseLocale(header: unknown): SupportedLocale {
  * 쓰고 신뢰 판단에 쓰지 않는다. 중복 헤더(배열)는 모호하므로 무시한다.
  */
 export function parseRequestClient(headers: IncomingHttpHeaders, requestId: string): RequestClient {
-  const appVersion = normalizeAppVersion(headers["x-app-version"]);
   return {
     requestId,
-    appVersion,
+    appVersion: normalizeAppVersion(headers["x-app-version"]),
     appBuild: matchPattern(singleValue(headers["x-app-build"]), APP_BUILD_PATTERN),
     platform: normalizeDevicePlatform(singleValue(headers["x-device-type"])),
     osVersion: matchPattern(singleValue(headers["x-os-version"]), OS_VERSION_PATTERN),
     deviceName: normalizeDeviceName(singleValue(headers["x-device-name"])),
     timezone: parseDeviceReportedTimezone(headers["x-timezone"]),
-    locale: requestedAppLocale(headers["accept-language"], appVersion),
+    locale: requestedAppLocale(headers["accept-language"]),
     idempotencyKey: matchPattern(singleValue(headers["idempotency-key"]), IDEMPOTENCY_KEY_PATTERN),
   };
 }
