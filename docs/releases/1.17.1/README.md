@@ -58,7 +58,7 @@
 
 ## 배포 순서
 
-1. 서버를 먼저 배포한다(Blue-Green, [서버 배포와 롤백](../../../apps/api/docs/deployment.md)). 월요일 11:30~20:30 KST는 피한다(저장값이 `UTC`인 계정의 주간 성취 실행 시각이 옮겨진다, #1885 본문). 배포 뒤 `/health`, 로그 error, pg-boss 큐 처리를 확인한다.
+1. 서버를 먼저 배포한다(Blue-Green, [서버 배포와 롤백](../../../apps/api/docs/deployment.md)). 피할 시각은 매일 03:00~04:30·07:00~08:00 KST(운영 문서), 월요일 06:00~09:00·11:30~20:30 KST, 매월 1일의 같은 두 창이다. 저장값이 `UTC`인 계정의 AI 리포트 생성 창·주간 성취·월간 리포트 푸시 시각이 서울 기준으로 옮겨져, 그 사이에 배포하면 그 주기 한 번이 빠진다(#1885 본문). 같은 계정은 배포 당일 알림이 한 번 빠지거나 한 번 더 올 수 있다(발송 시각과 날짜 키가 UTC에서 서울로 바뀐다). 배포 뒤 `/health`, 로그 error, pg-boss 큐 처리를 확인한다.
 2. 앱은 1.17.1 스토어 빌드로 낸다(버전이 바뀐다). 운영 1.17.0에 JS만 먼저 EAS Update로 낼지는 fingerprint를 비교한 뒤 정한다.
 3. 앱은 시뮬레이터 QA(iPhone → iPad → 접은 Duo, Android) 뒤 스토어에 제출한다. 결과는 [qa-matrix](qa-matrix.md)에 채운다.
 4. 스토어 문구는 `release.json`과 listing `release_notes.txt`를 같은 순서로 맞추고 `pnpm --filter @aido/mobile store:check`로 확인한다.
