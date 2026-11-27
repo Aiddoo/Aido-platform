@@ -11,10 +11,12 @@ import {
   getTrackedEvents,
   type TestDi,
 } from '@src/testing/core';
+import { pressTwiceInSameFrame } from '@src/testing/press';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { focusManager } from '@tanstack/react-query';
-import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, screen, waitFor } from '@testing-library/react-native';
+import { router } from 'expo-router';
 
 import { MyPageMenuPane } from './my-page-menu-pane';
 
@@ -122,7 +124,7 @@ describe('MyPageMenuPane', () => {
   });
 
   describe('캘린더 일정 가져오기 줄의 입구', () => {
-    it('누르면 마이 탭 메뉴에서 들어왔다고 한 번 센다', async () => {
+    it('같은 프레임에 두 번 눌러도 마이 탭 메뉴에서 들어왔다고 한 번 센다', async () => {
       // Given
       const httpClient = createHttpClientStub();
       // 이 테스트는 누름만 보므로 줄의 값 조회는 받는 중으로 둔다
@@ -131,9 +133,10 @@ describe('MyPageMenuPane', () => {
       await renderMenu(createTestDi({ ports: { httpClient, analytics } }));
 
       // When
-      await fireEvent.press(screen.getByText('캘린더 일정 가져오기'));
+      await pressTwiceInSameFrame(screen.getByText('캘린더 일정 가져오기'));
 
       // Then
+      expect(router.push).toHaveBeenCalledTimes(1);
       expect(getTrackedEvents(analytics, 'todo_import_entry_tapped')).toEqual([
         { source: 'mypage' },
       ]);

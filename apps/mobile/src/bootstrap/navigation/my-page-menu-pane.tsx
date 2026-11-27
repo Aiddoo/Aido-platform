@@ -15,6 +15,7 @@ import { FriendCountValue } from '@src/features/social/friend/components/friend-
 import { InviteRewardButton } from '@src/features/social/invite/components/invite-reward-button';
 import { useIsInviteAvailable } from '@src/features/social/invite/hooks/use-is-invite-available';
 import { useTrack } from '@src/shared/analytics';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { APP_LOCALES } from '@src/shared/i18n/app-locales';
 import type { FontScale } from '@src/shared/preferences/font-scale.preference';
@@ -53,6 +54,11 @@ export function MyPageMenuPane() {
   const { trackEvent } = useTrack();
   const isInviteAvailable = useIsInviteAvailable();
   const isCompact = usePaneSizeClass() === 'compact';
+
+  // 메뉴 이동처럼 연타 가드를 걸어 이동이 한 번인 연타를 한 번만 센다
+  const trackTodoImportEntryTap = useSingleTap(() =>
+    trackEvent('todo_import_entry_tapped', { source: 'mypage' }),
+  );
 
   return (
     <MyPageMenuNavigationProvider>
@@ -131,7 +137,7 @@ export function MyPageMenuPane() {
               label={t('todoImport:entry.menu')}
               pathname="/todo-import"
               value={<ActiveTodoImportValue />}
-              onPress={() => trackEvent('todo_import_entry_tapped', { source: 'mypage' })}
+              onPress={trackTodoImportEntryTap}
             />
             <SettingsListGroup.Separator />
             <MyPageMenuItem

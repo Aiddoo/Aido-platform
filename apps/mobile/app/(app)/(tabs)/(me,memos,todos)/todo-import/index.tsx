@@ -35,6 +35,7 @@ import { useFormatTargetRejection } from '@src/features/planning/todo-import/hoo
 import { findCachedActiveTodoImport } from '@src/features/planning/todo-import/queries/todo-import-cache';
 import { useGetCalendarPermissionQueryOptions } from '@src/features/planning/todo-import/queries/todo-import-source.queries';
 import {
+  START_TODO_IMPORT_ERROR_FEEDBACK,
   useRequestCalendarPermissionMutationOptions,
   useStartTodoImportMutationOptions,
 } from '@src/features/planning/todo-import/queries/todo-import.mutations';
@@ -51,6 +52,7 @@ import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { type Stepper, useStepper } from '@src/shared/hooks/use-stepper';
 import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
+import { useMutationErrorFeedback } from '@src/shared/query/use-mutation-error-feedback';
 import {
   ArrowRightIcon,
   Box,
@@ -590,6 +592,7 @@ function OptionsStep({ form, progress, onStarted, onTargetsRejected }: OptionsSt
   const accountId = useMyAccountId();
   const calendarImportGate = useEntitlementGate('CALENDAR_IMPORT', { surface: 'todo_import' });
   const formatTargetRejection = useFormatTargetRejection();
+  const showMutationError = useMutationErrorFeedback();
 
   const [range, collections, categoryMode, singleTarget, targets] = useWatch({
     control: form.control,
@@ -627,6 +630,11 @@ function OptionsStep({ form, progress, onStarted, onTargetsRejected }: OptionsSt
           toTodoImportSelection(form.getValues()),
           rejections,
         );
+        // 거절된 곳이 고른 캘린더와 하나도 맞지 않으면 보일 칸이 없어 전역 안내로 알린다
+        if (rejectedTargets.length === 0) {
+          showMutationError(error, START_TODO_IMPORT_ERROR_FEEDBACK);
+          return;
+        }
         for (const { collectionKey, rejection } of rejectedTargets) {
           form.setError(`targets.${collectionKey}`, {
             type: 'server',
