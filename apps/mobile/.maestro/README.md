@@ -67,7 +67,7 @@
 
 - `smoke`: 몇 분 안에 끝나는 핵심 경로. 출시 빌드마다 먼저 돈다. `regression`: 지난 버그·정책 경계. 출시 전에 전체로 돈다.
 - 기능 태그(`todo`, `invite`, `app`, …): `pnpm e2e:feature <태그>`로 그 기능만 돈다.
-- `needs-second-account`: `MAESTRO_SECOND_*` 계정이 있어야 한다. `push`: `pnpm e2e`가 연 시뮬레이터 푸시 입구가 있어야 한다. 친구 요청 알림을 기다리는 흐름 셋(알림함·`push` 둘)은 `accounts reset` 뒤 처음 하나만 통과했다(같은 두 계정의 요청에는 알림이 다시 생기지 않는 것으로 보인다, 2026-11-27). 나머지는 `--include-tags cold-start`처럼 따로 돌린다.
+- `needs-second-account`: `MAESTRO_SECOND_*` 계정이 있어야 한다. `push`: `pnpm e2e`가 연 시뮬레이터 푸시 입구가 있어야 한다. 친구 요청 알림을 기다리는 흐름 셋(알림함·`push` 둘)은 `accounts reset` 뒤 처음 하나만 통과했다(같은 두 계정의 요청에는 알림이 다시 생기지 않는 것으로 보인다, 2026-11-27). 꺼진 채 푸시 흐름은 `--include-tags cold-start`로, 나머지는 `accounts reset` 뒤 하나씩 돌린다.
 - `android-only`·`ios-only`: 다른 플랫폼에서는 본문을 건너뛴다(통과로 표시된다). 그 플랫폼은 아래 수동 목록으로 본다.
 
 ## 개발 서버에 붙이기
@@ -109,7 +109,7 @@ iOS 시뮬레이터는 영어 키보드를 첫 번째로 둔다(`xcrun simctl sp
 알림 안내가 뜨고 새로운 기능 소개가 피드를 덮는다. 로그인 하위 흐름이 부르는 `subflows/app/dismiss-hints.yaml`이 둘 다 닫는다.
 푸시를 받아야 하는 흐름은 `subflows/notification/allow-push.yaml`이 알림 설정에서 시스템 창을 허용한다.
 
-앱 탓이 아닌 실패: `iOS driver not ready in time`은 `MAESTRO_DRIVER_STARTUP_TIMEOUT=300000`으로 다시 돌린다(MCP와 CLI를 한 기기에 함께 쓰지 않는다). 준비 단계의 카테고리 `403`은 계정에 손으로 만든 카테고리가 남아 무료 한도(3개)를 넘은 것이라 `e2e:accounts delete` 뒤 `create`로 새로 만든다. 메모 만들기·고치기 흐름은 iOS에서 메모 카드가 화면 트리에 없어 실패한다(#1785).
+앱 탓이 아닌 실패: `iOS driver not ready in time`은 `MAESTRO_DRIVER_STARTUP_TIMEOUT=300000`으로 다시 돌린다(MCP와 CLI를 한 기기에 함께 쓰지 않는다). 준비 단계의 카테고리 `403`은 계정에 손으로 만든 카테고리가 남아 무료 한도(3개)를 넘은 것이라 `e2e:accounts delete` 뒤 `create`로 새로 만든다. 체크박스 연타 흐름은 iOS에서 Maestro가 체크 상태를 읽지 못해 실패하고, 오프라인 되돌림 흐름은 `adb reverse`로 로컬 API에 닿는 에뮬레이터에서 볼 수 없다.
 
 ### 시뮬레이터 푸시
 
