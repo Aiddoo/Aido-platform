@@ -200,6 +200,16 @@ export function selectHasActiveRepeat(overview: TodoOverview): boolean {
   return overview.hasActiveRepeat;
 }
 
+/** 할 일이 하나라도 있는지(만들었거나 가져왔다)만 고른다. 첫 할 일을 권하는 안내가 다른 칸이 바뀌어도 다시 그리지 않는다 */
+export function selectHasTodo(overview: TodoOverview): boolean {
+  return overview.hasTodo;
+}
+
+/** 그날 목록에 할 일이 하나라도 있는지만 고른다 */
+export function selectHasListedTodo(list: TodoListResult): boolean {
+  return 0 < list.todos.length;
+}
+
 /** 반복 안내·시작 체크리스트가 각자 select로 고른다. 둘 다 화면 한쪽의 보조 정보라 실패해도 경계로 보내지 않고 그 안내만 뺀다 */
 export function useGetTodoOverviewQueryOptions() {
   const todoApi = useTodoApi();

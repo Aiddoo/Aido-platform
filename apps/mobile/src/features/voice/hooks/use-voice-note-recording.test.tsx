@@ -756,6 +756,23 @@ describe('useVoiceNoteRecording', () => {
       expect(speechRecognizer.start).not.toHaveBeenCalled();
     });
 
+    it('받기를 고른 뒤 결과를 기다리는 사이 화면이 내려갔으면 안내를 띄우지 않는다', async () => {
+      // Given
+      const { speechRecognizer, capabilities, leaveScreen } = await renderStartingProbe();
+      const offlineModel = Promise.withResolvers<'scheduled'>();
+      speechRecognizer.requestOfflineModel.mockReturnValue(offlineModel.promise);
+      await act(async () => capabilities.resolve(NO_MODEL));
+      await userEvent.press(await screen.findByRole('button', { name: '받기' }));
+      await act(async () => leaveScreen());
+
+      // When
+      await act(async () => offlineModel.resolve('scheduled'));
+
+      // Then
+      expect(screen.queryByText('다 받을 때까지는 인터넷 연결이 필요해요')).toBeNull();
+      expect(speechRecognizer.start).not.toHaveBeenCalled();
+    });
+
     it('모델이 있는 기기도 화면이 내려갔으면 인식기를 시작하지 않는다', async () => {
       // Given
       const { speechRecognizer, capabilities, leaveScreen } = await renderStartingProbe();

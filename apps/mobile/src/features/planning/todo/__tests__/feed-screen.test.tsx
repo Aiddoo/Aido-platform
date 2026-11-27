@@ -13,17 +13,22 @@ import {
   type PushOnboardingGuardState,
 } from '@src/features/notification/stores/push-onboarding-guard.store';
 import { createTodoCategoryListDto } from '@src/features/planning/category/__tests__/todo-category.fixtures';
+import { todoImportFeedEntryStoredValue } from '@src/features/planning/todo-import/schemas/todo-import-feed-entry-storage.schema';
 import { createFriendsListDto } from '@src/features/social/friend/__tests__/friend.fixtures';
 import { createNudgeCooldownInfoDto } from '@src/features/social/nudge/__tests__/todo-nudge.fixtures';
 import { ServerError } from '@src/shared/errors/infra-error';
+import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
+import { Button } from '@src/shared/ui';
 import {
   createAnalyticsStub,
   createApiError,
   createJsonFetcherStub,
+  createMemoryObservableSyncStorage,
   createPendingResponse,
   createPushNotificationGatewayStub,
   createRouteParamsFake,
   createTestDi,
+  createTodoImportSourceStub,
   silenceConsole,
   stubWindowDimensions,
   getTrackedEvents,
@@ -31,15 +36,20 @@ import {
   setupViewMeasurePerTest,
 } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
+import { pressTwiceInSameFrame } from '@src/testing/press';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
+import { useMutation } from '@tanstack/react-query';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { noop } from 'es-toolkit';
 import { router } from 'expo-router';
 
 import FeedScreen from '../../../../../app/(app)/(tabs)/(todos)/feed/index';
+import { settleTodoBatchWrite } from '../queries/todo-cache';
+import { useCreateTodoMutationOptions } from '../queries/todo.mutations';
 import {
   createTodoDto,
+  createTodoFormValues,
   createTodoItemResponseDto,
   createTodoListResponseDto,
 } from './todo.fixtures';
@@ -864,6 +874,333 @@ describe('FeedScreen', () => {
         expect(premium.httpClient.get).toHaveBeenCalledWith('v1/ai/suggestions', expect.anything()),
       );
       expect(screen.queryByText('자주 하는 일을 반복으로 만들어요')).toBeNull();
+    });
+  });
+
+  describe('캘린더 가져오기 안내', () => {
+    const IMPORT_TITLE = '캘린더 일정을 할 일로 가져와보세요';
+    const OVERVIEW_PATH = 'v1/todos/overview';
+    const NO_TODO_OVERVIEW = { hasTodo: false, hasCompletedTodo: false, hasActiveRepeat: false };
+    const EMPTY_ACCOUNT_SERVER = {
+      todosByDate: {},
+      get: { [OVERVIEW_PATH]: ok(NO_TODO_OVERVIEW) },
+    };
+
+    async function waitForTodoRecordRead(
+      httpClient: Awaited<ReturnType<typeof renderFeed>>['httpClient'],
+    ) {
+      await waitFor(() =>
+        expect(httpClient.get).toHaveBeenCalledWith(OVERVIEW_PATH, expect.anything()),
+      );
+      await act(() => jest.advanceTimersByTimeAsync(0));
+    }
+
+    it('할 일이 하나도 없는 계정에는 할 일 기록을 한 번 묻고 안내를 보이고 보인 것을 한 번 센다', async () => {
+      // Given
+      const analytics = createAnalyticsStub();
+
+      // When
+      const { httpClient } = await renderFeed({
+        ports: { analytics },
+        server: EMPTY_ACCOUNT_SERVER,
+      });
+
+      // Then
+      expect(await screen.findByText(IMPORT_TITLE)).toBeOnTheScreen();
+      expect(countGetRequests(httpClient)[OVERVIEW_PATH]).toBe(1);
+      expect(getTrackedEvents(analytics, 'todo_import_entry_shown')).toEqual([
+        { source: 'feed_card' },
+      ]);
+    });
+
+    it('안내를 같은 프레임에 두 번 눌러도 가져오기 화면을 한 번 열고 한 번 센다', async () => {
+      // Given
+      const analytics = createAnalyticsStub();
+      await renderFeed({ ports: { analytics }, server: EMPTY_ACCOUNT_SERVER });
+      const notice = await screen.findByRole('button', { name: '캘린더에서 가져오기' });
+
+      // When
+      await pressTwiceInSameFrame(notice);
+
+      // Then
+      expect(router.push).toHaveBeenCalledTimes(1);
+      expect(router.push).toHaveBeenCalledWith('/todo-import');
+      expect(getTrackedEvents(analytics, 'todo_import_entry_tapped')).toEqual([
+        { source: 'feed_card' },
+      ]);
+    });
+
+    it('닫으면 사라지고 닫았다고 남아 피드를 다시 열어도 그 계정에는 다시 뜨지 않는다', async () => {
+      // Given
+      const analytics = createAnalyticsStub();
+      const syncStorage = createMemoryObservableSyncStorage();
+      const { di, unmount } = await renderFeed({
+        ports: { analytics, syncStorage },
+        server: EMPTY_ACCOUNT_SERVER,
+      });
+      await screen.findByText(IMPORT_TITLE);
+
+      // When
+      await fireEvent.press(screen.getByLabelText('캘린더 가져오기 안내 닫기'));
+      await waitFor(() => expect(screen.queryByText(IMPORT_TITLE)).toBeNull());
+      await unmount();
+      await renderScreen(<FeedScreen />, { withLocalDate: true, withOverlay: true, di });
+      await screen.findByText('자주 하는 일을 반복으로 만들어요');
+
+      // Then
+      expect(screen.queryByText(IMPORT_TITLE)).toBeNull();
+      expect(readStoredValue(syncStorage, todoImportFeedEntryStoredValue, ME_ID)).toBe('dismissed');
+      expect(getTrackedEvents(analytics, 'todo_import_entry_dismissed')).toEqual([
+        { source: 'feed_card' },
+      ]);
+    });
+
+    it('할 일 기록이 있는 계정은 처음 한 번만 묻고 남겨 피드를 다시 열면 묻지 않는다', async () => {
+      // Given
+      const analytics = createAnalyticsStub();
+      const syncStorage = createMemoryObservableSyncStorage();
+      const { httpClient, di, unmount } = await renderFeed({
+        ports: { analytics, syncStorage },
+        server: { todosByDate: {} },
+      });
+      await waitForTodoRecordRead(httpClient);
+      await waitFor(() =>
+        expect(readStoredValue(syncStorage, todoImportFeedEntryStoredValue, ME_ID)).toBe('hasTodo'),
+      );
+      expect(countGetRequests(httpClient)[OVERVIEW_PATH]).toBe(1);
+
+      // When
+      await unmount();
+      await renderScreen(<FeedScreen />, { withLocalDate: true, withOverlay: true, di });
+      await screen.findByText('자주 하는 일을 반복으로 만들어요');
+      await act(() => jest.advanceTimersByTimeAsync(0));
+
+      // Then
+      expect(screen.queryByText(IMPORT_TITLE)).toBeNull();
+      expect(countGetRequests(httpClient)[OVERVIEW_PATH]).toBe(1);
+      expect(getTrackedEvents(analytics, 'todo_import_entry_dismissed')).toEqual([]);
+    });
+
+    it('오늘 할 일이 보이면 할 일 기록을 묻지 않고 보이지 않는다', async () => {
+      // When
+      const { httpClient } = await renderFeed({
+        server: { get: { [OVERVIEW_PATH]: ok(NO_TODO_OVERVIEW) } },
+      });
+      await screen.findByText('운동');
+      await screen.findByText('자주 하는 일을 반복으로 만들어요');
+
+      // Then
+      expect(screen.queryByText(IMPORT_TITLE)).toBeNull();
+      expect(countGetRequests(httpClient)[OVERVIEW_PATH]).toBeUndefined();
+    });
+
+    it('다른 날을 보고 있어도 오늘 목록을 더 받지 않는다', async () => {
+      // When
+      const { httpClient } = await renderFeed({
+        params: { date: TOMORROW },
+        server: EMPTY_ACCOUNT_SERVER,
+      });
+      await screen.findByText(IMPORT_TITLE);
+
+      // Then
+      expect(getTodoRequestDates(httpClient).filter((date) => date === TODAY)).toHaveLength(1);
+    });
+
+    it('다른 계정에서 닫았어도 이 계정에는 보인다', async () => {
+      // Given
+      const syncStorage = createMemoryObservableSyncStorage();
+      writeStoredValue(syncStorage, todoImportFeedEntryStoredValue, 'dismissed', 'another-account');
+
+      // When
+      await renderFeed({ ports: { syncStorage }, server: EMPTY_ACCOUNT_SERVER });
+
+      // Then
+      expect(await screen.findByText(IMPORT_TITLE)).toBeOnTheScreen();
+    });
+
+    describe('할 일이 생길 때', () => {
+      const FIRST_TODO_TITLE = '첫 할 일';
+      const CREATE_BUTTON_LABEL = '첫 할 일 만들기';
+
+      /** 피드 옆에서 할 일 만들기 시트의 저장과 같은 mutation을 부른다 */
+      function CreateFirstTodoButton() {
+        const createTodo = useMutation(useCreateTodoMutationOptions());
+
+        return (
+          <Button
+            onPress={() =>
+              createTodo.mutate({
+                values: createTodoFormValues({ title: FIRST_TODO_TITLE, startDate: TODAY }),
+              })
+            }
+          >
+            {CREATE_BUTTON_LABEL}
+          </Button>
+        );
+      }
+
+      /** 할 일이 생겼는지에 따라 서버가 목록·할 일 기록을 다르게 준다 */
+      function createAccountServer() {
+        const account = { hasCreatedTodo: false };
+        const server = {
+          todosByDate: {},
+          get: {
+            'v1/todos': async () =>
+              ok(
+                createTodoListResponseDto({
+                  items: account.hasCreatedTodo
+                    ? [createTodoDto({ id: 77, title: FIRST_TODO_TITLE, startDate: TODAY })]
+                    : [],
+                }),
+              ),
+            [OVERVIEW_PATH]: async () =>
+              ok({ ...NO_TODO_OVERVIEW, hasTodo: account.hasCreatedTodo }),
+          },
+        };
+        return { account, server };
+      }
+
+      async function renderFeedWithCreateButton(rendered: Awaited<ReturnType<typeof renderFeed>>) {
+        await screen.findByText(IMPORT_TITLE);
+        await rendered.unmount();
+        await renderScreen(
+          <>
+            <FeedScreen />
+            <CreateFirstTodoButton />
+          </>,
+          { withLocalDate: true, withOverlay: true, di: rendered.di },
+        );
+        await screen.findByText(IMPORT_TITLE);
+      }
+
+      it('첫 할 일을 만들면 안내가 사라지고 다시 열어도 뜨지 않는다', async () => {
+        // Given
+        const syncStorage = createMemoryObservableSyncStorage();
+        const { account, server } = createAccountServer();
+        const rendered = await renderFeed({ ports: { syncStorage }, server });
+        rendered.httpClient.post.mockImplementation(async () => {
+          account.hasCreatedTodo = true;
+          return ok({
+            message: 'ok',
+            todo: createTodoDto({ id: 77, title: FIRST_TODO_TITLE, startDate: TODAY }),
+          });
+        });
+        await renderFeedWithCreateButton(rendered);
+
+        // When
+        await fireEvent.press(screen.getByRole('button', { name: CREATE_BUTTON_LABEL }));
+
+        // Then
+        await waitFor(() => expect(screen.queryByText(IMPORT_TITLE)).toBeNull());
+        await waitFor(() =>
+          expect(readStoredValue(syncStorage, todoImportFeedEntryStoredValue, ME_ID)).toBe(
+            'hasTodo',
+          ),
+        );
+
+        // When
+        await rendered.unmount();
+        await renderScreen(<FeedScreen />, {
+          withLocalDate: true,
+          withOverlay: true,
+          di: rendered.di,
+        });
+        await screen.findByText(FIRST_TODO_TITLE);
+
+        // Then
+        expect(screen.queryByText(IMPORT_TITLE)).toBeNull();
+      });
+
+      it('첫 할 일 만들기가 실패해 낙관적 줄이 되돌아오면 안내가 다시 보이고 기록을 남기지 않는다', async () => {
+        // Given
+        const syncStorage = createMemoryObservableSyncStorage();
+        const { server } = createAccountServer();
+        const rendered = await renderFeed({ ports: { syncStorage }, server });
+        const failedCreate = createPendingResponse(fail(createApiError(ErrorCode.SYS_0001)));
+        rendered.httpClient.post.mockReturnValue(failedCreate.response);
+        await renderFeedWithCreateButton(rendered);
+
+        // When
+        await fireEvent.press(screen.getByRole('button', { name: CREATE_BUTTON_LABEL }));
+
+        // Then
+        await waitFor(() => expect(screen.queryByText(IMPORT_TITLE)).toBeNull());
+
+        // When
+        await act(async () => failedCreate.settle());
+
+        // Then
+        expect(await screen.findByText(IMPORT_TITLE)).toBeOnTheScreen();
+        expect(readStoredValue(syncStorage, todoImportFeedEntryStoredValue, ME_ID)).toBeNull();
+      });
+
+      it('가져오기처럼 여러 할 일을 한 번에 쓰면 할 일 기록을 다시 받아 안내가 사라진다', async () => {
+        // Given
+        // 가져온 일정은 다른 날에 들어가 오늘 목록은 비어 있고, 할 일 기록만 바뀐다
+        const { account, server } = createAccountServer();
+        const { httpClient, queryClient } = await renderFeed({
+          server: { ...server, get: { [OVERVIEW_PATH]: server.get[OVERVIEW_PATH] } },
+        });
+        await screen.findByText(IMPORT_TITLE);
+        expect(countGetRequests(httpClient)[OVERVIEW_PATH]).toBe(1);
+        account.hasCreatedTodo = true;
+
+        // When
+        await act(() => settleTodoBatchWrite(queryClient));
+
+        // Then
+        await waitFor(() => expect(screen.queryByText(IMPORT_TITLE)).toBeNull());
+        expect(countGetRequests(httpClient)[OVERVIEW_PATH]).toBe(2);
+      });
+    });
+
+    it('설정에서만 켤 수 있게 캘린더 권한을 거절했으면 할 일 기록도 묻지 않고 보이지 않는다', async () => {
+      // Given
+      const todoImportSource = createTodoImportSourceStub({
+        permission: { status: 'denied', canAskAgain: false },
+      });
+
+      // When
+      const { httpClient } = await renderFeed({
+        ports: { todoImportSource },
+        server: EMPTY_ACCOUNT_SERVER,
+      });
+      await screen.findByText('자주 하는 일을 반복으로 만들어요');
+
+      // Then
+      expect(screen.queryByText(IMPORT_TITLE)).toBeNull();
+      expect(httpClient.get).not.toHaveBeenCalledWith(OVERVIEW_PATH, expect.anything());
+    });
+
+    it('할 일 기록을 읽지 못하면 자리를 잡지 않는다', async () => {
+      // Given
+      const { httpClient } = await renderFeed({
+        server: {
+          todosByDate: {},
+          get: { [OVERVIEW_PATH]: fail(createApiError(ErrorCode.SYS_0001)) },
+        },
+      });
+
+      // When
+      await waitForTodoRecordRead(httpClient);
+
+      // Then
+      expect(screen.queryByText(IMPORT_TITLE)).toBeNull();
+    });
+
+    it('친구 피드에는 보이지 않는다', async () => {
+      // When
+      await renderFeed({
+        params: { friendId: FRIEND_ID },
+        server: {
+          todosByDate: {},
+          get: { ...FRIEND_SERVER, [OVERVIEW_PATH]: ok(NO_TODO_OVERVIEW) },
+        },
+      });
+      await screen.findByText('친구 독서');
+
+      // Then
+      expect(screen.queryByText(IMPORT_TITLE)).toBeNull();
     });
   });
 

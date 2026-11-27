@@ -1,4 +1,4 @@
-import { NUDGE_REPLY_LABEL_KEYS } from '@src/features/social/nudge/constants/nudge-interaction-labels';
+import type { NudgeReplyKind } from '@aido/api/vocabulary';
 import { NudgeInteractionPolicy } from '@src/features/social/nudge/domains/nudge-interaction.model';
 import type { NudgeInteraction } from '@src/features/social/nudge/domains/nudge-interaction.model';
 import { isNudgeDisabledError } from '@src/features/social/nudge/domains/todo-nudge.error';
@@ -26,6 +26,13 @@ import { match } from 'ts-pattern';
 import { selectSentNudgeSections } from '../queries/notification.queries';
 import { NotificationList } from './notification-list';
 import { NotificationListRow } from './notification-list-row';
+
+// 다른 기능의 utils/는 가져오지 않아 받은 쪽(콕 응답 화면)과 같은 키를 이 파일에 둔다
+const NUDGE_REPLY_LABEL_KEYS = {
+  STARTING: 'interaction.starting',
+  THANKFUL: 'interaction.thankful',
+  LATER: 'interaction.later',
+} as const satisfies Record<NudgeReplyKind, string>;
 
 export function SentNudgeList() {
   const todayKey = useTodayKey();

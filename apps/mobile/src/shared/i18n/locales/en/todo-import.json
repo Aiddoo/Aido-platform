@@ -2,7 +2,11 @@
   "untitledEvent": "Untitled event",
   "entry": {
     "menu": "Import calendar events",
-    "inProgress": "Importing"
+    "inProgress": "Importing",
+    "feedTitle": "Bring your calendar events in as to-dos",
+    "feedDescription": "Move this device's calendar events in one go",
+    "feedOpenLabel": "Import from calendar",
+    "feedDismissLabel": "Dismiss calendar import tip"
   },
   "lastImport": {
     "label": "Last import",
@@ -122,7 +126,7 @@
     "fillsUp": "All of them fit. It'll be full after this",
     "overflow_one": "'{{name}}' has room for only {{count}} more. The nearest dates go in first and the other {{skipped}} are skipped",
     "overflow_other": "'{{name}}' has room for only {{count}} more. The nearest dates go in first and the other {{skipped}} are skipped",
-    "fullWarning": "'{{name}}' is full. Choose another place",
+    "fullWarning": "'{{name}}' can hold up to {{limit, number}} to-dos. It's full, so choose another place",
     "newTarget": "New · {{name}}",
     "newCategoryName": "Calendar events",
     "unassigned": "Not chosen",
@@ -154,8 +158,11 @@
       "noMatch": "No matching category",
       "newTitle": "Create a new category",
       "newDescription": "It starts as '{{name}}'. You can change it",
+      "newDescriptionFree_one": "You can create {{count}} more on Free. It starts as '{{name}}'",
+      "newDescriptionFree_other": "You can create {{count, number}} more on Free. It starts as '{{name}}'",
       "sameName": "'{{name}}' already exists",
       "lockedFree": "The free plan allows up to {{limit}} categories",
+      "lockedFreeOthers": "The free plan includes up to {{limit}} categories. Another calendar is already set to a new one",
       "locked": "You can't add more categories"
     },
     "rejected": {
@@ -172,7 +179,13 @@
     "shareWithFriends": "Share with friends",
     "shareWithFriendsDescription": "When off, only you can see them",
     "disclosure": "When you tap Import, the title, date, and time of the events you chose are saved to Aido as to-dos",
-    "import": "Import"
+    "import": "Import",
+    "summary": "{{events}} · {{range}} · {{destination}}",
+    "rangeLabel": "{{start}} to {{end}}",
+    "destinationOne": "'{{name}}' category",
+    "destinationNew": "new category '{{name}}'",
+    "destinationCount_one": "{{count}} category",
+    "destinationCount_other": "{{count, number}} categories"
   },
   "progress": {
     "reading": "Reading your calendar",

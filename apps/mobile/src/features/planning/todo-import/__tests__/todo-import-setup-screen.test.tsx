@@ -6,6 +6,8 @@ import type { HttpClient } from '@src/core/ports/http-client';
 import type { OsPermission } from '@src/core/ports/os-permission';
 import type { ImportCollectionRecord, ImportEventRecord } from '@src/core/ports/todo-import-source';
 import { createEntitlementSnapshotDto } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
+import { toEntitlementSnapshot } from '@src/features/billing/subscription/apis/entitlement.mapper';
+import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/queries/entitlement-query-keys';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { createTodoCategoryListDto } from '@src/features/planning/category/__tests__/todo-category.fixtures';
 import {
@@ -614,6 +616,359 @@ describe('TodoImportSetupScreen', () => {
       expect(countSetupRenders()).toBe(renderCountOnOptions);
       // 단계가 바뀔 때는 다시 그려져, 위 두 값이 같은 것이 세지 못해서가 아니다
       expect(renderCountOnOptions).toBeGreaterThan(renderCountOnCalendars);
+    });
+  });
+
+  const CATEGORIES_PATH = 'v1/todo-categories';
+  const RESOURCE_LIMIT_PATH = 'v1/todos/resource-limit';
+
+  /** 한도 응답만 카테고리 id마다 바꾼다(새 카테고리는 undefined). 나머지 응답은 그대로다 */
+  function respondResourceLimit(
+    httpClient: ReturnType<typeof createHttpClientStub>,
+    findLimit: (categoryId: unknown) => { maxPerCategory: number; activeCount: number },
+  ) {
+    const respondDefault = httpClient.get.getMockImplementation();
+    httpClient.get.mockImplementation(async (url, config) => {
+      if (url === RESOURCE_LIMIT_PATH) {
+        return ok(findLimit(config?.params?.categoryId));
+      }
+      if (respondDefault == null) {
+        throw new Error('기본 응답을 정하지 않았습니다');
+      }
+      return respondDefault(url, config);
+    });
+  }
+
+  /** 서버가 센 카테고리 사용량을 받아 둔 요금제 */
+  function seedEntitlements({
+    tier,
+    usedCategoryCount,
+  }: {
+    tier: 'FREE' | 'PREMIUM';
+    usedCategoryCount: number;
+  }) {
+    return (queryClient: TestDi['queryClient']) => {
+      queryClient.setQueryData(
+        ENTITLEMENT_QUERY_KEYS.snapshot(),
+        toEntitlementSnapshot(
+          createEntitlementSnapshotDto({ tier, used: { TODO_CATEGORY: usedCategoryCount } }),
+        ),
+      );
+    };
+  }
+
+  describe('넣을 곳의 이유', () => {
+    it('무료 사용자가 아직 만들 수 있으면 새 카테고리 줄에 더 만들 수 있는 수를 보인다', async () => {
+      // Given
+      await renderSetup({
+        seedQueryCache: seedEntitlements({ tier: 'FREE', usedCategoryCount: 2 }),
+      });
+      await goToCategories();
+
+      // When
+      await fireEvent.press(screen.getByRole('button', { name: /^넣을 곳, 기본/ }));
+
+      // Then
+      expect(
+        await screen.findByText("무료로 1개 더 만들 수 있어요. '캘린더 일정' 이름으로 시작해요"),
+      ).toBeOnTheScreen();
+    });
+
+    it('다른 캘린더가 남은 자리에 새 카테고리를 골랐으면 그 이유로 잠근다', async () => {
+      // Given
+      await renderSetup({
+        seedQueryCache: seedEntitlements({ tier: 'FREE', usedCategoryCount: 2 }),
+      });
+      await goToCategories();
+      await fireEvent.press(screen.getByText('캘린더마다 다른 곳에 넣을래요'));
+      await fireEvent.press(await screen.findByRole('button', { name: /'개인'의 일정을/ }));
+      await fireEvent.press(await screen.findByText('새 카테고리 만들기'));
+      await fireEvent.press(await screen.findByRole('button', { name: '확인' }));
+      await screen.findByRole('button', { name: /'개인'의 일정을 아이두 카테고리 '개인'에 넣기/ });
+
+      // When
+      await fireEvent.press(screen.getByRole('button', { name: /'회사'의 일정을/ }));
+
+      // Then
+      expect(
+        await screen.findByText(
+          '무료는 카테고리 3개까지예요. 다른 캘린더에 새 카테고리를 이미 골랐어요',
+        ),
+      ).toBeOnTheScreen();
+      expect(screen.queryByText(/무료로는 카테고리를/)).not.toBeOnTheScreen();
+    });
+
+    it('프리미엄 사용자에게는 무료 문구 없이 새 카테고리 이름만 알린다', async () => {
+      // Given
+      await renderSetup({
+        seedQueryCache: seedEntitlements({ tier: 'PREMIUM', usedCategoryCount: 2 }),
+      });
+      await goToCategories();
+
+      // When
+      await fireEvent.press(screen.getByRole('button', { name: /^넣을 곳, 기본/ }));
+
+      // Then
+      expect(
+        await screen.findByText("'캘린더 일정' 이름으로 시작해요. 바꿀 수 있어요"),
+      ).toBeOnTheScreen();
+      expect(screen.queryByText(/무료/)).not.toBeOnTheScreen();
+    });
+
+    it('가득 찬 카테고리의 줄에만 카테고리당 한도를 알린다', async () => {
+      // Given
+      const { httpClient } = await renderSetup();
+      respondResourceLimit(httpClient, (categoryId) => ({
+        maxPerCategory: 300,
+        activeCount: categoryId === 1 ? 300 : 5,
+      }));
+      await waitFor(() => expect(screen.getByRole('button', { name: '다음' })).toBeEnabled());
+      await pressNext();
+      await screen.findByText(CATEGORIES_TITLE);
+
+      // When
+      await splitAndMoveWorkTo('업무');
+
+      // Then
+      expect(
+        await screen.findAllByText(
+          "'기본'에는 할 일을 300개까지 넣을 수 있어요. 가득 찼으니 다른 곳을 골라주세요",
+        ),
+      ).toHaveLength(1);
+      expect(
+        screen.getByRole('button', { name: /'회사'의 일정을 아이두 카테고리 '업무'에 넣기$/ }),
+      ).toBeOnTheScreen();
+    });
+  });
+
+  describe('옵션 단계 요약', () => {
+    const DEFAULT_RANGE_LABEL = '11월 24일부터 12월 23일까지';
+
+    function countReads(httpClient: ReturnType<typeof createHttpClientStub>, path: string) {
+      return httpClient.get.mock.calls.filter(([url]) => url === path).length;
+    }
+
+    /** 줄바꿈을 막는 문자를 걷어 내고 화면에 그려진 글자를 찾는다 */
+    function getByShownText(expected: string | RegExp) {
+      return screen.getByText(expected, {
+        normalizer: (content) =>
+          content
+            .replaceAll(String.fromCodePoint(0x2060), '')
+            .replaceAll(String.fromCodePoint(0x00a0), ' '),
+      });
+    }
+
+    it('넣을 곳이 한 곳이면 카테고리 단계가 보인 수와 이름을 다시 보이고 요청을 더 보내지 않는다', async () => {
+      // Given
+      const { httpClient } = await renderSetup();
+      await goToCategories();
+      expect(screen.getByText("일정 5개를 '기본'에 넣어요")).toBeOnTheScreen();
+      const categoryReads = countReads(httpClient, CATEGORIES_PATH);
+      const limitReads = countReads(httpClient, RESOURCE_LIMIT_PATH);
+
+      // When
+      await goToOptions();
+
+      // Then
+      expect(
+        await screen.findByLabelText(`일정 5개 · ${DEFAULT_RANGE_LABEL} · 카테고리 '기본'`),
+      ).toBeOnTheScreen();
+      expect(getByShownText("일정 5개 · 11월 24일~12월 23일 · 카테고리 '기본'")).toBeOnTheScreen();
+      expect(countReads(httpClient, CATEGORIES_PATH)).toBe(categoryReads);
+      expect(countReads(httpClient, RESOURCE_LIMIT_PATH)).toBe(limitReads);
+    });
+
+    it('일정이 하나면 하나로 센다', async () => {
+      // Given
+      await renderSetup({ personalEventCount: 1 });
+      await screen.findByText('일정 4개를 가져와요');
+      await fireEvent.press(screen.getByRole('checkbox', { name: '회사, 3개' }));
+      await screen.findByText('일정 1개를 가져와요');
+      await goToCategories();
+
+      // When
+      await goToOptions();
+
+      // Then
+      expect(
+        await screen.findByLabelText(`일정 1개 · ${DEFAULT_RANGE_LABEL} · 카테고리 '기본'`),
+      ).toBeOnTheScreen();
+    });
+
+    it('해를 넘는 기간은 끝 날에만 해를 붙인다', async () => {
+      // Given
+      await renderSetup({
+        seedQueryCache: seedEntitlements({ tier: 'PREMIUM', usedCategoryCount: 2 }),
+      });
+      await screen.findByText('일정 5개를 가져와요');
+      await fireEvent.press(screen.getByRole('radio', { name: '3개월' }));
+      await goToCategories();
+
+      // When
+      await goToOptions();
+
+      // Then
+      expect(
+        await screen.findByLabelText(
+          /^일정 5개 · 11월 24일부터 2027년 2월 \d+일까지 · 카테고리 '기본'$/,
+        ),
+      ).toBeOnTheScreen();
+      expect(
+        getByShownText(/^일정 5개 · 11월 24일~2027년 2월 \d+일 · 카테고리 '기본'$/),
+      ).toBeOnTheScreen();
+    });
+
+    it('한도를 읽지 못한 채 와도 요약 자리에 다시 시도를 보이고 가져오기는 그대로 눌린다', async () => {
+      // Given
+      const { httpClient } = await renderSetup();
+      const respondDefault = httpClient.get.getMockImplementation();
+      httpClient.get.mockImplementation(async (url, config) => {
+        if (url === RESOURCE_LIMIT_PATH) {
+          return fail(createTodoImportApiError({ code: ErrorCode.SYS_0001 }));
+        }
+        if (respondDefault == null) {
+          throw new Error('기본 응답을 정하지 않았습니다');
+        }
+        return respondDefault(url, config);
+      });
+      await waitFor(() => expect(screen.getByRole('button', { name: '다음' })).toBeEnabled());
+      await pressNext();
+      await screen.findByText('아이두 카테고리를 읽지 못했어요');
+
+      // When
+      await goToOptions();
+
+      // Then
+      expect(await screen.findByText('아이두 카테고리를 읽지 못했어요')).toBeOnTheScreen();
+      expect(screen.getByRole('button', { name: '다시 시도' })).toBeOnTheScreen();
+      await pressImport();
+      await waitFor(() => expect(findStartRequests(httpClient)).toHaveLength(1));
+    });
+
+    it('자리가 모자라면 카테고리 단계처럼 실제로 들어가는 수를 보인다', async () => {
+      // Given
+      const { httpClient } = await renderSetup();
+      respondResourceLimit(httpClient, () => ({ maxPerCategory: 300, activeCount: 297 }));
+      await waitFor(() => expect(screen.getByRole('button', { name: '다음' })).toBeEnabled());
+      await pressNext();
+      expect(await screen.findByText("일정 5개 중 3개를 '기본'에 넣어요")).toBeOnTheScreen();
+
+      // When
+      await goToOptions();
+
+      // Then
+      expect(
+        await screen.findByLabelText(`일정 5개 중 3개 · ${DEFAULT_RANGE_LABEL} · 카테고리 '기본'`),
+      ).toBeOnTheScreen();
+    });
+
+    it('캘린더마다 다른 곳에 넣으면 이름 대신 곳 수를 보인다', async () => {
+      // Given
+      await renderSetup();
+      await goToCategories();
+      await splitAndMoveWorkTo('업무');
+      expect(screen.getByText('아이두 카테고리 2곳에 일정 5개를 넣어요')).toBeOnTheScreen();
+
+      // When
+      await goToOptions();
+
+      // Then
+      expect(
+        await screen.findByLabelText(`일정 5개 · ${DEFAULT_RANGE_LABEL} · 카테고리 2곳`),
+      ).toBeOnTheScreen();
+    });
+
+    it('캘린더마다 나눠도 모두 같은 곳에 넣으면 그곳의 이름을 보인다', async () => {
+      // Given
+      await renderSetup();
+      await goToCategories();
+      await splitAndMoveWorkTo('기본');
+
+      // When
+      await goToOptions();
+
+      // Then
+      expect(
+        await screen.findByLabelText(`일정 5개 · ${DEFAULT_RANGE_LABEL} · 카테고리 '기본'`),
+      ).toBeOnTheScreen();
+    });
+  });
+
+  describe('시작 실패 안내', () => {
+    it('진행 중이라는 실패에 가져오기 id가 빠져 오면 오류 안내를 띄우고 옵션 단계에 남는다', async () => {
+      // Given
+      await renderSetup({
+        startImport: async () =>
+          fail(createTodoImportApiError({ code: ErrorCode.TODO_IMPORT_2301, details: null })),
+      });
+      await goToCategories();
+      await goToOptions();
+
+      // When
+      await pressImport();
+
+      // Then
+      // 테스트의 서버 오류는 서버 카탈로그 문구를 싣는다
+      expect(
+        await screen.findByText('이미 진행 중인 캘린더 가져오기가 있습니다.'),
+      ).toBeOnTheScreen();
+      expect(screen.getByText(OPTIONS_TITLE)).toBeOnTheScreen();
+      expect(router.replace).not.toHaveBeenCalled();
+    });
+
+    it('거절된 넣을 곳이 고른 캘린더와 하나도 맞지 않으면 오류 안내를 띄우고 옵션 단계에 남는다', async () => {
+      // Given
+      await renderSetup({
+        startImport: async () =>
+          fail(
+            createTodoImportApiError({
+              code: ErrorCode.TODO_IMPORT_2303,
+              details: { targets: [{ targetKey: 'category-9', reason: 'CATEGORY_NOT_FOUND' }] },
+            }),
+          ),
+      });
+      await goToCategories();
+      await goToOptions();
+
+      // When
+      await pressImport();
+
+      // Then
+      // 테스트의 서버 오류는 서버 카탈로그 문구를 싣는다
+      expect(await screen.findByText('가져올 카테고리를 쓸 수 없습니다.')).toBeOnTheScreen();
+      expect(screen.getByText(OPTIONS_TITLE)).toBeOnTheScreen();
+      expect(screen.queryByText(CATEGORIES_TITLE)).not.toBeOnTheScreen();
+    });
+  });
+
+  describe('기간을 바꿔 다시 읽기', () => {
+    it('바꾼 기간의 일정을 읽는 동안 다음 버튼이 꺼졌다가 다 읽으면 켜진다', async () => {
+      // Given
+      const { todoImportSource } = await renderSetup();
+      await screen.findByText('일정 5개를 가져와요');
+      const nextButton = screen.getByRole('button', { name: '다음' });
+      await waitFor(() => expect(nextButton).toBeEnabled());
+      const readPreview = todoImportSource.previewEvents.getMockImplementation();
+      if (readPreview == null) {
+        throw new Error('일정 미리 읽기 응답을 정하지 않았습니다');
+      }
+      const previewGate = Promise.withResolvers<void>();
+      todoImportSource.previewEvents.mockImplementation(async (input) => {
+        await previewGate.promise;
+        return readPreview(input);
+      });
+
+      // When
+      await fireEvent.press(screen.getByRole('radio', { name: '1주' }));
+
+      // Then
+      await waitFor(() => expect(screen.getByRole('button', { name: '다음' })).toBeDisabled());
+
+      // When
+      await act(async () => previewGate.resolve());
+
+      // Then
+      await waitFor(() => expect(screen.getByRole('button', { name: '다음' })).toBeEnabled());
     });
   });
 });

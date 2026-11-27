@@ -63,17 +63,31 @@ describe('getEntitlementsRefetchIntervalMs', () => {
     expect(intervalMs).toBe(false);
   });
 
-  it('초기화가 없는 스냅샷(관리자)은 시각으로 다시 묻지 않는다', () => {
+  it('초기화가 없는 스냅샷은 시각으로 다시 묻지 않는다', () => {
+    // Given
+    const withoutResets = { ...createEntitlementSnapshot(), features: {} };
+
+    // When
+    const intervalMs = getEntitlementsRefetchIntervalMs(
+      withoutResets,
+      toInstant('2026-11-05T14:30:00.000Z'),
+    );
+
+    // Then
+    expect(intervalMs).toBe(false);
+  });
+
+  it('관리자도 프리미엄처럼 공정 사용 상한의 초기화에 맞춰 다시 받는다', () => {
     // Given
     const admin = createEntitlementSnapshot({ tier: 'ADMIN' });
 
     // When
     const intervalMs = getEntitlementsRefetchIntervalMs(
       admin,
-      toInstant('2026-11-05T14:30:00.000Z'),
+      toInstant('2026-11-30T14:30:00.000Z'),
     );
 
     // Then
-    expect(intervalMs).toBe(false);
+    expect(intervalMs).toBe(30 * MINUTE_MS);
   });
 });

@@ -40,7 +40,7 @@ import { cn } from '@src/shared/utils/cn';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { Popover, PressableFeedback, Separator, Skeleton } from 'heroui-native';
-import { type ReactNode, Suspense, useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { Controller, FormState, useForm, Watch } from 'react-hook-form';
 import { ScrollView, type StyleProp, type ViewStyle } from 'react-native';
 import { match } from 'ts-pattern';
@@ -322,20 +322,18 @@ PlanReview.TodoItem = function TodoItem({
 
   const handlePress = () =>
     openKeyboardSheet(({ isOpen, onOpenChange }) => (
+      // 안쪽 조회는 칩마다 자기 경계가 받아 여기는 렌더 오류만 닿는다. 루트 overlay라 앱 경계까지 올리지 않는다
       <QueryErrorBoundary fallback={QueryErrorFallback.Hidden}>
-        {/* 카테고리와 설정을 읽은 뒤에야 시트가 올라온다. 닫힌 시트라 밀릴 화면이 없고 조회는 이 화면에서 이미 받아 둔 캐시다 */}
-        <Suspense fallback={null}>
-          <PlanTodoEditBottomSheet
-            todo={todo}
-            fallbackCategoryId={fallbackCategoryId}
-            isOpen={isOpen}
-            onOpenChange={onOpenChange}
-            onConfirm={(edited) => {
-              onChange(edited);
-              onOpenChange(false);
-            }}
-          />
-        </Suspense>
+        <PlanTodoEditBottomSheet
+          todo={todo}
+          fallbackCategoryId={fallbackCategoryId}
+          isOpen={isOpen}
+          onOpenChange={onOpenChange}
+          onConfirm={(edited) => {
+            onChange(edited);
+            onOpenChange(false);
+          }}
+        />
       </QueryErrorBoundary>
     ));
 

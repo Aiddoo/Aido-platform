@@ -60,6 +60,9 @@ const REJECTED_ERROR = createApiError(ErrorCode.MEMO_2004, {
   message: '거절',
   status: HttpStatus.BAD_REQUEST,
 });
+/** 다른 기기에서 지웠거나 볼 수 없게 된 메모 */
+const UNAVAILABLE_ERROR = createApiError(ErrorCode.MEMO_2001, { message: '메모 없음' });
+const UNAVAILABLE_TOAST = '이미 없는 메모예요';
 /** 처음 메모의 서버 수정 시각 */
 const MEMO_UPDATED_AT = '2026-11-06T00:00:00.000Z';
 const DRAFT_KEY = createMemoDraftKey({ userId: ACCOUNT_ID, memoId: MEMO_ID });
@@ -93,6 +96,11 @@ async function startPress(element: ReturnType<typeof screen.getByText>) {
 
 function getParseRequests(httpClient: ReturnType<typeof createHttpClientStub>) {
   return httpClient.post.mock.calls.filter(([url]) => url === PARSE_MEMO_URL);
+}
+
+/** 떠나는 화면의 메모를 다시 받았는지 본다 */
+function getMemoDetailRequests(httpClient: ReturnType<typeof createHttpClientStub>) {
+  return httpClient.get.mock.calls.filter(([url]) => url === `v1/memos/${MEMO_ID}`);
 }
 
 interface RenderMemoDetailOptions {
@@ -326,6 +334,25 @@ describe('MemoDetailRoute', () => {
       expect(router.back).not.toHaveBeenCalled();
       expect(screen.getByDisplayValue('고친 메모')).toBeTruthy();
       expect(getTrackedEvents(analytics, 'memo_updated')).toHaveLength(0);
+    });
+
+    it('이미 없는 메모라 저장이 거절되면 한 번 알리고 초안을 버린 뒤 떠난다', async () => {
+      // Given
+      const { httpClient, haptics, di } = await renderMemoDetail();
+      httpClient.patch.mockResolvedValue(fail(UNAVAILABLE_ERROR));
+      await editContent('고친 메모');
+
+      // When
+      await pressToolbar('저장');
+
+      // Then
+      await waitFor(() => expect(router.back).toHaveBeenCalledTimes(1));
+      expect(await screen.findAllByText(UNAVAILABLE_TOAST)).toHaveLength(1);
+      expect(getMemoDetailRequests(httpClient)).toHaveLength(0);
+      expect(haptics.notify).not.toHaveBeenCalledWith('error');
+      expect(httpClient.patch).toHaveBeenCalledTimes(1);
+      await screen.unmount();
+      expect(di.draftService.restore(DRAFT_KEY).status).not.toBe('restored');
     });
 
     it('연결 문제로 못 보내면 뒤로 가기는 떠나고 글은 초안에 남는다', async () => {
@@ -771,6 +798,23 @@ describe('MemoDetailRoute', () => {
       expect(httpClient.patch).toHaveBeenCalledWith(`v1/memos/${MEMO_ID}/pin`, { isPinned: true });
       expect(getTrackedEvents(analytics, 'memo_pin_toggled')).toHaveLength(1);
     });
+
+    it('이미 없는 메모라 고정이 거절되면 한 번 알리고 떠난다', async () => {
+      // Given
+      const { httpClient, haptics } = await renderMemoDetail();
+      httpClient.patch.mockResolvedValue(fail(UNAVAILABLE_ERROR));
+      await screen.findByDisplayValue('처음 메모');
+
+      // When
+      await pressToolbar('메모 고정');
+
+      // Then
+      await waitFor(() => expect(router.back).toHaveBeenCalledTimes(1));
+      expect(await screen.findAllByText(UNAVAILABLE_TOAST)).toHaveLength(1);
+      expect(getMemoDetailRequests(httpClient)).toHaveLength(0);
+      expect(haptics.notify).not.toHaveBeenCalledWith('error');
+      expect(httpClient.patch).toHaveBeenCalledWith(`v1/memos/${MEMO_ID}/pin`, { isPinned: true });
+    });
   });
 
   describe('삭제', () => {
@@ -821,6 +865,27 @@ describe('MemoDetailRoute', () => {
       ).toEqual([MEMO_ID]);
       expect(router.back).not.toHaveBeenCalled();
       expect(getTrackedEvents(analytics, 'memo_deleted')).toHaveLength(0);
+    });
+
+    it('이미 없는 메모면 지운 것처럼 다이얼로그를 닫고 초안을 버린 뒤 떠난다', async () => {
+      // Given
+      const { httpClient, haptics, di } = await renderMemoDetail({
+        draft: { content: '앱을 닫기 전 글' },
+      });
+      httpClient.delete.mockResolvedValue(fail(UNAVAILABLE_ERROR));
+      await screen.findByDisplayValue('앱을 닫기 전 글');
+
+      // When
+      await confirmDelete();
+
+      // Then
+      await waitFor(() => expect(router.back).toHaveBeenCalledTimes(1));
+      await waitFor(() => expect(screen.queryByText('메모를 삭제할까요?')).toBeNull());
+      expect(await screen.findAllByText(UNAVAILABLE_TOAST)).toHaveLength(1);
+      expect(getMemoDetailRequests(httpClient)).toHaveLength(0);
+      expect(haptics.notify).not.toHaveBeenCalledWith('error');
+      await screen.unmount();
+      expect(di.draftService.restore(DRAFT_KEY).status).not.toBe('restored');
     });
 
     it('취소하면 보내지 않고 남는다', async () => {
@@ -1076,6 +1141,23 @@ describe('MemoDetailRoute', () => {
       await waitFor(() => expect(router.push).toHaveBeenCalledTimes(1));
       expect(httpClient.patch).toHaveBeenCalledTimes(1);
       expect(getParseRequests(httpClient)[0]?.[1]).toEqual({ content: '고친 메모', categoryId: 1 });
+    });
+
+    it('먼저 하는 저장이 이미 없는 메모로 거절되면 정리하지 않고 한 번 알린 뒤 떠난다', async () => {
+      // Given
+      const { httpClient, haptics } = await renderForAiParse({ consent: createAgreedConsent() });
+      httpClient.patch.mockResolvedValue(fail(UNAVAILABLE_ERROR));
+      await editContent('고친 메모');
+
+      // When
+      await startAiParse();
+
+      // Then
+      await waitFor(() => expect(router.back).toHaveBeenCalledTimes(1));
+      expect(await screen.findAllByText(UNAVAILABLE_TOAST)).toHaveLength(1);
+      expect(getMemoDetailRequests(httpClient)).toHaveLength(0);
+      expect(haptics.notify).not.toHaveBeenCalledWith('error');
+      expect(getParseRequests(httpClient)).toHaveLength(0);
     });
 
     it('정리에 실패하면 한 번 알리고 실패를 한 번 남기며 결과 화면으로 가지 않는다', async () => {

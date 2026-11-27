@@ -236,33 +236,7 @@ describe("알림 E2E", () => {
         expect(preference?.locale).toBe("en");
       });
 
-      it("앱 버전을 보내지 않은 1.4.0 전 앱의 미지원 언어(ja)는 ko로 저장한다", async () => {
-        // Given
-        const user = await testContext.helpers.createVerifiedUser(
-          "notif-locale-ja@test.com",
-          password,
-        );
-
-        // When
-        await request(testContext.app.getHttpServer())
-          .post("/v1/notifications/token")
-          .set("Authorization", `Bearer ${user.accessToken}`)
-          .set("Accept-Language", "ja-JP")
-          .send({
-            token: "ExponentPushToken[locale-ja-xxxxxxxxxxxx]",
-            deviceId: "ios_test-device-locale-ja",
-          })
-          .expect(201);
-
-        // Then
-        const client = testContext.testDatabase.getClient();
-        const preference = await client.query.userPreference.findFirst({
-          where: { userId: user.userId },
-        });
-        expect(preference?.locale).toBe("ko");
-      });
-
-      it("1.4.0 이후 앱의 미지원 언어(ja)는 앱과 같이 en으로 저장한다", async () => {
+      it("미지원 언어(ja)는 앱 버전을 보내지 않아도 앱과 같이 en으로 저장한다", async () => {
         // Given
         const user = await testContext.helpers.createVerifiedUser(
           "notif-locale-ja-current@test.com",
@@ -274,7 +248,6 @@ describe("알림 E2E", () => {
           .post("/v1/notifications/token")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .set("Accept-Language", "ja-JP")
-          .set("X-App-Version", "1.16.0")
           .send({
             token: "ExponentPushToken[locale-ja-current-xxxx]",
             deviceId: "ios_test-device-locale-ja-current",

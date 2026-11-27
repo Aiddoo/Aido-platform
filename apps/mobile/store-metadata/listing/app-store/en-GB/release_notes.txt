@@ -1,6 +1,8 @@
 Improvements
 - Tapping a button twice quickly, or again while a screen is closing after a save, now sends just one request.
 - We've tightened the wording across the app so messages are shorter and clearer.
+- Calendar import now shows a one-line summary of the events, dates, and destination before you start.
+- If you have no to-dos yet, you can start a calendar import right from the To-dos tab.
 
 Bug fixes
 - Fixed the Complete action on a notification waiting whilst you were offline and then running later once you reconnected.
@@ -10,3 +12,4 @@ Bug fixes
 - Fixed a different screen closing if you left while a save was still in progress.
 - Fixed screens opened straight from a link not closing after you saved.
 - Fixed a tip bubble appearing on top of a sheet and covering its text.
+- Fixed editing, pinning, or deleting a memo that was removed on another device failing again and again.

@@ -5,6 +5,7 @@ import {
 } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { useTrack } from '@src/shared/analytics';
+import type { MutationErrorFeedbackMeta } from '@src/shared/constants/query-meta';
 import { t } from '@src/shared/i18n';
 import { useMutationErrorFeedback } from '@src/shared/query/use-mutation-error-feedback';
 import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
@@ -27,6 +28,12 @@ import {
   setTodoImportInCache,
 } from './todo-import-cache';
 import { TODO_IMPORT_MUTATION_KEYS } from './todo-import-mutation-keys';
+
+// 시작 실패의 전역 안내. 화면이 맡았다가 보일 칸이 없으면 같은 안내로 돌린다
+export const START_TODO_IMPORT_ERROR_FEEDBACK = {
+  feature: 'todo_import',
+  fallbackKey: 'todoImport:toasts.startFailed',
+} as const satisfies MutationErrorFeedbackMeta;
 
 interface StartTodoImportVariables {
   accountId: string;
@@ -63,8 +70,7 @@ export function useStartTodoImportMutationOptions() {
     onSettled: () => invalidateActiveTodoImport(queryClient),
     meta: {
       errorFeedback: {
-        feature: 'todo_import',
-        fallbackKey: 'todoImport:toasts.startFailed',
+        ...START_TODO_IMPORT_ERROR_FEEDBACK,
         isHandledByFeature: isTodoImportStartHandledError,
       },
     },

@@ -2,6 +2,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { useConfirmDialog } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 
+import { isMemoUnavailableError } from '../domains/memo.error';
 import { useDeleteMemoMutationOptions } from '../queries/memo.mutations';
 
 interface UseOpenMemoDeleteDialogOptions {
@@ -22,7 +23,13 @@ export function useOpenMemoDeleteDialog({ memoId, onDeleted }: UseOpenMemoDelete
       cancelLabel: t('common:actions.cancel'),
       confirmLabel: t('common:actions.delete'),
       confirmColor: 'danger',
-      onConfirm: () => deleteMemo.mutateAsync(memoId),
+      // 이미 없는 메모는 지운 것과 같아 다이얼로그를 닫고 지운 뒤처럼 떠난다. 안내는 mutation이 한다
+      onConfirm: () =>
+        deleteMemo.mutateAsync(memoId).catch((error: unknown) => {
+          if (!isMemoUnavailableError(error)) {
+            throw error;
+          }
+        }),
     });
     if (isDeleted) {
       onDeleted?.();

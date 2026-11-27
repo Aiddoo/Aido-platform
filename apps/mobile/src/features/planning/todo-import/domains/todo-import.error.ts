@@ -122,19 +122,9 @@ export function findTodoImportRejection(error: unknown): ApiError | null {
   return isApiError(error) && !isRetryableTodoImportError(error) ? error : null;
 }
 
-/** 시작 화면이 칸·이동·한도 안내로 보여 전역 토스트를 띄우지 않는다 */
+/** 시작 화면이 칸·이동·한도 안내로 보일 수 있는 실패만 전역 안내를 끈다. 대상이 빠진 응답은 전역 안내가 알린다 */
 export function isTodoImportStartHandledError(error: unknown) {
-  return isMatching(
-    {
-      code: P.union(
-        ErrorCode.TODO_IMPORT_2301,
-        ErrorCode.TODO_IMPORT_2302,
-        ErrorCode.TODO_IMPORT_2303,
-        ErrorCode.TODO_CATEGORY_0857,
-      ),
-    },
-    isApiError(error) ? error : null,
-  );
+  return getTodoImportStartFailure(error).kind !== 'other';
 }
 
 export type TodoImportUploadFailure =

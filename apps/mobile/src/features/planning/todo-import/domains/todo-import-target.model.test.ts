@@ -188,4 +188,52 @@ describe('TodoImportTargetPolicy', () => {
       expect(count).toBe(2);
     });
   });
+
+  describe('getNewCategoryAvailability', () => {
+    const SCHOOL = { kind: 'NEW_CATEGORY', name: '수업', color: '#FF6B43' } as const;
+    const PART_TIME = { kind: 'NEW_CATEGORY', name: '알바', color: '#339AF0' } as const;
+
+    it.each([
+      {
+        scenario: '남은 자리가 없으면 한도 때문에 잠긴다',
+        otherTargets: [],
+        remainingCategoryCount: 0,
+        expected: { kind: 'locked', reason: 'limit' },
+      },
+      {
+        scenario: '다른 캘린더의 새 카테고리가 남은 자리를 잡았으면 그 때문에 잠긴다',
+        otherTargets: [PART_TIME],
+        remainingCategoryCount: 1,
+        expected: { kind: 'locked', reason: 'otherCalendars' },
+      },
+      {
+        scenario: '다른 캘린더가 잡은 자리를 빼고 남은 만큼 더 만들 수 있다',
+        otherTargets: [PART_TIME, WORK_TARGET],
+        remainingCategoryCount: 3,
+        expected: { kind: 'available', remainingCount: 2 },
+      },
+      {
+        scenario: '다른 캘린더의 이름이 같은 새 카테고리는 같은 자리를 함께 써 잠그지 않는다',
+        otherTargets: [{ ...SCHOOL, name: ' 수업 ' }],
+        remainingCategoryCount: 1,
+        expected: { kind: 'available', remainingCount: 1 },
+      },
+      {
+        scenario: '남은 자리를 세지 않는 요금제는 무제한이다',
+        otherTargets: [PART_TIME],
+        remainingCategoryCount: null,
+        expected: { kind: 'unlimited' },
+      },
+    ])('$scenario', ({ otherTargets, remainingCategoryCount, expected }) => {
+      // When
+      const availability = TodoImportTargetPolicy.getNewCategoryAvailability(
+        SCHOOL,
+        otherTargets,
+        remainingCategoryCount,
+      );
+
+      // Then
+      expect(availability).toEqual(expected);
+    });
+  });
 });

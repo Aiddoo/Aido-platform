@@ -413,10 +413,6 @@ function PasswordStep({ form, step, onNext, onSubmit }: PasswordStepProps) {
                       submitBehavior="submit"
                       returnKeyType="next"
                       isInvalid={error != null}
-                      errorMessage={resolveValidationMessage(error, {
-                        default: 'password.pattern',
-                        byType: { too_small: 'password.tooShort', too_big: 'password.tooLong' },
-                      })}
                       renderErrorMessage={false}
                       onSubmitEditing={openNextStepOrTerms}
                     />

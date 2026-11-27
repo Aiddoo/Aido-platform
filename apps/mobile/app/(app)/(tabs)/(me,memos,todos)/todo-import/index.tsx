@@ -14,6 +14,7 @@ import { ImportEndDateChips } from '@src/features/planning/todo-import/component
 import { ImportHintButton } from '@src/features/planning/todo-import/components/import-hint-button';
 import { ImportPlacementSummary } from '@src/features/planning/todo-import/components/import-placement-summary';
 import { ImportRangeInput } from '@src/features/planning/todo-import/components/import-range-input';
+import { ImportReviewSummary } from '@src/features/planning/todo-import/components/import-review-summary';
 import { ImportSourceList } from '@src/features/planning/todo-import/components/import-source-list';
 import { LastTodoImportRow } from '@src/features/planning/todo-import/components/last-todo-import-row';
 import { MissingCalendarHelp } from '@src/features/planning/todo-import/components/missing-calendar-help';
@@ -34,6 +35,7 @@ import { useFormatTargetRejection } from '@src/features/planning/todo-import/hoo
 import { findCachedActiveTodoImport } from '@src/features/planning/todo-import/queries/todo-import-cache';
 import { useGetCalendarPermissionQueryOptions } from '@src/features/planning/todo-import/queries/todo-import-source.queries';
 import {
+  START_TODO_IMPORT_ERROR_FEEDBACK,
   useRequestCalendarPermissionMutationOptions,
   useStartTodoImportMutationOptions,
 } from '@src/features/planning/todo-import/queries/todo-import.mutations';
@@ -50,6 +52,7 @@ import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { type Stepper, useStepper } from '@src/shared/hooks/use-stepper';
 import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
+import { useMutationErrorFeedback } from '@src/shared/query/use-mutation-error-feedback';
 import {
   ArrowRightIcon,
   Box,
@@ -589,8 +592,16 @@ function OptionsStep({ form, progress, onStarted, onTargetsRejected }: OptionsSt
   const accountId = useMyAccountId();
   const calendarImportGate = useEntitlementGate('CALENDAR_IMPORT', { surface: 'todo_import' });
   const formatTargetRejection = useFormatTargetRejection();
+  const showMutationError = useMutationErrorFeedback();
+
+  const [range, collections, categoryMode, singleTarget, targets] = useWatch({
+    control: form.control,
+    name: ['range', 'collections', 'categoryMode', 'singleTarget', 'targets'],
+  });
 
   const startImport = useMutation(useStartTodoImportMutationOptions());
+
+  const plan: TodoImportPlan = { collections, categoryMode, singleTarget, targets };
 
   // 실패는 RHF가 실패로 알아 다시 누를 수 있게 handleSubmit 밖 호출부에서 받는다
   const submitImport = form.handleSubmit(async (values) => {
@@ -619,6 +630,11 @@ function OptionsStep({ form, progress, onStarted, onTargetsRejected }: OptionsSt
           toTodoImportSelection(form.getValues()),
           rejections,
         );
+        // 거절된 곳이 고른 캘린더와 하나도 맞지 않으면 보일 칸이 없어 전역 안내로 알린다
+        if (rejectedTargets.length === 0) {
+          showMutationError(error, START_TODO_IMPORT_ERROR_FEEDBACK);
+          return;
+        }
         for (const { collectionKey, rejection } of rejectedTargets) {
           form.setError(`targets.${collectionKey}`, {
             type: 'server',
@@ -665,6 +681,14 @@ function OptionsStep({ form, progress, onStarted, onTargetsRejected }: OptionsSt
         </VStack>
       }
     >
+      <QueryErrorBoundary fallback={ImportReviewSummary.Error}>
+        <Suspense fallback={<ImportReviewSummary.Loading />}>
+          <ImportReviewSummary plan={plan} range={range} />
+        </Suspense>
+      </QueryErrorBoundary>
+
+      <Spacing size={20} />
+
       <SettingsListGroup>
         <Controller
           control={form.control}

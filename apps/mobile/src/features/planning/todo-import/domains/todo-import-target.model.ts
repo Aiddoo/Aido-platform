@@ -35,6 +35,12 @@ export interface NewCategoryDefaults {
   palette: readonly [string, ...string[]];
 }
 
+// limit: 남은 카테고리 자리가 없다, otherCalendars: 다른 캘린더가 고른 새 카테고리가 남은 자리를 다 잡았다
+export type NewCategoryAvailability =
+  | { kind: 'unlimited' }
+  | { kind: 'available'; remainingCount: number }
+  | { kind: 'locked'; reason: 'limit' | 'otherCalendars' };
+
 type Rgb = readonly [red: number, green: number, blue: number];
 
 const BYTE_BITS = 8;
@@ -161,5 +167,24 @@ export const TodoImportTargetPolicy = {
       target.kind === 'NEW_CATEGORY' ? [toComparableName(target.name)] : [],
     );
     return uniq(names).length;
+  },
+
+  // 남은 자리(서버 값, null은 무제한)를 다른 캘린더가 고른 새 카테고리가 먼저 쓰고, 이름이 같으면 한 자리를 함께 쓴다
+  getNewCategoryAvailability(
+    newCategory: TodoImportTarget,
+    otherTargets: readonly TodoImportTarget[],
+    remainingCategoryCount: number | null,
+  ): NewCategoryAvailability {
+    if (remainingCategoryCount == null) {
+      return { kind: 'unlimited' };
+    }
+    const otherNewCategoryCount = this.calculateNewCategoryCount(
+      otherTargets.filter((target) => !this.isSameTarget(target, newCategory)),
+    );
+    const remainingCount = remainingCategoryCount - otherNewCategoryCount;
+    if (0 < remainingCount) {
+      return { kind: 'available', remainingCount };
+    }
+    return { kind: 'locked', reason: remainingCategoryCount <= 0 ? 'limit' : 'otherCalendars' };
   },
 };

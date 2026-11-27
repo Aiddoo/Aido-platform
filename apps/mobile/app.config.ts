@@ -78,11 +78,6 @@ const ANDROID_WIDGET_UPDATE_PERIOD_MS = 30 * 60 * 1000;
 // Environment
 
 const PROJECT_ROOT = __dirname;
-// A relative plugin path avoids EAS runtime fallback and location-dependent fingerprints.
-const WEB_BROWSER_PLUGIN_PATH = path.relative(
-  PROJECT_ROOT,
-  path.join(path.dirname(require.resolve('expo-web-browser/package.json')), 'app.plugin.js'),
-);
 
 const restoreBase64File = ({
   envVar,
@@ -478,7 +473,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       ['expo-secure-store', { faceIDPermission: false }],
       'expo-sharing',
       'expo-system-ui',
-      WEB_BROWSER_PLUGIN_PATH,
+      'expo-web-browser',
 
       // expo-audio 플러그인은 등록하지 않는다. 기본값이 백그라운드 재생(iOS audio 모드, Android 전경 서비스)을
       // 켜는데, 앱은 화면을 보는 동안만 듣고 재생한다. 마이크 권한과 문구는 아래 플러그인이 넣는다.

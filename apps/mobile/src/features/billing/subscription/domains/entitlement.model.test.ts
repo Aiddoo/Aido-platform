@@ -162,7 +162,7 @@ describe('EntitlementPolicy', () => {
       ['FREE 7회 남음', 'FREE', 3, { type: 'remaining', count: 7, period: 'month' }],
       ['FREE 다 씀', 'FREE', 10, { type: 'used-up', period: 'month' }],
       ['PREMIUM 공정 사용', 'PREMIUM', 3, { type: 'untracked' }],
-      ['ADMIN 무제한', 'ADMIN', undefined, { type: 'untracked' }],
+      ['ADMIN 공정 사용', 'ADMIN', 3, { type: 'untracked' }],
     ] as const)('%s', (_case, tier, used, expected) => {
       // Given
       const snapshot = createEntitlementSnapshot({ tier, used: { AI_PARSE: used } });
@@ -298,7 +298,7 @@ describe('EntitlementPolicy', () => {
     });
 
     it.each([
-      ['ADMIN 무제한', createEntitlementSnapshot({ tier: 'ADMIN' }), 'AI_PARSE'],
+      ['ADMIN 공정 사용', createEntitlementSnapshot({ tier: 'ADMIN' }), 'AI_PARSE'],
       ['횟수를 세지 않는 기능', createEntitlementSnapshot(), 'FRIEND'],
       ['지난 초기화 시각', createEntitlementSnapshot(), 'NUDGE'],
     ] as const)('%s이면 안내하지 않는다', (_case, snapshot, feature) => {

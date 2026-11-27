@@ -19,7 +19,8 @@ export function PasswordStrengthIndicator({ password }: PasswordStrengthIndicato
 
   return (
     <VStack gap={8}>
-      <HStack gap={16} className="items-center">
+      {/* 영어처럼 긴 규칙은 화면 밖으로 잘리지 않고 다음 줄로 넘어간다 */}
+      <HStack align="center" className="flex-wrap gap-x-4 gap-y-1">
         <RuleItem isSatisfied={ruleChecks.hasLetter} label={t('passwordRules.hasLetter')} />
         <RuleItem isSatisfied={ruleChecks.hasNumber} label={t('passwordRules.hasNumber')} />
         <RuleItem

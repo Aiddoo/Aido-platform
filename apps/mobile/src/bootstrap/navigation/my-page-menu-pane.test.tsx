@@ -3,16 +3,20 @@ import { ok } from '@src/core/errors/result';
 import { MINUTE_MS } from '@src/shared/constants/time-units';
 import { ThemeProvider } from '@src/shared/providers/theme-provider';
 import {
+  createAnalyticsStub,
   createHttpClientStub,
   createMemoryObservableSyncStorage,
   createTestDi,
   createTestQueryClient,
+  getTrackedEvents,
   type TestDi,
 } from '@src/testing/core';
+import { pressTwiceInSameFrame } from '@src/testing/press';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { focusManager } from '@tanstack/react-query';
 import { act, screen, waitFor } from '@testing-library/react-native';
+import { router } from 'expo-router';
 
 import { MyPageMenuPane } from './my-page-menu-pane';
 
@@ -116,6 +120,26 @@ describe('MyPageMenuPane', () => {
 
       // Then
       expect(countActiveImportRequests(httpClient)).toBeLessThanOrEqual(2);
+    });
+  });
+
+  describe('캘린더 일정 가져오기 줄의 입구', () => {
+    it('같은 프레임에 두 번 눌러도 마이 탭 메뉴에서 들어왔다고 한 번 센다', async () => {
+      // Given
+      const httpClient = createHttpClientStub();
+      // 이 테스트는 누름만 보므로 줄의 값 조회는 받는 중으로 둔다
+      httpClient.get.mockImplementation(() => new Promise<never>(() => undefined));
+      const analytics = createAnalyticsStub();
+      await renderMenu(createTestDi({ ports: { httpClient, analytics } }));
+
+      // When
+      await pressTwiceInSameFrame(screen.getByText('캘린더 일정 가져오기'));
+
+      // Then
+      expect(router.push).toHaveBeenCalledTimes(1);
+      expect(getTrackedEvents(analytics, 'todo_import_entry_tapped')).toEqual([
+        { source: 'mypage' },
+      ]);
     });
   });
 });

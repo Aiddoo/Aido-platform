@@ -1,3 +1,5 @@
+import type { AnalyticsSource } from '@src/shared/analytics/event-vocabulary';
+
 export type TodoImportStep = 'permission' | 'calendars' | 'categories' | 'options';
 
 /** 일정 수는 구간으로만 보낸다 */
@@ -9,6 +11,10 @@ export type TodoImportFailureReason = 'server_failed' | 'canceled' | 'abandoned'
 
 declare module '@src/shared/analytics/event-map' {
   interface AppEventMap {
+    todo_import_entry_shown: { source: AnalyticsSource<'feed_card'> };
+    // 할 일 탭의 안내 카드와 마이 탭 메뉴 줄 중 어느 입구로 들어왔는지 비교한다
+    todo_import_entry_tapped: { source: AnalyticsSource<'feed_card' | 'mypage'> };
+    todo_import_entry_dismissed: { source: AnalyticsSource<'feed_card'> };
     todo_import_step_viewed: { step: TodoImportStep };
     todo_import_permission_requested: { status: 'granted' | 'denied' | 'undetermined' };
     todo_import_created: {
