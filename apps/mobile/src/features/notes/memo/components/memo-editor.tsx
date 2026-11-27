@@ -62,7 +62,6 @@ import {
   useSuspenseQueries,
   useSuspenseQuery,
 } from '@tanstack/react-query';
-import { noop } from 'es-toolkit';
 import { Stack, useRouter, useNavigation } from 'expo-router';
 import { Menu, Separator, Spinner } from 'heroui-native';
 import { type ComponentProps, type ComponentType, useLayoutEffect, useRef, useState } from 'react';
@@ -177,10 +176,20 @@ export function MemoEditor({ toolbar: Toolbar, onLeave }: MemoEditorProps) {
     onLeave();
   });
 
+  // 지웠거나 이미 없는 메모는 다시 보내도 소용없어 초안을 버리고 떠난다. 이미 없다는 안내는 mutation이 한다
+  const discardDraftAndLeave = () => {
+    discardDraft();
+    onLeave();
+  };
+
   // isSubmitting은 다음 렌더에야 켜져 같은 프레임의 두 번째 탭이 한 번 더 보낸다
   const handleSavePress = useSingleTap(() => {
     // 실패 안내는 mutation의 meta.errorFeedback이 맡고 글자와 편집 상태는 그대로 둔다
-    submitMemo().catch(noop);
+    submitMemo().catch((error: unknown) => {
+      if (isMemoUnavailableError(error)) {
+        discardDraftAndLeave();
+      }
+    });
   });
 
   const handleBackPress = useSingleTap(({ canSave }: { canSave: boolean }) => {
@@ -189,6 +198,10 @@ export function MemoEditor({ toolbar: Toolbar, onLeave }: MemoEditorProps) {
       return;
     }
     submitMemoAndLeave().catch((error: unknown) => {
+      if (isMemoUnavailableError(error)) {
+        discardDraftAndLeave();
+        return;
+      }
       // 연결 문제로 못 보낸 글자는 초안에 남으니 화면에 가두지 않는다
       if (isConnectivityError(error)) {
         onLeave();
@@ -207,7 +220,12 @@ export function MemoEditor({ toolbar: Toolbar, onLeave }: MemoEditorProps) {
     }
     isSavingChangesRef.current = true;
     const content = form.getValues('content');
-    const savedMemo = await saveContent(content).catch(() => null);
+    const savedMemo = await saveContent(content).catch((error: unknown) => {
+      if (isMemoUnavailableError(error)) {
+        discardDraftAndLeave();
+      }
+      return null;
+    });
     isSavingChangesRef.current = false;
     // 응답을 기다리는 사이 더 친 글자는 지우지 않는다
     if (savedMemo != null && form.getValues('content') === content) {
@@ -237,10 +255,7 @@ export function MemoEditor({ toolbar: Toolbar, onLeave }: MemoEditorProps) {
                 onLeave();
                 navigate('/feed');
               }}
-              onDeleted={() => {
-                discardDraft();
-                onLeave();
-              }}
+              onDeleted={discardDraftAndLeave}
             />
           );
         }}
@@ -287,7 +302,7 @@ MemoEditor.StackToolbar = function StackToolbar({
 
   const { data: memo } = useSuspenseQuery(useGetMemoQueryOptions({ memoId }));
 
-  const pin = useMemoPinAction(memo);
+  const pin = useMemoPinAction({ memo, onUnavailable: onDeleted });
   const startAiParse = useSuspenseStartMemoAiParse({ onSaveChanges });
   const isAiParseDisabled = useIsMemoAiParseDisabled();
   const isParsing = useIsMemoParsing();
@@ -374,7 +389,7 @@ MemoEditor.PaneToolbar = function PaneToolbar({
 
   const { data: memo } = useSuspenseQuery(useGetMemoQueryOptions({ memoId }));
 
-  const pin = useMemoPinAction(memo);
+  const pin = useMemoPinAction({ memo, onUnavailable: onDeleted });
 
   return (
     <Box className="bg-white">
@@ -644,13 +659,23 @@ function MemoMoreMenu({
 }
 
 /** 헤더가 JS(pane)든 네이티브(Stack 화면)든 같은 고정 동작을 쓴다. */
-function useMemoPinAction(memo: Memo) {
+function useMemoPinAction({ memo, onUnavailable }: { memo: Memo; onUnavailable: () => void }) {
   const setPinned = useMutation(useSetMemoPinnedMutationOptions({ memoId: memo.id }));
 
   return {
     isPinned: memo.isPinned,
     isDisabled: setPinned.isPending,
-    toggle: () => setPinned.mutate({ isPinned: !memo.isPinned }),
+    toggle: () =>
+      setPinned.mutate(
+        { isPinned: !memo.isPinned },
+        {
+          onError: (error) => {
+            if (isMemoUnavailableError(error)) {
+              onUnavailable();
+            }
+          },
+        },
+      ),
   };
 }
 
