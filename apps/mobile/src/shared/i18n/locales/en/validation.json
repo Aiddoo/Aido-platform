@@ -5,9 +5,6 @@
   },
   "password": {
     "required": "Please enter your password",
-    "tooShort": "Use at least {{count, number}} characters for your password",
-    "tooLong": "Use up to {{count, number}} characters for your password",
-    "pattern": "Use at least {{count, number}} characters, including letters and numbers",
     "mismatch": "Passwords don't match"
   },
   "nickname": {

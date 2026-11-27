@@ -1,7 +1,6 @@
 import {
   EMAIL_MAX_LENGTH,
   INQUIRY_CONTENT_LIMITS,
-  PASSWORD_RULES,
   TODO_CATEGORY_LIMITS,
   TODO_COMMENT_LIMITS,
   TODO_LIMITS,
@@ -23,9 +22,6 @@ interface ValidationMessageKeys {
 // 한도가 바뀌면 문구도 함께 바뀌도록 스키마와 같은 계약 상수를 {{count}}로 넘긴다
 const VALIDATION_MESSAGE_COUNTS: Readonly<Record<string, number>> = {
   'email.tooLong': EMAIL_MAX_LENGTH,
-  'password.tooShort': PASSWORD_RULES.MIN_LENGTH,
-  'password.tooLong': PASSWORD_RULES.MAX_LENGTH,
-  'password.pattern': PASSWORD_RULES.MIN_LENGTH,
   'nickname.tooLong': USER_PROFILE_LIMITS.NAME_MAX_LENGTH,
   'userTag.length': USER_TAG_LENGTH,
   'todoTitle.tooLong': TODO_LIMITS.TITLE_MAX_LENGTH,
