@@ -5,6 +5,7 @@ import {
   calculateRemainingCapacity,
   getTodoImportStartFailure,
   getTodoImportUploadFailure,
+  isTodoImportStartHandledError,
 } from './todo-import.error';
 
 describe('getTodoImportUploadFailure', () => {
@@ -129,6 +130,62 @@ describe('getTodoImportStartFailure', () => {
 
     // Then
     expect(failure).toEqual({ kind: 'other' });
+  });
+});
+
+describe('isTodoImportStartHandledError', () => {
+  it.each([
+    {
+      scenario: '이미 처리 중인 가져오기로 보낼 수 있으면 화면이 맡는다',
+      code: ErrorCode.TODO_IMPORT_2301,
+      details: { importId: IMPORT_ID },
+      expected: true,
+    },
+    {
+      scenario: '처리 중인 가져오기의 id가 오지 않으면 전역 안내가 맡는다',
+      code: ErrorCode.TODO_IMPORT_2301,
+      details: null,
+      expected: false,
+    },
+    {
+      scenario: '요금제 기간 한도는 한도 안내가 맡는다',
+      code: ErrorCode.TODO_IMPORT_2302,
+      details: null,
+      expected: true,
+    },
+    {
+      scenario: '새 카테고리 자리 부족은 한도 안내가 맡는다',
+      code: ErrorCode.TODO_CATEGORY_0857,
+      details: null,
+      expected: true,
+    },
+    {
+      scenario: '거절된 넣을 곳이 오면 그 칸이 맡는다',
+      code: ErrorCode.TODO_IMPORT_2303,
+      details: { targets: [{ targetKey: 'category-2', reason: 'CATEGORY_NOT_FOUND' }] },
+      expected: true,
+    },
+    {
+      scenario: '거절된 넣을 곳이 오지 않으면 전역 안내가 맡는다',
+      code: ErrorCode.TODO_IMPORT_2303,
+      details: null,
+      expected: false,
+    },
+    {
+      scenario: '그 밖의 거절은 전역 안내가 맡는다',
+      code: ErrorCode.TODO_IMPORT_2306,
+      details: null,
+      expected: false,
+    },
+  ])('$scenario', ({ code, details, expected }) => {
+    // Given
+    const error = createTodoImportApiError({ code, details });
+
+    // When
+    const isHandled = isTodoImportStartHandledError(error);
+
+    // Then
+    expect(isHandled).toBe(expected);
   });
 });
 

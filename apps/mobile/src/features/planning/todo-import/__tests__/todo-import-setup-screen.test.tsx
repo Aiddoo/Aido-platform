@@ -815,4 +815,58 @@ describe('TodoImportSetupScreen', () => {
       ).toBeOnTheScreen();
     });
   });
+
+  describe('시작 실패 안내', () => {
+    it('진행 중이라는 실패에 가져오기 id가 빠져 오면 오류 안내를 띄우고 옵션 단계에 남는다', async () => {
+      // Given
+      await renderSetup({
+        startImport: async () =>
+          fail(createTodoImportApiError({ code: ErrorCode.TODO_IMPORT_2301, details: null })),
+      });
+      await goToCategories();
+      await goToOptions();
+
+      // When
+      await pressImport();
+
+      // Then
+      // 테스트의 서버 오류는 서버 카탈로그 문구를 싣는다
+      expect(
+        await screen.findByText('이미 진행 중인 캘린더 가져오기가 있습니다.'),
+      ).toBeOnTheScreen();
+      expect(screen.getByText(OPTIONS_TITLE)).toBeOnTheScreen();
+      expect(router.replace).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('기간을 바꿔 다시 읽기', () => {
+    it('바꾼 기간의 일정을 읽는 동안 다음 버튼이 꺼졌다가 다 읽으면 켜진다', async () => {
+      // Given
+      const { todoImportSource } = await renderSetup();
+      await screen.findByText('일정 5개를 가져와요');
+      const nextButton = screen.getByRole('button', { name: '다음' });
+      await waitFor(() => expect(nextButton).toBeEnabled());
+      const readPreview = todoImportSource.previewEvents.getMockImplementation();
+      if (readPreview == null) {
+        throw new Error('일정 미리 읽기 응답을 정하지 않았습니다');
+      }
+      const previewGate = Promise.withResolvers<void>();
+      todoImportSource.previewEvents.mockImplementation(async (input) => {
+        await previewGate.promise;
+        return readPreview(input);
+      });
+
+      // When
+      await fireEvent.press(screen.getByRole('radio', { name: '1주' }));
+
+      // Then
+      await waitFor(() => expect(screen.getByRole('button', { name: '다음' })).toBeDisabled());
+
+      // When
+      await act(async () => previewGate.resolve());
+
+      // Then
+      await waitFor(() => expect(screen.getByRole('button', { name: '다음' })).toBeEnabled());
+    });
+  });
 });
