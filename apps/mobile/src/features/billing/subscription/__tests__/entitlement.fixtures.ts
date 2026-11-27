@@ -24,9 +24,19 @@ export const MONTHLY_RESETS_AT = '2026-11-30T15:00:00.000Z';
 /** 다음 날 00:00 KST */
 export const DAILY_RESETS_AT = '2026-11-05T15:00:00.000Z';
 
+/** 서버 planOfTier처럼 ADMIN은 프리미엄 요금제의 기능·한도를 받는다(무제한 경로가 없다) */
+function getPlanOfTier(tier: AccessTier): Plan {
+  return match(tier)
+    .returnType<Plan>()
+    .with('FREE', () => 'free')
+    .with('PREMIUM', 'ADMIN', () => 'premium')
+    .exhaustive();
+}
+
 /** 등급별로 서버가 보낼 기능 한도(사용량 0). 횟수는 PLAN_CATALOG에서만 읽는다 */
 function createDefaultFeatureQuota(feature: PlanFeature, tier: AccessTier): FeatureQuotaDto {
   const definition = PLAN_CATALOG[feature];
+  const plan = getPlanOfTier(tier);
   const base = {
     feature,
     allowed: true,
@@ -40,29 +50,23 @@ function createDefaultFeatureQuota(feature: PlanFeature, tier: AccessTier): Feat
   } satisfies FeatureQuotaDto;
 
   if (definition.kind === 'flag') {
-    return {
-      ...base,
-      allowed: tier === 'ADMIN' || definition[tier === 'FREE' ? 'free' : 'premium'],
-    };
+    return { ...base, allowed: definition[plan] };
   }
   if (definition.kind === 'horizon') {
-    const limit = definition[tier === 'FREE' ? 'free' : 'premium'];
+    const limit = definition[plan];
     return { ...base, allowed: limit > 0, limit };
   }
-  if (tier === 'ADMIN') {
-    return base;
-  }
   if (definition.kind === 'resource') {
-    return { ...base, limit: tier === 'FREE' ? definition.free : definition.premium };
+    return { ...base, limit: definition[plan] };
   }
 
   const fairUseLimit = 'fairUse' in definition ? definition.fairUse.premium : null;
-  const limit = tier === 'FREE' ? definition.free : fairUseLimit;
+  const limit = plan === 'free' ? definition.free : fairUseLimit;
   const perUse =
     'perUse' in definition
       ? {
-          maxSeconds: definition.perUse.maxSeconds[tier === 'FREE' ? 'free' : 'premium'],
-          maxCharacters: definition.perUse.maxCharacters[tier === 'FREE' ? 'free' : 'premium'],
+          maxSeconds: definition.perUse.maxSeconds[plan],
+          maxCharacters: definition.perUse.maxCharacters[plan],
         }
       : null;
   if (limit == null) {
@@ -78,7 +82,7 @@ function createDefaultFeatureQuota(feature: PlanFeature, tier: AccessTier): Feat
       .with('month', () => MONTHLY_RESETS_AT)
       .with('day', () => DAILY_RESETS_AT)
       .exhaustive(),
-    isFairUse: tier !== 'FREE' && fairUseLimit != null,
+    isFairUse: plan === 'premium' && fairUseLimit != null,
     perUse,
   };
 }

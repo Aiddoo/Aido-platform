@@ -1,6 +1,6 @@
 import { entitlementSnapshotSchema } from '@aido/api/contracts/entitlement/v1';
 import { ErrorCode } from '@aido/api/errors';
-import { PLAN_FEATURE_KEYS } from '@aido/api/vocabulary';
+import { PLAN_CATALOG, PLAN_FEATURE_KEYS } from '@aido/api/vocabulary';
 import { toInstant } from '@src/shared/date/instant';
 import { createApiError } from '@src/testing/core';
 
@@ -61,7 +61,11 @@ describe('toEntitlementSnapshot', () => {
       tier: 'ADMIN',
       isPremium: false,
     });
-    expect(snapshot.features.AI_PARSE?.limit).toBeNull();
+    // 서버는 ADMIN에게 프리미엄과 같은 공정 사용 상한을 준다(무제한 경로가 없다)
+    expect(snapshot.features.AI_PARSE).toMatchObject({
+      limit: PLAN_CATALOG.AI_PARSE.fairUse.premium,
+      isFairUse: true,
+    });
   });
 });
 
