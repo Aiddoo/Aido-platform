@@ -80,7 +80,7 @@ export class TodoQueryController {
 categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수도 함께 반환합니다.
 
 **응답 필드**
-- \`maxPerCategory\`: 카테고리당 최대 활성 할 일 수 (모든 구독 동일, ADMIN은 무제한)
+- \`maxPerCategory\`: 카테고리당 최대 활성 할 일 수 (ADMIN을 포함해 모든 사용자 동일)
 - \`activeCount\`: 해당 카테고리의 현재 활성 할 일 개수 (categoryId 지정 시)`,
   })
   @ApiSuccessResponse({ type: TodoResourceLimitResponseDto })

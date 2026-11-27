@@ -132,7 +132,7 @@ const premiumEntitlementShape = {
 /** 새 서버가 기능을 더해도 이전 앱이 응답을 거절하지 않도록 모르는 키를 허용한다. */
 export const premiumEntitlementsSchema = z.looseObject(premiumEntitlementShape).meta({
   description:
-    "PREMIUM_FEATURES 카탈로그의 기능별 현재 권한입니다. ADMIN은 모든 기능이 allowed=true, limit=null입니다. 만료·자동 갱신 유예(3시간)를 반영한 서버 판단과 같습니다.",
+    "PREMIUM_FEATURES 카탈로그의 기능별 현재 권한입니다. ADMIN은 프리미엄 요금제와 같은 값을 받습니다. 만료·자동 갱신 유예(3시간)를 반영한 서버 판단과 같습니다.",
 });
 
 export const currentUserSchema = z
